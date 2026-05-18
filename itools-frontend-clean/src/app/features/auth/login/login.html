@@ -1,0 +1,65 @@
+<div class="login-page">
+  <div class="page-overlay"></div>
+  <div class="red-outline red-outline-1"></div>
+  <div class="red-outline red-outline-2"></div>
+
+  <div class="scene">
+    <div class="login-wrapper">
+      <section class="login-panel">
+        <div class="panel-shine"></div>
+
+        <h1>SE CONNECTER</h1>
+
+        <div class="error-box" *ngIf="errorMessage">
+          {{ errorMessage }}
+        </div>
+
+        <form (ngSubmit)="submit()" class="login-form">
+          <div class="input-shell">
+            <input
+              type="email"
+              name="email"
+              [(ngModel)]="email"
+              placeholder="exp@allcircuits.com"
+              autocomplete="email"
+              required
+            />
+          </div>
+
+          <div class="input-shell">
+            <input
+              type="password"
+              name="password"
+              [(ngModel)]="password"
+              placeholder="mot de passe"
+              autocomplete="current-password"
+              required
+            />
+          </div>
+
+          <div class="login-options">
+            <label class="remember-wrap">
+              <input type="checkbox" name="rememberMe" [(ngModel)]="rememberMe" />
+              <span>Se souvenir de moi</span>
+            </label>
+
+            <a href="javascript:void(0)">Mot de passe oublié?</a>
+          </div>
+
+          <button class="login-btn" type="submit" [disabled]="loading">
+            {{ loading ? 'Connexion...' : 'Se connecter' }}
+          </button>
+
+          <div class="login-footer">
+            Vous n’avez pas de compte?
+            <a href="javascript:void(0)">demander l’accès</a>
+          </div>
+        </form>
+      </section>
+
+      <section class="logo-area">
+        <img src="/images/itools-logo.png" alt="iTools" class="logo-img" />
+      </section>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,578 @@
+<div class="fournisseurs-page">
+  <section class="fournisseurs-card page-header">
+    <div class="card-inner header-inner">
+      <div>
+        <span class="section-kicker">Référentiel</span>
+        <h1>Fournisseurs</h1>
+        <p>
+          Gestion des fournisseurs, codes fournisseurs et noms fournisseurs.
+        </p>
+      </div>
+
+      <div class="header-actions">
+        <button type="button" class="secondary-btn" (click)="downloadFournisseursData()">
+          Télécharger les données
+        </button>
+
+        <button type="button" class="secondary-btn" (click)="downloadTemplate()">
+          Télécharger modèle à remplir
+        </button>
+
+        <button type="button" class="secondary-btn" (click)="openImportModal()">
+          Import en masse
+        </button>
+
+        <button type="button" class="action-btn" (click)="openCreateModal()">
+          Nouveau
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <div class="alert success" *ngIf="successMessage">
+    {{ successMessage }}
+  </div>
+
+  <div class="alert error" *ngIf="errorMessage && !showModal">
+    {{ errorMessage }}
+  </div>
+
+  <section class="fournisseurs-card filters-card">
+    <div class="card-inner">
+      <div class="filters-top">
+        <div>
+          <span class="section-kicker">Filtres</span>
+          <h2>Vue globale des fournisseurs</h2>
+          <p>
+            Recherche, filtre par nomenclature, tri et choix du mode d’affichage.
+          </p>
+        </div>
+
+        <div class="view-switch">
+          <button
+            type="button"
+            [class.active]="viewMode === 'list'"
+            (click)="setViewMode('list')"
+          >
+            Liste
+          </button>
+
+          <button
+            type="button"
+            [class.active]="viewMode === 'images'"
+            (click)="setViewMode('images')"
+          >
+            Images
+          </button>
+        </div>
+      </div>
+
+      <div class="filters-grid">
+        <div class="form-group search-field">
+          <label>Recherche</label>
+          <input
+            class="form-control"
+            type="text"
+            placeholder="Rechercher par code, nom, nomenclature, date..."
+            [(ngModel)]="searchText"
+            (input)="applyFilters()"
+          />
+        </div>
+
+        <div class="form-group">
+          <label>Nomenclature</label>
+          <select
+            class="form-control"
+            [(ngModel)]="selectedNomenclature"
+            (change)="applyFilters()"
+          >
+            <option value="">Toutes les nomenclatures</option>
+
+            <option
+              *ngFor="let nomenclature of nomenclatureOptions"
+              [value]="nomenclature"
+            >
+              {{ nomenclature }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Trier par</label>
+          <select
+            class="form-control"
+            [(ngModel)]="sortField"
+            (change)="applyFilters()"
+          >
+            <option value="nomFournisseur">Nom</option>
+            <option value="createdAt">Date de création</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Ordre</label>
+          <select
+            class="form-control"
+            [(ngModel)]="sortDirection"
+            (change)="applyFilters()"
+          >
+            <option value="asc">Croissant</option>
+            <option value="desc">Décroissant</option>
+          </select>
+        </div>
+
+        <div class="filters-actions">
+          <button type="button" class="secondary-btn" (click)="resetFilters()">
+            Réinitialiser
+          </button>
+        </div>
+      </div>
+
+      <div class="summary-grid">
+        <div class="summary-card">
+          <span>Total</span>
+          <strong>{{ fournisseurs.length }}</strong>
+        </div>
+
+        <div class="summary-card">
+          <span>Affichés</span>
+          <strong>{{ filteredFournisseurs.length }}</strong>
+        </div>
+
+        <div class="summary-card">
+          <span>Nomenclatures</span>
+          <strong>{{ nomenclatureOptions.length }}</strong>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="fournisseurs-card list-card">
+    <div class="card-inner">
+      <div class="list-header">
+        <div>
+          <span class="section-kicker">Liste</span>
+          <h2>Liste des fournisseurs</h2>
+          <p>{{ filteredFournisseurs.length }} fournisseur(s) trouvé(s)</p>
+        </div>
+
+        <div class="sort-state">
+          <span>Tri actuel</span>
+          <strong>
+            {{ sortField === 'nomFournisseur' ? 'Nom' : 'Date de création' }}
+            —
+            {{ sortDirection === 'asc' ? 'Croissant' : 'Décroissant' }}
+          </strong>
+        </div>
+      </div>
+
+      <ng-container *ngIf="filteredFournisseurs.length > 0; else emptyState">
+        <div class="table-wrap" *ngIf="viewMode === 'list'">
+          <table class="fournisseurs-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Image</th>
+                <th>Code fournisseur</th>
+                <th>
+                  <button type="button" class="th-sort-btn" (click)="toggleSort('nomFournisseur')">
+                    Nom fournisseur
+                    <span *ngIf="sortField === 'nomFournisseur'">
+                      {{ sortDirection === 'asc' ? '↑' : '↓' }}
+                    </span>
+                  </button>
+                </th>
+                <th>Nomenclature</th>
+                <th>
+                  <button type="button" class="th-sort-btn" (click)="toggleSort('createdAt')">
+                    Date création
+                    <span *ngIf="sortField === 'createdAt'">
+                      {{ sortDirection === 'asc' ? '↑' : '↓' }}
+                    </span>
+                  </button>
+                </th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              <tr *ngFor="let item of filteredFournisseurs">
+                <td>{{ item.id }}</td>
+
+                <td>
+                  <div class="table-image">
+                    <img
+                      *ngIf="getFournisseurImageUrl(item); else tableImageFallback"
+                      [src]="getFournisseurImageUrl(item)"
+                      [alt]="item.nomFournisseur"
+                    />
+
+                    <ng-template #tableImageFallback>
+                      <span>{{ getFournisseurInitial(item) }}</span>
+                    </ng-template>
+                  </div>
+                </td>
+
+                <td>
+                  <span class="code-badge">
+                    {{ item.codeFournisseur }}
+                  </span>
+                </td>
+
+                <td>
+                  <strong class="fournisseur-name">
+                    {{ item.nomFournisseur }}
+                  </strong>
+                </td>
+
+                <td>
+                  <span class="nomenclature-badge">
+                    {{ getFournisseurNomenclature(item) }}
+                  </span>
+                </td>
+
+                <td>
+                  <span class="date-badge">
+                    {{ formatCreationDate(item) }}
+                  </span>
+                </td>
+
+                <td class="actions">
+                  <button type="button" class="table-btn" (click)="openEditModal(item)">
+                    Modifier
+                  </button>
+
+                  <button
+                    *ngIf="canCreateReclamation()"
+                    type="button"
+                    class="table-btn reclamation"
+                    (click)="openReclamationModal(item)"
+                  >
+                    Passer réclamation
+                  </button>
+
+                  <button type="button" class="table-btn danger" (click)="deleteFournisseur(item)">
+                    Supprimer
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="images-grid" *ngIf="viewMode === 'images'">
+          <article class="fournisseur-image-card" *ngFor="let item of filteredFournisseurs">
+            <div class="image-preview">
+              <img
+                *ngIf="getFournisseurImageUrl(item); else cardImageFallback"
+                [src]="getFournisseurImageUrl(item)"
+                [alt]="item.nomFournisseur"
+              />
+
+              <ng-template #cardImageFallback>
+                <div class="image-fallback">
+                  <span>{{ getFournisseurInitial(item) }}</span>
+                </div>
+              </ng-template>
+            </div>
+
+            <div class="image-card-body">
+              <span class="nomenclature-badge">
+                {{ getFournisseurNomenclature(item) }}
+              </span>
+
+              <h3>{{ item.nomFournisseur }}</h3>
+
+              <p>Code : {{ item.codeFournisseur }}</p>
+              <p>ID : {{ item.id }}</p>
+              <p>Créé le : {{ formatCreationDate(item) }}</p>
+            </div>
+
+            <div class="image-card-actions">
+              <button type="button" class="table-btn" (click)="openEditModal(item)">
+                Modifier
+              </button>
+
+              <button
+                *ngIf="canCreateReclamation()"
+                type="button"
+                class="table-btn reclamation"
+                (click)="openReclamationModal(item)"
+              >
+                Réclamation
+              </button>
+
+              <button type="button" class="table-btn danger" (click)="deleteFournisseur(item)">
+                Supprimer
+              </button>
+            </div>
+          </article>
+        </div>
+      </ng-container>
+
+      <ng-template #emptyState>
+        <p class="empty-text">Aucun fournisseur trouvé.</p>
+      </ng-template>
+    </div>
+  </section>
+</div>
+
+<div class="it-modal-overlay" *ngIf="showModal" (click)="closeModal()">
+  <div class="it-modal" (click)="$event.stopPropagation()">
+    <div class="it-modal-inner">
+      <div class="it-modal-header">
+        <div>
+          <span class="section-kicker">Fournisseur</span>
+
+          <h2 class="it-modal-title">
+            {{ isEditMode ? 'Modifier fournisseur' : 'Ajouter fournisseur' }}
+          </h2>
+
+          <p class="it-modal-subtitle">
+            Complète les informations puis valide l’enregistrement.
+          </p>
+        </div>
+
+        <button type="button" class="it-modal-close" (click)="closeModal()">×</button>
+      </div>
+
+      <div class="alert error" *ngIf="errorMessage">
+        {{ errorMessage }}
+      </div>
+
+      <form (ngSubmit)="submit()" class="fournisseurs-form modal-form">
+        <div class="form-group">
+          <label>Code fournisseur</label>
+          <input
+            class="form-control"
+            type="text"
+            name="codeFournisseur"
+            [(ngModel)]="form.codeFournisseur"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label>Nom fournisseur</label>
+          <input
+            class="form-control"
+            type="text"
+            name="nomFournisseur"
+            [(ngModel)]="form.nomFournisseur"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label>Nomenclature</label>
+          <select
+            class="form-control"
+            name="nomenclature"
+            [(ngModel)]="form.nomenclature"
+            required
+          >
+            <option value="">Sélectionner une nomenclature</option>
+            <option *ngFor="let nomenclature of nomenclatureChoices" [value]="nomenclature">
+              {{ nomenclature }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Date de création</label>
+          <input
+            class="form-control"
+            type="date"
+            name="createdAt"
+            [(ngModel)]="form.createdAt"
+            required
+          />
+        </div>
+
+        <div class="form-note">
+          La photo fournisseur pourra être importée plus tard.
+          Si le backend ne sauvegarde pas encore la nomenclature ou la date, il faut aussi ajouter ces champs côté API.
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="action-btn">
+            {{ isEditMode ? 'Enregistrer' : 'Ajouter' }}
+          </button>
+
+          <button type="button" class="secondary-btn" (click)="closeModal()">
+            Annuler
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="it-modal-overlay" *ngIf="showImportModal" (click)="closeImportModal()">
+  <div class="it-modal import-modal" (click)="$event.stopPropagation()">
+    <div class="it-modal-inner">
+      <div class="it-modal-header">
+        <div>
+          <span class="section-kicker">Import</span>
+
+          <h2 class="it-modal-title">Import en masse</h2>
+
+          <p class="it-modal-subtitle">
+            Téléverse un fichier Excel ou CSV contenant la liste des nouveaux fournisseurs.
+          </p>
+        </div>
+
+        <button type="button" class="it-modal-close" (click)="closeImportModal()">×</button>
+      </div>
+
+      <div class="alert success" *ngIf="importSuccessMessage">
+        {{ importSuccessMessage }}
+      </div>
+
+      <div class="alert error" *ngIf="importErrorMessage">
+        {{ importErrorMessage }}
+      </div>
+
+      <div class="import-box">
+        <label class="import-label">Fichier Excel / CSV</label>
+
+        <input
+          class="file-input"
+          type="file"
+          accept=".xlsx,.xls,.csv"
+          (change)="onFileSelected($event)"
+        />
+
+        <p class="file-name" *ngIf="selectedImportFile">
+          Fichier sélectionné : {{ selectedImportFile.name }}
+        </p>
+      </div>
+
+      <div class="import-help">
+        Colonnes acceptées :
+        <strong>codeFournisseur</strong>,
+        <strong>nomFournisseur</strong>,
+        <strong>nomenclature</strong>,
+        <strong>imageUrl</strong>,
+        <strong>createdAt</strong>.
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="action-btn" (click)="importFournisseurs()">
+          Importer
+        </button>
+
+        <button type="button" class="secondary-btn" (click)="closeImportModal()">
+          Annuler
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="it-modal-overlay" *ngIf="showReclamationModal" (click)="closeReclamationModal()">
+  <div class="it-modal reclamation-modal" (click)="$event.stopPropagation()">
+    <div class="it-modal-inner">
+      <div class="it-modal-header">
+        <div>
+          <span class="section-kicker">Assistance</span>
+
+          <h2 class="it-modal-title">Passer une réclamation</h2>
+
+          <p class="it-modal-subtitle">
+            La réclamation sera envoyée pour traitement.
+          </p>
+        </div>
+
+        <button type="button" class="it-modal-close" (click)="closeReclamationModal()">×</button>
+      </div>
+
+      <div class="alert success" *ngIf="reclamationSuccessMessage">
+        {{ reclamationSuccessMessage }}
+      </div>
+
+      <div class="alert error" *ngIf="reclamationErrorMessage">
+        {{ reclamationErrorMessage }}
+      </div>
+
+      <div class="selected-item-box" *ngIf="selectedReclamationFournisseur">
+        <span>Fournisseur concerné</span>
+        <strong>{{ getFournisseurReclamationLabel(selectedReclamationFournisseur) }}</strong>
+      </div>
+
+      <form class="fournisseurs-form modal-form" (ngSubmit)="submitReclamation()">
+        <div class="form-group">
+          <label>Titre</label>
+          <input
+            class="form-control"
+            type="text"
+            name="reclamationTitle"
+            [(ngModel)]="reclamationForm.title"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label>Type de problème</label>
+          <select
+            class="form-control"
+            name="problemType"
+            [(ngModel)]="reclamationForm.problemType"
+            required
+          >
+            <option *ngFor="let problemType of reclamationProblemTypes" [value]="problemType">
+              {{ problemType }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Date de réclamation</label>
+          <input
+            class="form-control"
+            type="date"
+            name="reclamationDate"
+            [(ngModel)]="reclamationForm.reclamationDate"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label>Priorité</label>
+          <select
+            class="form-control"
+            name="priority"
+            [(ngModel)]="reclamationForm.priority"
+            required
+          >
+            <option *ngFor="let priority of priorityOptions" [value]="priority">
+              {{ priority }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Description du problème</label>
+          <textarea
+            class="form-control textarea-control"
+            name="description"
+            [(ngModel)]="reclamationForm.description"
+            rows="5"
+            placeholder="Décris clairement le problème rencontré..."
+            required
+          ></textarea>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="action-btn">
+            Envoyer réclamation
+          </button>
+
+          <button type="button" class="secondary-btn" (click)="closeReclamationModal()">
+            Annuler
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

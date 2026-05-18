@@ -1,0 +1,116 @@
+<div class="archive-day-page">
+  <section class="archive-card page-header">
+    <div class="card-inner header-inner">
+      <div>
+        <span class="section-kicker">Historique</span>
+        <h1 class="page-title">Archives du jour</h1>
+        <p class="page-subtitle">
+          {{ getFormattedSelectedDate() }}
+        </p>
+      </div>
+
+      <div class="header-actions">
+        <button type="button" class="secondary-btn" (click)="backToCalendar()">
+          Retour calendrier
+        </button>
+
+        <button type="button" class="secondary-btn" (click)="loadArchives()">
+          Actualiser
+        </button>
+
+        <button type="button" class="action-btn" (click)="downloadDayArchives()">
+          Télécharger les données
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <div class="alert success" *ngIf="successMessage">
+    {{ successMessage }}
+  </div>
+
+  <div class="alert error" *ngIf="errorMessage">
+    {{ errorMessage }}
+  </div>
+
+  <section class="archive-card">
+    <div class="card-inner">
+      <div class="list-header">
+        <div>
+          <span class="section-kicker">Détails</span>
+          <h2 class="section-title">Opérations de cette date</h2>
+        </div>
+
+        <span class="counter-badge">
+          {{ archives.length }} opération(s)
+        </span>
+      </div>
+
+      <div class="loading" *ngIf="isLoading">
+        Chargement des archives...
+      </div>
+
+      <div class="timeline" *ngIf="!isLoading && archives.length > 0; else emptyState">
+        <div class="timeline-item" *ngFor="let item of archives">
+          <div class="timeline-time">
+            {{ item.createdAt | date:'HH:mm:ss' }}
+          </div>
+
+          <div class="timeline-content">
+            <div class="operation-header">
+              <span class="action-badge" [ngClass]="getActionClass(item.action)">
+                {{ getActionLabel(item.action) }}
+              </span>
+
+              <span class="entity-badge">
+                {{ item.entityName }}
+              </span>
+            </div>
+
+            <h3>{{ item.description }}</h3>
+
+            <div class="meta-grid">
+              <div>
+                <span>Utilisateur</span>
+                <strong>{{ item.userName || '-' }}</strong>
+              </div>
+
+              <div>
+                <span>Rôle</span>
+                <strong>{{ item.role || '-' }}</strong>
+              </div>
+
+              <div>
+                <span>ID entité</span>
+                <strong>{{ item.entityId || '-' }}</strong>
+              </div>
+
+              <div>
+                <span>Date complète</span>
+                <strong>{{ item.createdAt | date:'dd/MM/yyyy HH:mm:ss' }}</strong>
+              </div>
+            </div>
+
+            <div class="json-grid">
+              <div class="json-box">
+                <h4>Anciennes valeurs</h4>
+                <pre>{{ prettyJson(item.oldValues) }}</pre>
+              </div>
+
+              <div class="json-box">
+                <h4>Nouvelles valeurs</h4>
+                <pre>{{ prettyJson(item.newValues) }}</pre>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <ng-template #emptyState>
+        <p class="empty-text" *ngIf="!isLoading">
+          Aucune opération trouvée pour cette date.
+        </p>
+      </ng-template>
+    </div>
+  </section>
+</div>

@@ -1,0 +1,538 @@
+.dashboard-page {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* =========================================================
+   4 BANNIÈRES DU HAUT
+   ========================================================= */
+
+.top-stats-grid {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(190px, 1fr));
+  gap: 16px;
+}
+
+.stat-card {
+  min-height: 180px;
+  padding: 24px 22px;
+
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 20px;
+
+  border-radius: 22px;
+  border: none !important;
+
+  opacity: 1 !important;
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.16) !important;
+
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.2) !important;
+}
+
+.stat-icon {
+  width: 68px;
+  height: 68px;
+  min-width: 68px;
+
+  border-radius: 50%;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: rgba(255, 255, 255, 0.18) !important;
+  border: 1px solid rgba(255, 255, 255, 0.28) !important;
+}
+
+.stat-icon img {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  display: block;
+
+  filter: brightness(0) invert(1) !important;
+  opacity: 1 !important;
+}
+
+.stat-content {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.stat-number {
+  display: block;
+
+  color: #ffffff !important;
+  font-size: 62px !important;
+  line-height: 0.9 !important;
+  font-weight: 900 !important;
+  letter-spacing: -1px;
+  opacity: 1 !important;
+}
+
+.stat-label {
+  display: block;
+  margin-top: 8px;
+
+  color: #ffffff !important;
+  font-size: 16px !important;
+  line-height: 1.1 !important;
+  font-weight: 850 !important;
+  opacity: 1 !important;
+}
+
+/* =========================================================
+   COULEURS OPAQUES DES BANNIÈRES
+   ========================================================= */
+
+/* Emplacements libres = vert opaque */
+.stat-card--green {
+  background: linear-gradient(135deg, #16a34a 0%, #0f7a35 100%) !important;
+}
+
+/* Outillages = bleu opaque */
+.stat-card--blue {
+  background: linear-gradient(135deg, #2563eb 0%, #1746b8 100%) !important;
+}
+
+/* Emplacements HS = rouge opaque */
+.stat-card--red {
+  background: linear-gradient(135deg, #dc2626 0%, #9f1717 100%) !important;
+}
+
+/* Utilisateurs inscrits = jaune opaque */
+.stat-card--yellow {
+  background: linear-gradient(135deg, #f4b400 0%, #c98700 100%) !important;
+}
+
+/* Sécurité supplémentaire si main-layout.scss force encore les cartes */
+.dashboard-page .top-stats-grid .stat-card {
+  border: none !important;
+  opacity: 1 !important;
+}
+
+.dashboard-page .top-stats-grid .stat-card--green {
+  background: linear-gradient(135deg, #16a34a 0%, #0f7a35 100%) !important;
+}
+
+.dashboard-page .top-stats-grid .stat-card--blue {
+  background: linear-gradient(135deg, #2563eb 0%, #1746b8 100%) !important;
+}
+
+.dashboard-page .top-stats-grid .stat-card--red {
+  background: linear-gradient(135deg, #dc2626 0%, #9f1717 100%) !important;
+}
+
+.dashboard-page .top-stats-grid .stat-card--yellow {
+  background: linear-gradient(135deg, #f4b400 0%, #c98700 100%) !important;
+}
+
+.dashboard-page .top-stats-grid .stat-card .stat-number,
+.dashboard-page .top-stats-grid .stat-card .stat-label {
+  color: #ffffff !important;
+  opacity: 1 !important;
+}
+
+.dashboard-page .top-stats-grid .stat-card .stat-icon img {
+  filter: brightness(0) invert(1) !important;
+  opacity: 1 !important;
+}
+
+/* =========================================================
+   CARTES GRAPHIQUES
+   ========================================================= */
+
+.charts-grid {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1.25fr 1fr;
+  gap: 16px;
+}
+
+.chart-card {
+  min-height: 430px;
+  padding: 26px 28px;
+
+  border-radius: 22px;
+  border: 1px solid #efc0c9;
+
+  background: linear-gradient(
+    135deg,
+    #fff9fa 0%,
+    #fff2f4 46%,
+    #fdeaee 100%
+  );
+
+  box-shadow: 0 6px 16px rgba(120, 0, 0, 0.03);
+}
+
+.chart-card h2 {
+  margin: 0 0 18px 0;
+
+  color: #07133d;
+  font-size: 21px;
+  line-height: 1.12;
+  font-weight: 900;
+  text-align: center;
+}
+
+/* =========================================================
+   GRAPH EN BÂTONS CSS
+   ========================================================= */
+
+.bar-chart {
+  width: 100%;
+  height: 330px;
+
+  display: grid;
+  grid-template-columns: 42px 1fr;
+  gap: 12px;
+
+  padding: 8px 4px 0;
+}
+
+.bar-y-axis {
+  height: 270px;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-end;
+
+  padding: 0 4px 28px 0;
+
+  color: #07133d;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.bar-area {
+  position: relative;
+  height: 270px;
+
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  align-items: end;
+
+  border-left: 2px solid #dce4ef;
+  border-bottom: 2px solid #dce4ef;
+}
+
+.bar-grid {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+
+  background:
+    linear-gradient(to right, transparent 19.8%, #e2e8f2 20%, transparent 20.2%),
+    linear-gradient(to right, transparent 39.8%, #e2e8f2 40%, transparent 40.2%),
+    linear-gradient(to right, transparent 59.8%, #e2e8f2 60%, transparent 60.2%),
+    linear-gradient(to right, transparent 79.8%, #e2e8f2 80%, transparent 80.2%);
+}
+
+.bar-item {
+  position: relative;
+  z-index: 2;
+
+  height: 100%;
+
+  display: flex;
+  align-items: end;
+  justify-content: center;
+
+  cursor: pointer;
+}
+
+.bar-empty::before {
+  content: '';
+  width: 34px;
+  height: 8px;
+  margin-bottom: 0;
+
+  border-radius: 999px;
+  background: transparent;
+}
+
+.bar-fill {
+  width: 42px;
+  border-radius: 14px 14px 0 0;
+  background: linear-gradient(180deg, #dc2626 0%, #b91c1c 100%);
+  box-shadow: 0 8px 18px rgba(185, 28, 28, 0.25);
+}
+
+.bar-fill--active {
+  height: 100%;
+}
+
+.bar-x-axis {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -28px;
+
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+
+  color: #07133d;
+  font-size: 12px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.bar-x-axis span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* =========================================================
+   TOOLTIPS DES GRAPHIQUES
+   ========================================================= */
+
+.bar-tooltip,
+.pie-tooltip {
+  position: absolute;
+  z-index: 50;
+
+  min-width: 180px;
+
+  padding: 11px 13px;
+
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.98);
+  border: 1px solid #efc0c9;
+  box-shadow: 0 14px 30px rgba(120, 0, 0, 0.16);
+
+  color: #07133d;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(8px);
+
+  transition:
+    opacity 0.18s ease,
+    visibility 0.18s ease,
+    transform 0.18s ease;
+
+  pointer-events: none;
+}
+
+.bar-tooltip {
+  left: 50%;
+  bottom: calc(100% + 12px);
+  transform: translateX(-50%) translateY(8px);
+}
+
+.bar-tooltip strong,
+.pie-tooltip strong {
+  display: block;
+  margin-bottom: 5px;
+
+  color: #d60000;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.bar-tooltip span,
+.pie-tooltip span {
+  display: block;
+}
+
+.bar-item:hover .bar-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* =========================================================
+   GRAPH CIRCULAIRE CSS
+   ========================================================= */
+
+.pie-legend {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 26px;
+
+  margin-bottom: 22px;
+
+  color: #07133d;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.pie-legend span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.legend-color {
+  width: 26px;
+  height: 8px;
+  display: inline-block;
+}
+
+.legend-libre {
+  background: #16a34a;
+}
+
+.legend-occupe {
+  background: #f4b400;
+}
+
+.legend-hs {
+  background: #dc2626;
+}
+
+.pie-wrapper {
+  height: 300px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pie-chart {
+  position: relative;
+
+  width: 260px;
+  height: 260px;
+
+  border-radius: 50%;
+
+  background: conic-gradient(
+    #16a34a 0deg 309deg,
+    #f4b400 309deg 309deg,
+    #dc2626 309deg 360deg
+  );
+
+  box-shadow:
+    inset -18px -18px 28px rgba(0, 0, 0, 0.06),
+    0 10px 20px rgba(0, 80, 40, 0.08);
+}
+
+.pie-chart::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.pie-zone {
+  position: absolute;
+  cursor: pointer;
+}
+
+/* Grande zone libre */
+.pie-zone--libre {
+  inset: 0;
+  border-radius: 50%;
+}
+
+/* Petite zone HS */
+.pie-zone--hs {
+  top: 0;
+  left: 50%;
+
+  width: 50%;
+  height: 50%;
+}
+
+/* Zone occupé, valeur 0 */
+.pie-zone--occupe {
+  top: 8px;
+  left: 50%;
+
+  width: 36px;
+  height: 36px;
+
+  transform: translateX(-50%);
+}
+
+.pie-tooltip {
+  left: 50%;
+  top: -18px;
+
+  transform: translateX(-50%) translateY(-100%) translateY(8px);
+}
+
+.pie-zone:hover .pie-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(-100%) translateY(0);
+}
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 1180px) {
+  .top-stats-grid {
+    grid-template-columns: repeat(2, minmax(220px, 1fr));
+  }
+
+  .charts-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 700px) {
+  .top-stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .stat-card {
+    min-height: 145px;
+    padding: 22px 20px;
+  }
+
+  .stat-number {
+    font-size: 48px !important;
+  }
+
+  .stat-label {
+    font-size: 15px !important;
+  }
+
+  .chart-card {
+    min-height: 360px;
+    padding: 22px 18px;
+  }
+
+  .bar-chart {
+    height: 280px;
+  }
+
+  .bar-y-axis,
+  .bar-area {
+    height: 220px;
+  }
+
+  .pie-wrapper {
+    height: 260px;
+  }
+
+  .pie-chart {
+    width: 220px;
+    height: 220px;
+  }
+}

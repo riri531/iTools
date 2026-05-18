@@ -1,0 +1,83 @@
+<aside class="sidebar-card">
+  <div class="sidebar-top">
+    <div class="brand-block">
+      <h2>iTools</h2>
+      <p>Gestion des outils</p>
+    </div>
+
+    <button type="button" class="user-block profile-trigger" (click)="goToProfile()">
+      <div class="user-avatar">
+        <img
+          *ngIf="getSidebarPhotoUrl(); else sidebarInitial"
+          [src]="getSidebarPhotoUrl()"
+          alt="Photo de profil"
+        />
+
+        <ng-template #sidebarInitial>
+          <span>{{ getInitial() }}</span>
+        </ng-template>
+      </div>
+
+      <div class="user-meta">
+        <strong>{{ fullName }}</strong>
+        <span>{{ role }}</span>
+      </div>
+    </button>
+  </div>
+
+  <nav class="sidebar-nav">
+    <a routerLink="/app/dashboard" routerLinkActive="active">
+      Dashboard
+    </a>
+
+    <a routerLink="/app/reclamations" routerLinkActive="active">
+      Réclamations
+    </a>
+
+    <a *ngIf="canSeeAssistance" routerLink="/app/assistance" routerLinkActive="active">
+      Assistance intelligente
+    </a>
+
+    <a *ngIf="canSeeUsers" routerLink="/app/users" routerLinkActive="active">
+      Utilisateurs
+    </a>
+
+    <a *ngIf="canSeeDesignations" routerLink="/app/designations" routerLinkActive="active">
+      Désignations
+    </a>
+
+    <a *ngIf="canSeeLignes" routerLink="/app/lignes" routerLinkActive="active">
+      Lignes
+    </a>
+
+    <a *ngIf="canSeeClients" routerLink="/app/clients" routerLinkActive="active">
+      Clients
+    </a>
+
+    <a *ngIf="canSeeFournisseurs" routerLink="/app/fournisseurs" routerLinkActive="active">
+      Fournisseurs
+    </a>
+
+    <a *ngIf="canSeeMatieres" routerLink="/app/matieres" routerLinkActive="active">
+      Matières
+    </a>
+
+    <a *ngIf="canSeeEmplacements" routerLink="/app/emplacements" routerLinkActive="active">
+      Emplacements
+    </a>
+
+    <a *ngIf="canSeeOutils" routerLink="/app/outils" routerLinkActive="active">
+      Outils
+    </a>
+
+    <a *ngIf="role === 'ADMIN'" routerLink="/app/archives" routerLinkActive="active">
+      Archives
+    </a>
+  </nav>
+
+  <div class="sidebar-bottom">
+    <button type="button" class="logout-btn" (click)="logout()">
+      Déconnexion
+    </button>
+  </div>
+</aside>

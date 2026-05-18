@@ -1,0 +1,147 @@
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="logo-area">
+      <img
+        src="/images/logo-iTools.png"
+        alt="Logo iTools"
+        class="site-logo"
+      />
+      <div class="logo-subtitle">Gestion des outils</div>
+    </div>
+
+    <nav class="nav-menu">
+      <a
+        *ngFor="let item of navItems"
+        class="nav-link"
+        [routerLink]="item.route"
+        routerLinkActive="active"
+        [routerLinkActiveOptions]="{ exact: true }"
+      >
+        <span class="nav-icon">
+          <img [src]="item.icon" [alt]="item.label" />
+        </span>
+
+        <span class="nav-label">
+          {{ item.label }}
+        </span>
+      </a>
+    </nav>
+
+    <div class="sidebar-bottom">
+      <div class="role-block">
+        <span class="role-icon">
+          <img src="/icons/utilisateur.png" alt="Rôle utilisateur" />
+        </span>
+
+        <span class="role-label">
+          {{ roleLabel }}
+        </span>
+      </div>
+
+      <button type="button" class="logout-btn" (click)="logout()">
+        <span class="logout-icon">
+          <img src="/icons/deconnexion.png" alt="Déconnexion" />
+        </span>
+
+        <span>Déconnexion</span>
+      </button>
+    </div>
+  </aside>
+
+  <main class="main-shell">
+    <header class="topbar">
+      <div class="welcome-text">
+        Bienvenue sur <strong>iTools</strong>
+      </div>
+
+      <form class="search-box" (ngSubmit)="submitSearch()">
+        <input
+          type="text"
+          name="searchText"
+          [(ngModel)]="searchText"
+          placeholder="Rechercher..."
+          autocomplete="off"
+          (focus)="onSearchFocus()"
+          (blur)="onSearchBlur()"
+          (ngModelChange)="onSearchChange()"
+        />
+
+        <button type="submit" aria-label="Rechercher">
+          <img src="/icons/recherche.png" alt="Rechercher" />
+        </button>
+
+        <div class="search-results" *ngIf="showSearchResults">
+          <div class="search-empty" *ngIf="searchLoading">
+            Recherche en cours...
+          </div>
+
+          <button
+            *ngFor="let result of searchResults"
+            type="button"
+            class="search-result-item"
+            (mousedown)="goToResult(result)"
+          >
+            <span class="search-result-icon" *ngIf="result.icon">
+              <img [src]="result.icon" [alt]="result.label" />
+            </span>
+
+            <span class="search-result-text">
+              <strong>{{ result.label }}</strong>
+              <small>{{ result.description || result.type }}</small>
+            </span>
+          </button>
+
+          <div
+            class="search-empty"
+            *ngIf="!searchLoading && searchResults.length === 0"
+          >
+            Aucun résultat trouvé.
+          </div>
+        </div>
+      </form>
+
+      <div class="topbar-actions">
+        <button
+          type="button"
+          class="top-icon"
+          aria-label="Notifications"
+          (click)="goToNotifications()"
+        >
+          <img src="/icons/notifications.png" alt="Notifications" />
+        </button>
+
+        <button
+          type="button"
+          class="top-icon"
+          aria-label="Réclamations"
+          (click)="goToReclamations()"
+        >
+          <img src="/icons/messages.png" alt="Réclamations" />
+        </button>
+
+        <button
+          type="button"
+          class="profile-btn"
+          aria-label="Profil"
+          (click)="goToProfile()"
+        >
+          <span class="avatar avatar-with-photo" *ngIf="getTopbarProfilePhotoUrl(); else initialsAvatar">
+            <img [src]="getTopbarProfilePhotoUrl()" alt="Photo de profil" />
+          </span>
+
+          <ng-template #initialsAvatar>
+            <span class="avatar">
+              {{ initials }}
+            </span>
+          </ng-template>
+
+          <span class="arrow">⌄</span>
+        </button>
+      </div>
+    </header>
+
+    <section class="page-content">
+      <router-outlet></router-outlet>
+    </section>
+  </main>
+</div>

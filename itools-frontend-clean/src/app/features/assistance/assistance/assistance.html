@@ -1,0 +1,210 @@
+<div class="assistance-page">
+  <section class="assistance-card page-header">
+    <div class="card-inner header-inner">
+      <div>
+        <span class="section-kicker">Assistance intelligente</span>
+        <h1>Assistant iTools</h1>
+        <p>
+          Guide interactif pour aider les utilisateurs à comprendre les pages,
+          les actions, les statuts, les imports et les erreurs.
+        </p>
+      </div>
+
+      <div class="header-actions">
+        <button type="button" class="secondary-btn" (click)="resetChat()">
+          Réinitialiser
+        </button>
+
+        <button
+          type="button"
+          class="action-btn"
+          (click)="selectedTopic ? goToRoute(selectedTopic.route) : selectTopicById('errors')"
+        >
+          {{ selectedTopic?.route ? 'Ouvrir la page liée' : 'J’ai une erreur' }}
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <section class="assistance-card search-card">
+    <div class="card-inner">
+      <div class="search-layout">
+        <div>
+          <span class="section-kicker">Recherche</span>
+          <h2>Que veux-tu comprendre ?</h2>
+          <p>
+            Recherche une page, un bouton, un statut, une erreur ou une action.
+          </p>
+        </div>
+
+        <div class="search-box">
+          <input
+            type="text"
+            class="form-control"
+            placeholder="Exemple : outil HS, import, mot de passe, historique..."
+            [(ngModel)]="searchText"
+          />
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="assistance-grid">
+    <aside class="assistance-card topics-panel">
+      <div class="card-inner">
+        <div class="panel-header">
+          <span class="section-kicker">Rubriques</span>
+          <h2>Choisis un sujet</h2>
+          <p>{{ filteredTopics.length }} rubrique(s) disponible(s)</p>
+        </div>
+
+        <div class="topics-list">
+          <button
+            type="button"
+            class="topic-btn"
+            *ngFor="let topic of filteredTopics"
+            [class.active]="selectedTopic?.id === topic.id"
+            (click)="selectTopic(topic)"
+          >
+            <span class="topic-badge">{{ topic.badge }}</span>
+
+            <span class="topic-text">
+              <strong>{{ topic.shortTitle }}</strong>
+              <small>{{ topic.description }}</small>
+            </span>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <main class="assistance-card chatbot-panel">
+      <div class="chat-header">
+        <div>
+          <span class="section-kicker">Chatbot guidé</span>
+          <h2>
+            {{ selectedTopic ? selectedTopic.title : 'Assistant de navigation' }}
+          </h2>
+          <p>
+            {{ selectedTopic ? selectedTopic.description : 'Clique sur une rubrique ou sur une question rapide.' }}
+          </p>
+        </div>
+
+        <div class="chat-state">
+          <span>Sujet actif</span>
+          <strong>{{ selectedTopic ? selectedTopic.shortTitle : 'Aucun' }}</strong>
+        </div>
+      </div>
+
+      <div class="chat-body">
+        <div
+          class="chat-message"
+          *ngFor="let message of messages"
+          [ngClass]="{
+            'bot-message': message.from === 'bot',
+            'user-message': message.from === 'user'
+          }"
+        >
+          <div class="message-avatar">
+            {{ message.from === 'bot' ? 'AI' : 'U' }}
+          </div>
+
+          <div class="message-content">
+            <p>{{ message.text }}</p>
+
+            <div class="steps-box" *ngIf="message.question?.steps?.length">
+              <h4>Étapes conseillées</h4>
+
+              <ol>
+                <li *ngFor="let step of message.question?.steps">
+                  {{ step }}
+                </li>
+              </ol>
+            </div>
+
+            <button
+              *ngIf="message.question?.relatedRoute"
+              type="button"
+              class="message-route-btn"
+              (click)="goToRoute(message.question?.relatedRoute)"
+            >
+              {{ message.question?.relatedRouteLabel || 'Ouvrir la page' }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="quick-zone">
+        <div class="quick-header">
+          <span>Questions rapides</span>
+
+          <button type="button" class="mini-btn" (click)="resetChat()">
+            Recommencer
+          </button>
+        </div>
+
+        <div class="quick-list">
+          <button
+            type="button"
+            class="quick-btn"
+            *ngFor="let question of quickQuestions"
+            (click)="selectQuestion(question)"
+          >
+            {{ question.label }}
+          </button>
+        </div>
+      </div>
+    </main>
+  </section>
+
+  <section class="assistance-card overview-card">
+    <div class="card-inner">
+      <div class="overview-header">
+        <div>
+          <span class="section-kicker">Accès rapide</span>
+          <h2>Parcours recommandés</h2>
+          <p>
+            Sélectionne directement une situation fréquente pour obtenir une aide guidée.
+          </p>
+        </div>
+      </div>
+
+      <div class="overview-grid">
+        <button type="button" class="overview-item" (click)="selectTopicById('outils')">
+          <span>OT</span>
+          <strong>Je ne comprends pas un outil</strong>
+          <small>OTT, code outillage, valeur, stock, HS.</small>
+        </button>
+
+        <button type="button" class="overview-item" (click)="selectTopicById('emplacements')">
+          <span>EM</span>
+          <strong>Je ne comprends pas un emplacement</strong>
+          <small>Armoire, numéro, matière, désignation, statut.</small>
+        </button>
+
+        <button type="button" class="overview-item" (click)="selectTopicById('reclamations')">
+          <span>RC</span>
+          <strong>Je veux signaler un problème</strong>
+          <small>Créer, suivre ou filtrer une réclamation.</small>
+        </button>
+
+        <button type="button" class="overview-item" (click)="selectTopicById('imports')">
+          <span>IM</span>
+          <strong>Je veux importer des données</strong>
+          <small>Modèle, colonnes, fichier Excel ou CSV.</small>
+        </button>
+
+        <button type="button" class="overview-item" (click)="selectTopicById('profile')">
+          <span>PR</span>
+          <strong>Je veux modifier mon profil</strong>
+          <small>Informations, photo, mot de passe.</small>
+        </button>
+
+        <button type="button" class="overview-item" (click)="selectTopicById('errors')">
+          <span>ER</span>
+          <strong>Je rencontre une erreur</strong>
+          <small>Backend, SQL Server, rôle, mot de passe.</small>
+        </button>
+      </div>
+    </div>
+  </section>
+</div>

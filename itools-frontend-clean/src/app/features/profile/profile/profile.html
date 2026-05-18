@@ -1,0 +1,574 @@
+<div class="profile-page">
+  <aside class="profile-side-card">
+    <div class="profile-mini-card">
+      <div class="profile-mini-photo" *ngIf="getProfilePhotoUrl(); else miniInitialAvatar">
+        <img [src]="getProfilePhotoUrl()" alt="Photo de profil" />
+      </div>
+
+      <ng-template #miniInitialAvatar>
+        <div class="profile-mini-photo initial-avatar">
+          {{ getInitial() }}
+        </div>
+      </ng-template>
+
+      <h3>{{ profile?.fullName || 'Utilisateur' }}</h3>
+      <p>{{ profile?.role || 'Profil' }}</p>
+    </div>
+
+    <nav class="profile-tabs">
+      <button
+        type="button"
+        class="profile-tab"
+        [class.active]="activeSection === 'personal'"
+        (click)="setActiveSection('personal')"
+      >
+        <span class="tab-icon">
+          <img src="/icons/profile/infos-personnelles.png" alt="Informations personnelles" />
+        </span>
+        <span>Informations personnelles</span>
+      </button>
+
+      <button
+        type="button"
+        class="profile-tab"
+        [class.active]="activeSection === 'photo'"
+        (click)="setActiveSection('photo')"
+      >
+        <span class="tab-icon">
+          <img src="/icons/profile/photo-de-profil.png" alt="Photo de profil" />
+        </span>
+        <span>Photo de profil</span>
+      </button>
+
+      <button
+        type="button"
+        class="profile-tab"
+        [class.active]="activeSection === 'security'"
+        (click)="setActiveSection('security')"
+      >
+        <span class="tab-icon">
+          <img src="/icons/profile/securite.png" alt="Sécurité" />
+        </span>
+        <span>Login & mot de passe</span>
+      </button>
+
+      <button
+        type="button"
+        class="profile-tab logout-tab"
+        (click)="logout()"
+      >
+        <span class="tab-icon">
+          <img src="/icons/deconnexion.png" alt="Déconnexion" />
+        </span>
+        <span>Déconnexion</span>
+      </button>
+    </nav>
+  </aside>
+
+  <main class="profile-content">
+    <div class="alert success" *ngIf="successMessage">
+      {{ successMessage }}
+    </div>
+
+    <div class="alert error" *ngIf="errorMessage">
+      {{ errorMessage }}
+    </div>
+
+    <!-- =====================================================
+         SECTION INFORMATIONS PERSONNELLES - APERÇU
+         ===================================================== -->
+
+    <section class="profile-panel" *ngIf="activeSection === 'personal'">
+      <div class="panel-header personal-preview-header">
+        <div>
+          <span class="section-kicker">Coordonnées</span>
+          <h1>Informations personnelles</h1>
+          <p>Consulte tes informations de compte. Clique sur modifier pour les mettre à jour.</p>
+        </div>
+
+        <button type="button" class="action-btn edit-profile-btn" (click)="openPersonalInfoModal()">
+          Modifier
+        </button>
+      </div>
+
+      <div class="loading" *ngIf="isLoadingProfile">
+        Chargement du profil...
+      </div>
+
+      <div class="personal-preview-grid" *ngIf="!isLoadingProfile">
+        <div class="preview-card preview-card-large">
+          <span class="preview-label">Nom complet</span>
+          <strong>{{ profile?.fullName || 'Non renseigné' }}</strong>
+        </div>
+
+        <div class="preview-card">
+          <span class="preview-label">Rôle</span>
+          <strong>{{ profile?.role || 'Non renseigné' }}</strong>
+        </div>
+
+        <div class="preview-card preview-card-large">
+          <span class="preview-label">Adresse mail</span>
+          <strong>{{ profile?.email || 'Non renseigné' }}</strong>
+        </div>
+
+        <div class="preview-card">
+          <span class="preview-label">Téléphone</span>
+          <strong>{{ profile?.phoneNumber || 'Non renseigné' }}</strong>
+        </div>
+
+        <div class="preview-card">
+          <span class="preview-label">Adresse</span>
+          <strong>{{ profile?.address || 'Non renseignée' }}</strong>
+        </div>
+
+        <div class="preview-card">
+          <span class="preview-label">Genre</span>
+          <strong>{{ getGenderLabel(profile?.gender) }}</strong>
+        </div>
+
+        <div class="preview-card">
+          <span class="preview-label">Date de naissance</span>
+          <strong>{{ formatDate(profile?.dateOfBirth) }}</strong>
+        </div>
+
+        <div class="preview-card">
+          <span class="preview-label">Code postal</span>
+          <strong>{{ profile?.postalCode || 'Non renseigné' }}</strong>
+        </div>
+
+        <div class="preview-card">
+          <span class="preview-label">Matricule usine</span>
+          <strong>{{ profile?.factoryRegistrationNumber || 'Non renseigné' }}</strong>
+        </div>
+      </div>
+    </section>
+
+    <!-- =====================================================
+         SECTION PHOTO DE PROFIL
+         ===================================================== -->
+
+    <section class="profile-panel" *ngIf="activeSection === 'photo'">
+      <div class="panel-header">
+        <span class="section-kicker">Photo</span>
+        <h1>Photo de profil</h1>
+        <p>Consulte, modifie ou supprime ta photo de profil.</p>
+      </div>
+
+      <div class="photo-management-layout">
+        <div class="photo-preview-card">
+          <div class="big-profile-photo" *ngIf="getProfilePhotoUrl(); else bigInitialAvatar">
+            <img [src]="getProfilePhotoUrl()" alt="Photo de profil" />
+          </div>
+
+          <ng-template #bigInitialAvatar>
+            <div class="big-profile-photo initial-avatar">
+              {{ getInitial() }}
+            </div>
+          </ng-template>
+
+          <h2>{{ profile?.fullName || 'Utilisateur' }}</h2>
+          <p>{{ profile?.email }}</p>
+        </div>
+
+        <div class="photo-actions-card">
+          <h2>Gestion de la photo</h2>
+          <p>
+            Choisis une action pour visualiser, modifier ou supprimer ta photo de profil.
+          </p>
+
+          <div class="photo-action-grid">
+            <button
+              type="button"
+              class="photo-action-btn view"
+              (click)="openViewPhotoModal()"
+            >
+              <span class="photo-action-icon">
+                <img src="/icons/profile/voir.png" alt="Voir photo" />
+              </span>
+              <strong>Voir photo</strong>
+            </button>
+
+            <button
+              type="button"
+              class="photo-action-btn edit"
+              (click)="openPhotoChoiceModal()"
+            >
+              <span class="photo-action-icon">
+                <img src="/icons/profile/modifier-photo.png" alt="Modifier photo" />
+              </span>
+              <strong>Modifier photo</strong>
+            </button>
+
+            <button
+              type="button"
+              class="photo-action-btn delete"
+              (click)="deletePhoto()"
+              [disabled]="isDeletingPhoto || !getProfilePhotoUrl()"
+            >
+              <span class="photo-action-icon">
+                <img src="/icons/profile/supprimer.png" alt="Supprimer photo" />
+              </span>
+              <strong>
+                {{ isDeletingPhoto ? 'Suppression...' : 'Supprimer photo' }}
+              </strong>
+            </button>
+          </div>
+
+          <input
+            #fileInput
+            type="file"
+            accept="image/png,image/jpeg,image/jpg,image/webp"
+            hidden
+            (change)="onPhotoSelected($event)"
+          />
+        </div>
+      </div>
+    </section>
+
+    <!-- =====================================================
+         SECTION SÉCURITÉ
+         ===================================================== -->
+
+    <section class="profile-panel" *ngIf="activeSection === 'security'">
+      <div class="panel-header">
+        <span class="section-kicker">Sécurité</span>
+        <h1>Login & mot de passe</h1>
+        <p>Change ton mot de passe de connexion.</p>
+      </div>
+
+      <form class="profile-form security-form" (ngSubmit)="changePassword()">
+        <div class="form-group">
+          <label>Mot de passe actuel</label>
+          <input
+            type="password"
+            name="currentPassword"
+            [(ngModel)]="passwordForm.currentPassword"
+            placeholder="Mot de passe actuel"
+            required
+          />
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Nouveau mot de passe</label>
+            <input
+              type="password"
+              name="newPassword"
+              [(ngModel)]="passwordForm.newPassword"
+              placeholder="Nouveau mot de passe"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label>Confirmer le mot de passe</label>
+            <input
+              type="password"
+              name="confirmPassword"
+              [(ngModel)]="passwordForm.confirmPassword"
+              placeholder="Confirmer le mot de passe"
+              required
+            />
+          </div>
+        </div>
+
+        <div class="form-actions split-actions">
+          <button
+            type="button"
+            class="secondary-outline-btn"
+            (click)="resetPasswordForm()"
+          >
+            Effacer
+          </button>
+
+          <button
+            type="submit"
+            class="action-btn"
+            [disabled]="isChangingPassword"
+          >
+            {{ isChangingPassword ? 'Modification...' : 'Changer mot de passe' }}
+          </button>
+        </div>
+      </form>
+    </section>
+  </main>
+</div>
+
+<!-- =====================================================
+     POPUP MODIFICATION INFOS PERSONNELLES
+     ===================================================== -->
+
+<div class="modal-backdrop" *ngIf="isPersonalInfoModalOpen">
+  <div class="modal-card personal-info-modal">
+    <button type="button" class="modal-close" (click)="closePersonalInfoModal()">
+      ×
+    </button>
+
+    <div class="modal-header">
+      <span class="section-kicker">Modification</span>
+      <h2>Modifier les informations personnelles</h2>
+      <p>Renseigne les informations du profil puis clique sur conserver.</p>
+    </div>
+
+    <form class="profile-form modal-profile-form" (ngSubmit)="saveProfileFromModal()">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Nom</label>
+          <input
+            type="text"
+            name="lastName"
+            [(ngModel)]="profileForm.lastName"
+            placeholder="Nom"
+          />
+        </div>
+
+        <div class="form-group">
+          <label>Prénom</label>
+          <input
+            type="text"
+            name="firstName"
+            [(ngModel)]="profileForm.firstName"
+            placeholder="Prénom"
+          />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Adresse mail</label>
+        <input
+          type="email"
+          name="email"
+          [(ngModel)]="profileForm.email"
+          placeholder="Adresse mail"
+          required
+        />
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Contact / numéro de téléphone</label>
+          <input
+            type="text"
+            name="phoneNumber"
+            [(ngModel)]="profileForm.phoneNumber"
+            placeholder="Exemple : +216 99 999 999"
+          />
+        </div>
+
+        <div class="form-group">
+          <label>Date de naissance</label>
+          <input
+            type="date"
+            name="dateOfBirth"
+            [(ngModel)]="profileForm.dateOfBirth"
+          />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Adresse</label>
+        <input
+          type="text"
+          name="address"
+          [(ngModel)]="profileForm.address"
+          placeholder="Adresse"
+        />
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Code postal</label>
+          <input
+            type="text"
+            name="postalCode"
+            [(ngModel)]="profileForm.postalCode"
+            placeholder="Code postal"
+          />
+        </div>
+
+        <div class="form-group">
+          <label>Numéro de matricule dans l’usine</label>
+          <input
+            type="text"
+            name="factoryRegistrationNumber"
+            [(ngModel)]="profileForm.factoryRegistrationNumber"
+            placeholder="Matricule usine"
+          />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Genre</label>
+
+        <div class="radio-row">
+          <label class="radio-pill" [class.active]="profileForm.gender === 'H'">
+            <input
+              type="radio"
+              name="gender"
+              value="H"
+              [(ngModel)]="profileForm.gender"
+            />
+            <span>Homme</span>
+          </label>
+
+          <label class="radio-pill" [class.active]="profileForm.gender === 'F'">
+            <input
+              type="radio"
+              name="gender"
+              value="F"
+              [(ngModel)]="profileForm.gender"
+            />
+            <span>Femme</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="form-actions modal-actions">
+        <button
+          type="button"
+          class="secondary-outline-btn"
+          (click)="closePersonalInfoModal()"
+        >
+          Annuler
+        </button>
+
+        <button
+          type="submit"
+          class="action-btn"
+          [disabled]="isSavingProfile"
+        >
+          {{ isSavingProfile ? 'Enregistrement...' : 'Conserver' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- =====================================================
+     POPUP VOIR PHOTO
+     ===================================================== -->
+
+<div class="modal-backdrop" *ngIf="photoModalMode === 'view'">
+  <div class="modal-card photo-view-modal">
+    <button type="button" class="modal-close" (click)="closePhotoModal()">
+      ×
+    </button>
+
+    <h2>Photo de profil</h2>
+
+    <div class="modal-photo" *ngIf="getProfilePhotoUrl(); else viewInitialAvatar">
+      <img [src]="getProfilePhotoUrl()" alt="Photo de profil" />
+    </div>
+
+    <ng-template #viewInitialAvatar>
+      <div class="modal-photo initial-avatar">
+        {{ getInitial() }}
+      </div>
+    </ng-template>
+
+    <button type="button" class="action-btn" (click)="closePhotoModal()">
+      Fermer
+    </button>
+  </div>
+</div>
+
+<!-- =====================================================
+     POPUP CHOIX MODIFICATION PHOTO
+     ===================================================== -->
+
+<div class="modal-backdrop" *ngIf="photoModalMode === 'choice'">
+  <div class="modal-card">
+    <button type="button" class="modal-close" (click)="closePhotoModal()">
+      ×
+    </button>
+
+    <h2>Modifier la photo</h2>
+    <p>Choisis comment tu veux ajouter ta nouvelle photo de profil.</p>
+
+    <div class="choice-grid">
+      <button type="button" class="choice-btn" (click)="startCameraFromModal()">
+        <span class="choice-icon">
+          <img src="/icons/profile/appareil-photo.png" alt="Prendre une photo" />
+        </span>
+        <strong>Prendre une photo</strong>
+        <small>Utiliser la caméra de l’appareil</small>
+      </button>
+
+      <button type="button" class="choice-btn" (click)="openFileSelector()">
+        <span class="choice-icon">
+          <img src="/icons/profile/upload.png" alt="Importer une image" />
+        </span>
+        <strong>Importer une image</strong>
+        <small>Sélectionner depuis les fichiers</small>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- =====================================================
+     POPUP CAMÉRA
+     ===================================================== -->
+
+<div class="modal-backdrop" *ngIf="photoModalMode === 'camera'">
+  <div class="modal-card camera-modal">
+    <button type="button" class="modal-close" (click)="cancelCameraModal()">
+      ×
+    </button>
+
+    <h2>Prendre une photo</h2>
+    <p>Positionne-toi devant la caméra puis clique sur capturer.</p>
+
+    <div class="camera-box">
+      <video #videoElement autoplay muted playsinline></video>
+      <canvas #canvasElement hidden></canvas>
+    </div>
+
+    <div class="form-actions split-actions">
+      <button type="button" class="secondary-outline-btn" (click)="cancelCameraModal()">
+        Annuler
+      </button>
+
+      <button type="button" class="action-btn" (click)="capturePhoto()">
+        Capturer
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- =====================================================
+     POPUP APERÇU PHOTO CHOISIE
+     ===================================================== -->
+
+<div class="modal-backdrop" *ngIf="photoModalMode === 'preview'">
+  <div class="modal-card photo-view-modal">
+    <button type="button" class="modal-close" (click)="cancelSelectedPhoto()">
+      ×
+    </button>
+
+    <h2>Aperçu de la nouvelle photo</h2>
+    <p>Tu peux conserver cette photo ou en choisir une autre.</p>
+
+    <div class="modal-photo" *ngIf="selectedPhotoPreviewUrl">
+      <img [src]="selectedPhotoPreviewUrl" alt="Nouvelle photo de profil" />
+    </div>
+
+    <div class="form-actions preview-actions">
+      <button
+        type="button"
+        class="secondary-outline-btn"
+        (click)="reselectPhoto()"
+      >
+        Reprendre / re-sélectionner
+      </button>
+
+      <button
+        type="button"
+        class="action-btn"
+        (click)="confirmSelectedPhoto()"
+        [disabled]="isUploadingPhoto"
+      >
+        {{ isUploadingPhoto ? 'Enregistrement...' : 'Conserver cette photo' }}
+      </button>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,678 @@
+<div class="emplacements-page">
+  <section class="emplacements-card page-header">
+    <div class="card-inner header-inner">
+      <div>
+        <span class="section-kicker">Référentiel</span>
+        <h1>Emplacements</h1>
+        <p>
+          Gestion des emplacements, armoires, numéros, matières, désignations et statuts.
+        </p>
+      </div>
+
+      <div class="header-actions">
+        <button type="button" class="secondary-btn" (click)="downloadEmplacementsData()">
+          Télécharger les données
+        </button>
+
+        <button type="button" class="secondary-btn" (click)="downloadTemplate()">
+          Télécharger modèle à remplir
+        </button>
+
+        <button type="button" class="secondary-btn" (click)="openImportModal()">
+          Import en masse
+        </button>
+
+        <button type="button" class="action-btn" (click)="openCreateModal()">
+          Nouveau
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <div class="alert success" *ngIf="successMessage">
+    {{ successMessage }}
+  </div>
+
+  <div class="alert error" *ngIf="errorMessage && !showModal">
+    {{ errorMessage }}
+  </div>
+
+  <section class="emplacements-card filters-card">
+    <div class="card-inner">
+      <div class="filters-top">
+        <div>
+          <span class="section-kicker">Filtres</span>
+          <h2>Vue globale des emplacements</h2>
+          <p>
+            Recherche, filtre par statut, matière, désignation, tri et choix du mode d’affichage.
+          </p>
+        </div>
+
+        <div class="view-switch">
+          <button
+            type="button"
+            [class.active]="viewMode === 'list'"
+            (click)="setViewMode('list')"
+          >
+            Liste
+          </button>
+
+          <button
+            type="button"
+            [class.active]="viewMode === 'images'"
+            (click)="setViewMode('images')"
+          >
+            Images
+          </button>
+        </div>
+      </div>
+
+      <div class="filters-grid">
+        <div class="form-group search-field">
+          <label>Recherche</label>
+          <input
+            class="form-control"
+            type="text"
+            placeholder="Rechercher par matière, armoire, numéro, désignation, statut..."
+            [(ngModel)]="searchText"
+            (input)="applyFilters()"
+          />
+        </div>
+
+        <div class="form-group">
+          <label>Statut</label>
+          <select
+            class="form-control"
+            [(ngModel)]="selectedStatus"
+            (change)="applyFilters()"
+          >
+            <option value="">Tous les statuts</option>
+            <option *ngFor="let status of statusFilterOptions" [value]="status">
+              {{ getStatusLabel(status) }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Matière</label>
+          <select
+            class="form-control"
+            [(ngModel)]="selectedMatiere"
+            (change)="applyFilters()"
+          >
+            <option value="">Toutes les matières</option>
+            <option *ngFor="let matiere of matiereFilterOptions" [value]="matiere">
+              {{ matiere }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Désignation</label>
+          <select
+            class="form-control"
+            [(ngModel)]="selectedDesignation"
+            (change)="applyFilters()"
+          >
+            <option value="">Toutes les désignations</option>
+            <option *ngFor="let designation of designationFilterOptions" [value]="designation">
+              {{ designation }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Trier par</label>
+          <select
+            class="form-control"
+            [(ngModel)]="sortField"
+            (change)="applyFilters()"
+          >
+            <option value="designation">Désignation</option>
+            <option value="matiere">Matière</option>
+            <option value="armoire">Armoire</option>
+            <option value="numero">Numéro</option>
+            <option value="createdAt">Date de création</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Ordre</label>
+          <select
+            class="form-control"
+            [(ngModel)]="sortDirection"
+            (change)="applyFilters()"
+          >
+            <option value="asc">Croissant</option>
+            <option value="desc">Décroissant</option>
+          </select>
+        </div>
+
+        <div class="filters-actions">
+          <button type="button" class="secondary-btn" (click)="resetFilters()">
+            Réinitialiser
+          </button>
+        </div>
+      </div>
+
+      <div class="summary-grid">
+        <div class="summary-card">
+          <span>Total</span>
+          <strong>{{ emplacements.length }}</strong>
+        </div>
+
+        <div class="summary-card">
+          <span>Affichés</span>
+          <strong>{{ filteredEmplacements.length }}</strong>
+        </div>
+
+        <div class="summary-card libre">
+          <span>Libres</span>
+          <strong>{{ countByStatus('Libre') }}</strong>
+        </div>
+
+        <div class="summary-card service">
+          <span>Occupés</span>
+          <strong>{{ countByStatus('S') }}</strong>
+        </div>
+
+        <div class="summary-card hs">
+          <span>HS</span>
+          <strong>{{ countByStatus('HS') }}</strong>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="emplacements-card list-card">
+    <div class="card-inner">
+      <div class="list-header">
+        <div>
+          <span class="section-kicker">Liste</span>
+          <h2>Liste des emplacements</h2>
+          <p>{{ filteredEmplacements.length }} emplacement(s) trouvé(s)</p>
+        </div>
+
+        <div class="sort-state">
+          <span>Tri actuel</span>
+          <strong>
+            {{ getSortLabel(sortField) }}
+            —
+            {{ sortDirection === 'asc' ? 'Croissant' : 'Décroissant' }}
+          </strong>
+        </div>
+      </div>
+
+      <ng-container *ngIf="filteredEmplacements.length > 0; else emptyState">
+        <div class="table-wrap" *ngIf="viewMode === 'list'">
+          <table class="emplacements-table">
+            <thead>
+              <tr>
+                <th>Image</th>
+
+                <th>
+                  <button type="button" class="th-sort-btn" (click)="toggleSort('matiere')">
+                    Matière
+                    <span *ngIf="sortField === 'matiere'">
+                      {{ sortDirection === 'asc' ? '↑' : '↓' }}
+                    </span>
+                  </button>
+                </th>
+
+                <th>
+                  <button type="button" class="th-sort-btn" (click)="toggleSort('armoire')">
+                    Armoire
+                    <span *ngIf="sortField === 'armoire'">
+                      {{ sortDirection === 'asc' ? '↑' : '↓' }}
+                    </span>
+                  </button>
+                </th>
+
+                <th>
+                  <button type="button" class="th-sort-btn" (click)="toggleSort('numero')">
+                    Numéro
+                    <span *ngIf="sortField === 'numero'">
+                      {{ sortDirection === 'asc' ? '↑' : '↓' }}
+                    </span>
+                  </button>
+                </th>
+
+                <th>
+                  <button type="button" class="th-sort-btn" (click)="toggleSort('designation')">
+                    Désignation
+                    <span *ngIf="sortField === 'designation'">
+                      {{ sortDirection === 'asc' ? '↑' : '↓' }}
+                    </span>
+                  </button>
+                </th>
+
+                <th>Statut</th>
+
+                <th>
+                  <button type="button" class="th-sort-btn" (click)="toggleSort('createdAt')">
+                    Date création
+                    <span *ngIf="sortField === 'createdAt'">
+                      {{ sortDirection === 'asc' ? '↑' : '↓' }}
+                    </span>
+                  </button>
+                </th>
+
+                <th>Actions</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              <tr *ngFor="let item of filteredEmplacements">
+                <td>
+                  <div class="table-image">
+                    <img
+                      *ngIf="getEmplacementImageUrl(item); else tableImageFallback"
+                      [src]="getEmplacementImageUrl(item)"
+                      [alt]="getDesignationName(item)"
+                    />
+
+                    <ng-template #tableImageFallback>
+                      <span>{{ getEmplacementInitial(item) }}</span>
+                    </ng-template>
+                  </div>
+                </td>
+
+                <td>{{ getMatiereName(item) }}</td>
+                <td>{{ item.armoire }}</td>
+                <td>{{ item.numero }}</td>
+
+                <td>
+                  <strong class="emplacement-name">
+                    {{ getDesignationName(item) }}
+                  </strong>
+                </td>
+
+                <td>
+                  <span
+                    class="status-badge"
+                    [class.status-libre]="normalizeStatus(item.status) === 'Libre'"
+                    [class.status-service]="normalizeStatus(item.status) === 'S'"
+                    [class.status-hs]="normalizeStatus(item.status) === 'HS'"
+                  >
+                    {{ getStatusLabel(item.status) }}
+                  </span>
+                </td>
+
+                <td>
+                  <span class="date-badge">
+                    {{ formatCreationDate(item) }}
+                  </span>
+                </td>
+
+                <td class="actions">
+                  <button type="button" class="table-btn" (click)="openEditModal(item)">
+                    Modifier
+                  </button>
+
+                  <button
+                    *ngIf="canCreateReclamation()"
+                    type="button"
+                    class="table-btn reclamation"
+                    [class.urgent]="normalizeStatus(item.status) === 'HS'"
+                    (click)="openReclamationModal(item)"
+                  >
+                    Passer réclamation
+                  </button>
+
+                  <button type="button" class="table-btn danger" (click)="deleteEmplacement(item)">
+                    Supprimer
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="images-grid" *ngIf="viewMode === 'images'">
+          <article class="emplacement-image-card" *ngFor="let item of filteredEmplacements">
+            <div class="image-preview">
+              <img
+                *ngIf="getEmplacementImageUrl(item); else cardImageFallback"
+                [src]="getEmplacementImageUrl(item)"
+                [alt]="getDesignationName(item)"
+              />
+
+              <ng-template #cardImageFallback>
+                <div class="image-fallback">
+                  <span>{{ getEmplacementInitial(item) }}</span>
+                </div>
+              </ng-template>
+            </div>
+
+            <div class="image-card-body">
+              <span
+                class="status-badge"
+                [class.status-libre]="normalizeStatus(item.status) === 'Libre'"
+                [class.status-service]="normalizeStatus(item.status) === 'S'"
+                [class.status-hs]="normalizeStatus(item.status) === 'HS'"
+              >
+                {{ getStatusLabel(item.status) }}
+              </span>
+
+              <h3>{{ getDesignationName(item) }}</h3>
+
+              <p>Matière : {{ getMatiereName(item) }}</p>
+              <p>Armoire : {{ item.armoire }}</p>
+              <p>Numéro : {{ item.numero }}</p>
+              <p>Créé le : {{ formatCreationDate(item) }}</p>
+            </div>
+
+            <div class="image-card-actions">
+              <button type="button" class="table-btn" (click)="openEditModal(item)">
+                Modifier
+              </button>
+
+              <button
+                *ngIf="canCreateReclamation()"
+                type="button"
+                class="table-btn reclamation"
+                [class.urgent]="normalizeStatus(item.status) === 'HS'"
+                (click)="openReclamationModal(item)"
+              >
+                Réclamation
+              </button>
+
+              <button type="button" class="table-btn danger" (click)="deleteEmplacement(item)">
+                Supprimer
+              </button>
+            </div>
+          </article>
+        </div>
+      </ng-container>
+
+      <ng-template #emptyState>
+        <p class="empty-text">Aucun emplacement trouvé.</p>
+      </ng-template>
+    </div>
+  </section>
+</div>
+
+<div class="it-modal-overlay" *ngIf="showModal" (click)="closeModal()">
+  <div class="it-modal" (click)="$event.stopPropagation()">
+    <div class="it-modal-inner">
+      <div class="it-modal-header">
+        <div>
+          <span class="section-kicker">Emplacement</span>
+
+          <h2 class="it-modal-title">
+            {{ isEditMode ? 'Modifier emplacement' : 'Ajouter emplacement' }}
+          </h2>
+
+          <p class="it-modal-subtitle">
+            Complète les informations puis valide l’enregistrement.
+          </p>
+        </div>
+
+        <button type="button" class="it-modal-close" (click)="closeModal()">×</button>
+      </div>
+
+      <div class="alert error" *ngIf="errorMessage">
+        {{ errorMessage }}
+      </div>
+
+      <form (ngSubmit)="submit()" class="emplacements-form modal-form">
+        <div class="form-group">
+          <label>Matière</label>
+          <select
+            class="form-control"
+            name="matiereId"
+            [(ngModel)]="form.matiereId"
+            required
+          >
+            <option [value]="0">Sélectionner une matière</option>
+
+            <option *ngFor="let matiere of matieres" [value]="matiere.id">
+              {{ matiere.nomMatiere }} - {{ matiere.process }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Armoire</label>
+          <input
+            class="form-control"
+            type="text"
+            name="armoire"
+            [(ngModel)]="form.armoire"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label>Numéro</label>
+          <input
+            class="form-control"
+            type="text"
+            name="numero"
+            [(ngModel)]="form.numero"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label>Désignation</label>
+          <select
+            class="form-control"
+            name="designationId"
+            [(ngModel)]="form.designationId"
+            required
+          >
+            <option [value]="0">Sélectionner une désignation</option>
+
+            <option *ngFor="let designation of designations" [value]="designation.id">
+              {{ designation.name }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Statut</label>
+          <select
+            class="form-control"
+            name="status"
+            [(ngModel)]="form.status"
+            required
+          >
+            <option *ngFor="let status of statusOptions" [value]="status">
+              {{ getStatusLabel(status) }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-note">
+          Les images des emplacements pourront être ajoutées plus tard. La date de création sera affichée si le backend la renvoie.
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="action-btn">
+            {{ isEditMode ? 'Enregistrer' : 'Ajouter' }}
+          </button>
+
+          <button type="button" class="secondary-btn" (click)="closeModal()">
+            Annuler
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="it-modal-overlay" *ngIf="showImportModal" (click)="closeImportModal()">
+  <div class="it-modal import-modal" (click)="$event.stopPropagation()">
+    <div class="it-modal-inner">
+      <div class="it-modal-header">
+        <div>
+          <span class="section-kicker">Import</span>
+
+          <h2 class="it-modal-title">Import en masse</h2>
+
+          <p class="it-modal-subtitle">
+            Téléverse un fichier Excel ou CSV contenant la liste des nouveaux emplacements.
+          </p>
+        </div>
+
+        <button type="button" class="it-modal-close" (click)="closeImportModal()">×</button>
+      </div>
+
+      <div class="alert success" *ngIf="importSuccessMessage">
+        {{ importSuccessMessage }}
+      </div>
+
+      <div class="alert error" *ngIf="importErrorMessage">
+        {{ importErrorMessage }}
+      </div>
+
+      <div class="import-box">
+        <label class="import-label">Fichier Excel / CSV</label>
+
+        <input
+          class="file-input"
+          type="file"
+          accept=".xlsx,.xls,.csv"
+          (change)="onFileSelected($event)"
+        />
+
+        <p class="file-name" *ngIf="selectedImportFile">
+          Fichier sélectionné : {{ selectedImportFile.name }}
+        </p>
+      </div>
+
+      <div class="import-help">
+        Colonnes acceptées :
+        <strong>matiere</strong>,
+        <strong>armoire</strong>,
+        <strong>numero</strong>,
+        <strong>designation</strong>,
+        <strong>status</strong>,
+        <strong>imageUrl</strong>,
+        <strong>createdAt</strong>.
+        <br />
+        Tu peux aussi utiliser :
+        <strong>matiereId</strong>,
+        <strong>designationId</strong>.
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="action-btn" (click)="importEmplacements()">
+          Importer
+        </button>
+
+        <button type="button" class="secondary-btn" (click)="closeImportModal()">
+          Annuler
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="it-modal-overlay" *ngIf="showReclamationModal" (click)="closeReclamationModal()">
+  <div class="it-modal reclamation-modal" (click)="$event.stopPropagation()">
+    <div class="it-modal-inner">
+      <div class="it-modal-header">
+        <div>
+          <span class="section-kicker">Assistance</span>
+
+          <h2 class="it-modal-title">Passer une réclamation</h2>
+
+          <p class="it-modal-subtitle">
+            La réclamation sera envoyée pour traitement.
+          </p>
+        </div>
+
+        <button type="button" class="it-modal-close" (click)="closeReclamationModal()">×</button>
+      </div>
+
+      <div class="alert success" *ngIf="reclamationSuccessMessage">
+        {{ reclamationSuccessMessage }}
+      </div>
+
+      <div class="alert error" *ngIf="reclamationErrorMessage">
+        {{ reclamationErrorMessage }}
+      </div>
+
+      <div class="selected-item-box" *ngIf="selectedReclamationEmplacement">
+        <span>Emplacement concerné</span>
+        <strong>{{ getEmplacementReclamationLabel(selectedReclamationEmplacement) }}</strong>
+      </div>
+
+      <form class="emplacements-form modal-form" (ngSubmit)="submitReclamation()">
+        <div class="form-group">
+          <label>Titre</label>
+          <input
+            class="form-control"
+            type="text"
+            name="reclamationTitle"
+            [(ngModel)]="reclamationForm.title"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label>Type de problème</label>
+          <select
+            class="form-control"
+            name="problemType"
+            [(ngModel)]="reclamationForm.problemType"
+            required
+          >
+            <option *ngFor="let problemType of reclamationProblemTypes" [value]="problemType">
+              {{ problemType }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Date de réclamation</label>
+          <input
+            class="form-control"
+            type="date"
+            name="reclamationDate"
+            [(ngModel)]="reclamationForm.reclamationDate"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label>Priorité</label>
+          <select
+            class="form-control"
+            name="priority"
+            [(ngModel)]="reclamationForm.priority"
+            required
+          >
+            <option *ngFor="let priority of priorityOptions" [value]="priority">
+              {{ priority }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Description du problème</label>
+          <textarea
+            class="form-control textarea-control"
+            name="description"
+            [(ngModel)]="reclamationForm.description"
+            rows="5"
+            placeholder="Décris clairement le problème rencontré..."
+            required
+          ></textarea>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="action-btn">
+            Envoyer réclamation
+          </button>
+
+          <button type="button" class="secondary-btn" (click)="closeReclamationModal()">
+            Annuler
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

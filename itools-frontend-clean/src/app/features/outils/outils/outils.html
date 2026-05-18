@@ -1,0 +1,742 @@
+<div class="outils-page">
+  <section class="outils-card page-header">
+    <div class="card-inner header-inner">
+      <div>
+        <span class="section-kicker">Outillages</span>
+        <h1>Outils</h1>
+        <p>
+          Gestion des outillages, affectations, statuts, valeurs et emplacements.
+        </p>
+      </div>
+
+      <div class="header-actions">
+        <button type="button" class="secondary-btn" (click)="downloadOutilsData()">
+          Télécharger les données
+        </button>
+
+        <button type="button" class="secondary-btn" (click)="downloadTemplate()">
+          Télécharger modèle à remplir
+        </button>
+
+        <button type="button" class="secondary-btn" (click)="openImportModal()">
+          Import en masse
+        </button>
+
+        <button type="button" class="action-btn" (click)="openCreateModal()">
+          Nouveau
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <div class="alert success" *ngIf="successMessage">
+    {{ successMessage }}
+  </div>
+
+  <div class="alert error" *ngIf="errorMessage && !showModal">
+    {{ errorMessage }}
+  </div>
+
+  <section class="outils-card filters-card">
+    <div class="card-inner">
+      <div class="filters-top">
+        <div>
+          <span class="section-kicker">Filtres</span>
+          <h2>Vue globale des outils</h2>
+          <p>
+            Recherche, filtres par caractéristiques, tri et choix du mode d’affichage.
+          </p>
+        </div>
+
+        <div class="view-switch">
+          <button
+            type="button"
+            [class.active]="viewMode === 'list'"
+            (click)="setViewMode('list')"
+          >
+            Liste
+          </button>
+
+          <button
+            type="button"
+            [class.active]="viewMode === 'images'"
+            (click)="setViewMode('images')"
+          >
+            Images
+          </button>
+        </div>
+      </div>
+
+      <div class="filters-grid">
+        <div class="form-group search-field">
+          <label>Recherche</label>
+          <input
+            class="form-control"
+            type="text"
+            placeholder="Rechercher par code, OTT, ligne, client, matière, désignation..."
+            [(ngModel)]="searchText"
+            (input)="applyFilters()"
+          />
+        </div>
+
+        <div class="form-group">
+          <label>Ligne</label>
+          <select
+            class="form-control"
+            [(ngModel)]="selectedLigne"
+            (change)="applyFilters()"
+          >
+            <option value="">Toutes les lignes</option>
+            <option *ngFor="let ligne of ligneFilterOptions" [value]="ligne">
+              {{ ligne }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Client</label>
+          <select
+            class="form-control"
+            [(ngModel)]="selectedClient"
+            (change)="applyFilters()"
+          >
+            <option value="">Tous les clients</option>
+            <option *ngFor="let client of clientFilterOptions" [value]="client">
+              {{ client }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Fournisseur</label>
+          <select
+            class="form-control"
+            [(ngModel)]="selectedFournisseur"
+            (change)="applyFilters()"
+          >
+            <option value="">Tous les fournisseurs</option>
+            <option *ngFor="let fournisseur of fournisseurFilterOptions" [value]="fournisseur">
+              {{ fournisseur }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Matière</label>
+          <select
+            class="form-control"
+            [(ngModel)]="selectedMatiere"
+            (change)="applyFilters()"
+          >
+            <option value="">Toutes les matières</option>
+            <option *ngFor="let matiere of matiereFilterOptions" [value]="matiere">
+              {{ matiere }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Désignation</label>
+          <select
+            class="form-control"
+            [(ngModel)]="selectedDesignation"
+            (change)="applyFilters()"
+          >
+            <option value="">Toutes les désignations</option>
+            <option *ngFor="let designation of designationFilterOptions" [value]="designation">
+              {{ designation }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Statut</label>
+          <select
+            class="form-control"
+            [(ngModel)]="selectedStatus"
+            (change)="applyFilters()"
+          >
+            <option value="">Tous les statuts</option>
+            <option *ngFor="let status of statusFilterOptions" [value]="status">
+              {{ getStatusLabel(status) }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Trier par</label>
+          <select
+            class="form-control"
+            [(ngModel)]="sortField"
+            (change)="applyFilters()"
+          >
+            <option value="codeOutillage">Code outillage</option>
+            <option value="ott">OTT</option>
+            <option value="dateCreation">Date de création</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Ordre</label>
+          <select
+            class="form-control"
+            [(ngModel)]="sortDirection"
+            (change)="applyFilters()"
+          >
+            <option value="asc">Croissant</option>
+            <option value="desc">Décroissant</option>
+          </select>
+        </div>
+
+        <div class="filters-actions">
+          <button type="button" class="secondary-btn" (click)="resetFilters()">
+            Réinitialiser
+          </button>
+        </div>
+      </div>
+
+      <div class="summary-grid">
+        <div class="summary-card">
+          <span>Total</span>
+          <strong>{{ outils.length }}</strong>
+        </div>
+
+        <div class="summary-card">
+          <span>Affichés</span>
+          <strong>{{ filteredOutils.length }}</strong>
+        </div>
+
+        <div class="summary-card service">
+          <span>Service</span>
+          <strong>{{ countByStatus('S') }}</strong>
+        </div>
+
+        <div class="summary-card hs">
+          <span>HS</span>
+          <strong>{{ countByStatus('HS') }}</strong>
+        </div>
+
+        <div class="summary-card warning">
+          <span>Stock risque</span>
+          <strong>{{ countStockRisks() }}</strong>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="outils-card list-card">
+    <div class="card-inner">
+      <div class="list-header">
+        <div>
+          <span class="section-kicker">Liste</span>
+          <h2>Liste des outils</h2>
+          <p>{{ filteredOutils.length }} outil(s) trouvé(s)</p>
+        </div>
+
+        <div class="sort-state">
+          <span>Tri actuel</span>
+          <strong>
+            {{ getSortLabel(sortField) }}
+            —
+            {{ sortDirection === 'asc' ? 'Croissant' : 'Décroissant' }}
+          </strong>
+        </div>
+      </div>
+
+      <ng-container *ngIf="filteredOutils.length > 0; else emptyState">
+        <div class="table-wrap" *ngIf="viewMode === 'list'">
+          <table class="outils-table">
+            <thead>
+              <tr>
+                <th>Image</th>
+                <th>Ligne</th>
+                <th>Client</th>
+                <th>Fournisseur</th>
+                <th>Matière</th>
+                <th>Désignation</th>
+                <th>Emplacement</th>
+
+                <th>
+                  <button type="button" class="th-sort-btn" (click)="toggleSort('ott')">
+                    OTT
+                    <span *ngIf="sortField === 'ott'">
+                      {{ sortDirection === 'asc' ? '↑' : '↓' }}
+                    </span>
+                  </button>
+                </th>
+
+                <th>
+                  <button type="button" class="th-sort-btn" (click)="toggleSort('codeOutillage')">
+                    Code outillage
+                    <span *ngIf="sortField === 'codeOutillage'">
+                      {{ sortDirection === 'asc' ? '↑' : '↓' }}
+                    </span>
+                  </button>
+                </th>
+
+                <th>Statut</th>
+                <th>Valeur</th>
+
+                <th>
+                  <button type="button" class="th-sort-btn" (click)="toggleSort('dateCreation')">
+                    Date création
+                    <span *ngIf="sortField === 'dateCreation'">
+                      {{ sortDirection === 'asc' ? '↑' : '↓' }}
+                    </span>
+                  </button>
+                </th>
+
+                <th>Actions</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              <tr *ngFor="let item of filteredOutils">
+                <td>
+                  <div class="table-image">
+                    <img
+                      *ngIf="getOutilImageUrl(item); else tableImageFallback"
+                      [src]="getOutilImageUrl(item)"
+                      [alt]="item.codeOutillage"
+                    />
+
+                    <ng-template #tableImageFallback>
+                      <span>{{ getOutilInitial(item) }}</span>
+                    </ng-template>
+                  </div>
+                </td>
+
+                <td>{{ getLigneName(item) }}</td>
+                <td>{{ getClientName(item) }}</td>
+                <td>{{ getFournisseurName(item) }}</td>
+                <td>{{ getMatiereName(item) }}</td>
+                <td>{{ getDesignationName(item) }}</td>
+                <td>{{ getEmplacementName(item) }}</td>
+                <td>{{ item.ott }}</td>
+
+                <td>
+                  <strong class="outil-name">
+                    {{ item.codeOutillage }}
+                  </strong>
+                </td>
+
+                <td>
+                  <span
+                    class="status-badge"
+                    [class.status-service]="normalizeStatus(item.status) === 'S'"
+                    [class.status-hs]="normalizeStatus(item.status) === 'HS'"
+                  >
+                    {{ getStatusLabel(item.status) }}
+                  </span>
+                </td>
+
+                <td>
+                  <div class="stock-cell">
+                    <strong>{{ item.valeur }}</strong>
+
+                    <span
+                      class="stock-badge"
+                      [class.epuise]="getStockState(item) === 'EPUISE'"
+                      [class.risque]="getStockState(item) === 'RISQUE'"
+                      [class.normal]="getStockState(item) === 'NORMAL'"
+                    >
+                      {{ getStockLabel(item) }}
+                    </span>
+                  </div>
+                </td>
+
+                <td>
+                  <span class="date-badge">
+                    {{ formatCreationDate(item) }}
+                  </span>
+                </td>
+
+                <td class="actions">
+                  <button type="button" class="table-btn" (click)="openEditModal(item)">
+                    Modifier
+                  </button>
+
+                  <button
+                    *ngIf="canCreateReclamation()"
+                    type="button"
+                    class="table-btn reclamation"
+                    [class.urgent]="getStockState(item) === 'EPUISE'"
+                    [class.warning]="getStockState(item) === 'RISQUE'"
+                    (click)="openReclamationModal(item)"
+                  >
+                    {{ getStockState(item) === 'NORMAL' ? 'Passer réclamation' : 'Réclamation stock' }}
+                  </button>
+
+                  <button type="button" class="table-btn danger" (click)="deleteOutil(item)">
+                    Supprimer
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="images-grid" *ngIf="viewMode === 'images'">
+          <article class="outil-image-card" *ngFor="let item of filteredOutils">
+            <div class="image-preview">
+              <img
+                *ngIf="getOutilImageUrl(item); else cardImageFallback"
+                [src]="getOutilImageUrl(item)"
+                [alt]="item.codeOutillage"
+              />
+
+              <ng-template #cardImageFallback>
+                <div class="image-fallback">
+                  <span>{{ getOutilInitial(item) }}</span>
+                </div>
+              </ng-template>
+            </div>
+
+            <div class="image-card-body">
+              <div class="badges-row">
+                <span
+                  class="status-badge"
+                  [class.status-service]="normalizeStatus(item.status) === 'S'"
+                  [class.status-hs]="normalizeStatus(item.status) === 'HS'"
+                >
+                  {{ getStatusLabel(item.status) }}
+                </span>
+
+                <span
+                  class="stock-badge"
+                  [class.epuise]="getStockState(item) === 'EPUISE'"
+                  [class.risque]="getStockState(item) === 'RISQUE'"
+                  [class.normal]="getStockState(item) === 'NORMAL'"
+                >
+                  {{ getStockLabel(item) }}
+                </span>
+              </div>
+
+              <h3>{{ item.codeOutillage }}</h3>
+
+              <p>OTT : {{ item.ott }}</p>
+              <p>Ligne : {{ getLigneName(item) }}</p>
+              <p>Client : {{ getClientName(item) }}</p>
+              <p>Fournisseur : {{ getFournisseurName(item) }}</p>
+              <p>Matière : {{ getMatiereName(item) }}</p>
+              <p>Désignation : {{ getDesignationName(item) }}</p>
+              <p>Emplacement : {{ getEmplacementName(item) }}</p>
+              <p>Créé le : {{ formatCreationDate(item) }}</p>
+            </div>
+
+            <div class="image-card-actions">
+              <button type="button" class="table-btn" (click)="openEditModal(item)">
+                Modifier
+              </button>
+
+              <button
+                *ngIf="canCreateReclamation()"
+                type="button"
+                class="table-btn reclamation"
+                [class.urgent]="getStockState(item) === 'EPUISE'"
+                [class.warning]="getStockState(item) === 'RISQUE'"
+                (click)="openReclamationModal(item)"
+              >
+                Réclamation
+              </button>
+
+              <button type="button" class="table-btn danger" (click)="deleteOutil(item)">
+                Supprimer
+              </button>
+            </div>
+          </article>
+        </div>
+      </ng-container>
+
+      <ng-template #emptyState>
+        <p class="empty-text">Aucun outil trouvé.</p>
+      </ng-template>
+    </div>
+  </section>
+</div>
+
+<div class="it-modal-overlay" *ngIf="showModal" (click)="closeModal()">
+  <div class="it-modal" (click)="$event.stopPropagation()">
+    <div class="it-modal-inner">
+      <div class="it-modal-header">
+        <div>
+          <span class="section-kicker">Outil</span>
+
+          <h2 class="it-modal-title">
+            {{ isEditMode ? 'Modifier outil' : 'Ajouter outil' }}
+          </h2>
+
+          <p class="it-modal-subtitle">
+            Complète les informations puis valide l’enregistrement.
+          </p>
+        </div>
+
+        <button type="button" class="it-modal-close" (click)="closeModal()">×</button>
+      </div>
+
+      <div class="alert error" *ngIf="errorMessage">
+        {{ errorMessage }}
+      </div>
+
+      <form (ngSubmit)="submit()" class="outils-form modal-form">
+        <div class="form-group">
+          <label>Ligne</label>
+          <select class="form-control" name="ligneId" [(ngModel)]="form.ligneId" required>
+            <option [value]="0">Sélectionner une ligne</option>
+            <option *ngFor="let ligne of lignes" [value]="ligne.id">
+              {{ ligne.nom }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Client</label>
+          <select class="form-control" name="clientId" [(ngModel)]="form.clientId" required>
+            <option [value]="0">Sélectionner un client</option>
+            <option *ngFor="let client of clients" [value]="client.id">
+              {{ client.nomClient }} - {{ client.nomReference }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Fournisseur</label>
+          <select class="form-control" name="fournisseurId" [(ngModel)]="form.fournisseurId" required>
+            <option [value]="0">Sélectionner un fournisseur</option>
+            <option *ngFor="let fournisseur of fournisseurs" [value]="fournisseur.id">
+              {{ fournisseur.codeFournisseur }} - {{ fournisseur.nomFournisseur }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Emplacement</label>
+          <select class="form-control" name="emplacementId" [(ngModel)]="form.emplacementId" required>
+            <option [value]="0">Sélectionner un emplacement</option>
+            <option *ngFor="let emplacement of emplacements" [value]="emplacement.id">
+              {{ getEmplacementLabel(emplacement) }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>OTT</label>
+          <input class="form-control" type="text" name="ott" [(ngModel)]="form.ott" required />
+        </div>
+
+        <div class="form-group">
+          <label>Code outillage</label>
+          <input class="form-control" type="text" name="codeOutillage" [(ngModel)]="form.codeOutillage" required />
+        </div>
+
+        <div class="form-group">
+          <label>Statut</label>
+          <select class="form-control" name="status" [(ngModel)]="form.status" required>
+            <option *ngFor="let status of statusOptions" [value]="status">
+              {{ getStatusLabel(status) }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Valeur</label>
+          <input class="form-control" type="number" name="valeur" [(ngModel)]="form.valeur" min="0" />
+        </div>
+
+        <div class="form-group">
+          <label>Justification HS</label>
+          <input
+            class="form-control"
+            type="text"
+            name="justificationHS"
+            [(ngModel)]="form.justificationHS"
+            placeholder="Obligatoire si statut HS"
+          />
+        </div>
+
+        <div class="form-group">
+          <label>Date affectation</label>
+          <input
+            class="form-control"
+            type="date"
+            name="dateAffectation"
+            [(ngModel)]="form.dateAffectation"
+          />
+        </div>
+
+        <div class="form-note">
+          Les images des outils pourront être ajoutées plus tard. La date de création sera affichée si le backend la renvoie.
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="action-btn">
+            {{ isEditMode ? 'Enregistrer' : 'Ajouter' }}
+          </button>
+
+          <button type="button" class="secondary-btn" (click)="closeModal()">
+            Annuler
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="it-modal-overlay" *ngIf="showImportModal" (click)="closeImportModal()">
+  <div class="it-modal import-modal" (click)="$event.stopPropagation()">
+    <div class="it-modal-inner">
+      <div class="it-modal-header">
+        <div>
+          <span class="section-kicker">Import</span>
+
+          <h2 class="it-modal-title">Import en masse</h2>
+
+          <p class="it-modal-subtitle">
+            Téléverse un fichier Excel ou CSV contenant la liste des nouveaux outils.
+          </p>
+        </div>
+
+        <button type="button" class="it-modal-close" (click)="closeImportModal()">×</button>
+      </div>
+
+      <div class="alert success" *ngIf="importSuccessMessage">
+        {{ importSuccessMessage }}
+      </div>
+
+      <div class="alert error" *ngIf="importErrorMessage">
+        {{ importErrorMessage }}
+      </div>
+
+      <div class="import-box">
+        <label class="import-label">Fichier Excel / CSV</label>
+        <input
+          class="file-input"
+          type="file"
+          accept=".xlsx,.xls,.csv"
+          (change)="onFileSelected($event)"
+        />
+
+        <p class="file-name" *ngIf="selectedImportFile">
+          Fichier sélectionné : {{ selectedImportFile.name }}
+        </p>
+      </div>
+
+      <div class="import-help">
+        Colonnes acceptées :
+        <strong>ligne</strong>,
+        <strong>client</strong>,
+        <strong>fournisseur</strong>,
+        <strong>emplacement</strong>,
+        <strong>ott</strong>,
+        <strong>codeOutillage</strong>,
+        <strong>status</strong>,
+        <strong>valeur</strong>,
+        <strong>justificationHS</strong>,
+        <strong>dateAffectation</strong>,
+        <strong>imageUrl</strong>,
+        <strong>createdAt</strong>.
+        <br />
+        Tu peux aussi utiliser :
+        <strong>ligneId</strong>,
+        <strong>clientId</strong>,
+        <strong>fournisseurId</strong>,
+        <strong>emplacementId</strong>.
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="action-btn" (click)="importOutils()">
+          Importer
+        </button>
+
+        <button type="button" class="secondary-btn" (click)="closeImportModal()">
+          Annuler
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="it-modal-overlay" *ngIf="showReclamationModal" (click)="closeReclamationModal()">
+  <div class="it-modal reclamation-modal" (click)="$event.stopPropagation()">
+    <div class="it-modal-inner">
+      <div class="it-modal-header">
+        <div>
+          <span class="section-kicker">Assistance</span>
+
+          <h2 class="it-modal-title">Passer une réclamation</h2>
+
+          <p class="it-modal-subtitle">
+            La réclamation sera envoyée pour traitement.
+          </p>
+        </div>
+
+        <button type="button" class="it-modal-close" (click)="closeReclamationModal()">×</button>
+      </div>
+
+      <div class="alert success" *ngIf="reclamationSuccessMessage">
+        {{ reclamationSuccessMessage }}
+      </div>
+
+      <div class="alert error" *ngIf="reclamationErrorMessage">
+        {{ reclamationErrorMessage }}
+      </div>
+
+      <div class="selected-item-box" *ngIf="selectedReclamationOutil">
+        <span>Outil concerné</span>
+        <strong>{{ getOutilReclamationLabel(selectedReclamationOutil) }}</strong>
+      </div>
+
+      <form class="outils-form modal-form" (ngSubmit)="submitReclamation()">
+        <div class="form-group">
+          <label>Titre</label>
+          <input class="form-control" type="text" name="reclamationTitle" [(ngModel)]="reclamationForm.title" required />
+        </div>
+
+        <div class="form-group">
+          <label>Type de problème</label>
+          <select class="form-control" name="problemType" [(ngModel)]="reclamationForm.problemType" required>
+            <option *ngFor="let problemType of reclamationProblemTypes" [value]="problemType">
+              {{ problemType }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Date de réclamation</label>
+          <input class="form-control" type="date" name="reclamationDate" [(ngModel)]="reclamationForm.reclamationDate" required />
+        </div>
+
+        <div class="form-group">
+          <label>Priorité</label>
+          <select class="form-control" name="priority" [(ngModel)]="reclamationForm.priority" required>
+            <option *ngFor="let priority of priorityOptions" [value]="priority">
+              {{ priority }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Description du problème</label>
+          <textarea
+            class="form-control textarea-control"
+            name="description"
+            [(ngModel)]="reclamationForm.description"
+            rows="5"
+            placeholder="Décris clairement le problème rencontré..."
+            required
+          ></textarea>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="action-btn">
+            Envoyer réclamation
+          </button>
+
+          <button type="button" class="secondary-btn" (click)="closeReclamationModal()">
+            Annuler
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

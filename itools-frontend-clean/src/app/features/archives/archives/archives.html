@@ -1,0 +1,193 @@
+<div class="archives-page">
+  <section class="archives-card page-header">
+    <div class="card-inner header-inner">
+      <div>
+        <span class="section-kicker">Historique</span>
+        <h1 class="page-title">Archives</h1>
+        <p class="page-subtitle">
+          Calendrier des opérations effectuées dans l’application iTools.
+        </p>
+      </div>
+
+      <div class="header-actions">
+        <button type="button" class="secondary-btn" (click)="loadArchives()">
+          Actualiser
+        </button>
+
+        <button type="button" class="secondary-btn" (click)="goToToday()">
+          Aujourd’hui
+        </button>
+
+        <button type="button" class="action-btn" (click)="downloadArchives()">
+          Télécharger les archives
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <div class="alert success" *ngIf="successMessage">
+    {{ successMessage }}
+  </div>
+
+  <div class="alert error" *ngIf="errorMessage">
+    {{ errorMessage }}
+  </div>
+
+  <section class="archives-card filters-card">
+    <div class="card-inner">
+      <div class="filters-title">
+        <span class="section-kicker">Filtres</span>
+        <h2 class="section-title">Filtres</h2>
+        <p>Recherche, filtre par action et filtre par entité.</p>
+      </div>
+
+      <div class="filters-grid">
+        <div class="form-group">
+          <label>Recherche</label>
+          <input
+            class="form-control"
+            type="text"
+            placeholder="Utilisateur, action, entité, description..."
+            [(ngModel)]="searchText"
+            (input)="applyFilters()"
+          />
+        </div>
+
+        <div class="form-group">
+          <label>Action</label>
+          <select
+            class="form-control"
+            [(ngModel)]="selectedAction"
+            (change)="applyFilters()"
+          >
+            <option value="">Toutes les actions</option>
+            <option *ngFor="let action of actionOptions" [value]="action">
+              {{ getActionLabel(action) }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Entité</label>
+          <select
+            class="form-control"
+            [(ngModel)]="selectedEntity"
+            (change)="applyFilters()"
+          >
+            <option value="">Toutes les entités</option>
+            <option *ngFor="let entity of entityOptions" [value]="entity">
+              {{ entity }}
+            </option>
+          </select>
+        </div>
+
+        <div class="filters-actions">
+          <button type="button" class="secondary-btn" (click)="resetFilters()">
+            Réinitialiser
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="archives-card calendar-card">
+    <div class="card-inner">
+      <div class="calendar-toolbar">
+        <button type="button" class="month-btn" (click)="previousMonth()">
+          ‹
+        </button>
+
+        <h2 class="month-title">
+          {{ getMonthTitle() }}
+        </h2>
+
+        <button type="button" class="month-btn" (click)="nextMonth()">
+          ›
+        </button>
+      </div>
+
+      <div class="calendar-meta">
+        <span>{{ filteredArchives.length }} opération(s) trouvée(s)</span>
+        <span>Clique sur une date pour voir l’aperçu.</span>
+      </div>
+
+      <div class="loading" *ngIf="isLoading">
+        Chargement des archives...
+      </div>
+
+      <div class="calendar-wrapper" *ngIf="!isLoading">
+        <div class="calendar-grid">
+          <div class="weekday" *ngFor="let day of weekDays">
+            {{ day }}
+          </div>
+
+          <div
+            class="calendar-day"
+            *ngFor="let day of calendarDays"
+            [ngClass]="{
+              'outside': !day.isCurrentMonth,
+              'today': day.isToday,
+              'has-archives': day.archives.length > 0,
+              'selected': selectedDay?.dateKey === day.dateKey
+            }"
+            role="button"
+            tabindex="0"
+            (click)="selectDay(day)"
+          >
+            <span class="day-number">{{ day.dayNumber }}</span>
+
+            <span class="operation-count" *ngIf="day.archives.length > 0">
+              {{ day.archives.length }}
+            </span>
+
+            <span class="day-dot" *ngIf="day.archives.length > 0"></span>
+
+            <div
+              class="preview-bubble"
+              *ngIf="selectedDay?.dateKey === day.dateKey"
+              (click)="$event.stopPropagation()"
+            >
+              <div class="bubble-arrow"></div>
+
+              <div class="bubble-header">
+                <div>
+                  <h3>{{ day.date | date:'dd/MM/yyyy' }}</h3>
+                  <p>{{ day.archives.length }} opération(s)</p>
+                </div>
+
+                <button type="button" class="close-bubble" (click)="selectedDay = null">
+                  ×
+                </button>
+              </div>
+
+              <div class="preview-list">
+                <div class="preview-item" *ngFor="let item of getPreviewItems(day)">
+                  <span class="action-badge" [ngClass]="getActionClass(item.action)">
+                    {{ getActionLabel(item.action) }}
+                  </span>
+
+                  <div class="preview-text">
+                    <strong>{{ item.entityName }}</strong>
+                    <p>{{ item.description }}</p>
+                  </div>
+                </div>
+              </div>
+
+              <p class="more-text" *ngIf="day.archives.length > 5">
+                + {{ day.archives.length - 5 }} autre(s) opération(s)
+              </p>
+
+              <button
+                type="button"
+                class="action-btn bubble-btn"
+                (click)="openDayDetails(day)"
+              >
+                Voir en détail
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>

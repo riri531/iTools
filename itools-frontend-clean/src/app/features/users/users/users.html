@@ -1,0 +1,465 @@
+<div class="users-page">
+  <section class="users-card page-header">
+    <div class="card-inner header-inner">
+      <div>
+        <span class="section-kicker">Administration</span>
+        <h1>Utilisateurs</h1>
+        <p>
+          Gestion des comptes, emails et rôles de l’application iTools.
+        </p>
+      </div>
+
+      <div class="header-actions">
+        <button type="button" class="secondary-btn" (click)="downloadUsersData()">
+          Télécharger les données
+        </button>
+
+        <button type="button" class="secondary-btn" (click)="downloadTemplate()">
+          Télécharger modèle à remplir
+        </button>
+
+        <button type="button" class="secondary-btn" (click)="openImportModal()">
+          Import en masse
+        </button>
+
+        <button type="button" class="action-btn" (click)="openCreateModal()">
+          Nouveau
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <div class="alert success" *ngIf="successMessage">
+    {{ successMessage }}
+  </div>
+
+  <div class="alert error" *ngIf="errorMessage && !showModal">
+    {{ errorMessage }}
+  </div>
+
+  <section class="users-card filters-card">
+    <div class="card-inner">
+      <div class="filters-top">
+        <div>
+          <span class="section-kicker">Filtres</span>
+          <h2>Vue globale des utilisateurs</h2>
+          <p>
+            Recherche, filtre par rôle, tri et choix du mode d’affichage.
+          </p>
+        </div>
+
+        <div class="view-switch">
+          <button
+            type="button"
+            [class.active]="viewMode === 'list'"
+            (click)="setViewMode('list')"
+          >
+            Liste
+          </button>
+
+          <button
+            type="button"
+            [class.active]="viewMode === 'images'"
+            (click)="setViewMode('images')"
+          >
+            Images
+          </button>
+        </div>
+      </div>
+
+      <div class="filters-grid">
+        <div class="form-group search-field">
+          <label>Recherche</label>
+          <input
+            class="form-control"
+            type="text"
+            placeholder="Rechercher par nom, email, rôle, date..."
+            [(ngModel)]="searchText"
+            (input)="applyFilters()"
+          />
+        </div>
+
+        <div class="form-group">
+          <label>Rôle</label>
+          <select
+            class="form-control"
+            [(ngModel)]="selectedRole"
+            (change)="applyFilters()"
+          >
+            <option value="">Tous les rôles</option>
+
+            <option
+              *ngFor="let role of roleOptions"
+              [value]="role"
+            >
+              {{ role }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Trier par</label>
+          <select
+            class="form-control"
+            [(ngModel)]="sortField"
+            (change)="applyFilters()"
+          >
+            <option value="fullName">Nom</option>
+            <option value="createdAt">Date de création</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Ordre</label>
+          <select
+            class="form-control"
+            [(ngModel)]="sortDirection"
+            (change)="applyFilters()"
+          >
+            <option value="asc">Croissant</option>
+            <option value="desc">Décroissant</option>
+          </select>
+        </div>
+
+        <div class="filters-actions">
+          <button type="button" class="secondary-btn" (click)="resetFilters()">
+            Réinitialiser
+          </button>
+        </div>
+      </div>
+
+      <div class="summary-grid">
+        <div class="summary-card">
+          <span>Total</span>
+          <strong>{{ users.length }}</strong>
+        </div>
+
+        <div class="summary-card">
+          <span>Affichés</span>
+          <strong>{{ filteredUsers.length }}</strong>
+        </div>
+
+        <div class="summary-card">
+          <span>Rôles</span>
+          <strong>{{ roleOptions.length }}</strong>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="users-card list-card">
+    <div class="card-inner">
+      <div class="list-header">
+        <div>
+          <span class="section-kicker">Liste</span>
+          <h2>Liste des utilisateurs</h2>
+          <p>{{ filteredUsers.length }} utilisateur(s) trouvé(s)</p>
+        </div>
+
+        <div class="sort-state">
+          <span>Tri actuel</span>
+          <strong>
+            {{ sortField === 'fullName' ? 'Nom' : 'Date de création' }}
+            —
+            {{ sortDirection === 'asc' ? 'Croissant' : 'Décroissant' }}
+          </strong>
+        </div>
+      </div>
+
+      <ng-container *ngIf="filteredUsers.length > 0; else emptyState">
+        <div class="table-wrap" *ngIf="viewMode === 'list'">
+          <table class="users-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Image</th>
+                <th>
+                  <button type="button" class="th-sort-btn" (click)="toggleSort('fullName')">
+                    Nom
+                    <span *ngIf="sortField === 'fullName'">
+                      {{ sortDirection === 'asc' ? '↑' : '↓' }}
+                    </span>
+                  </button>
+                </th>
+                <th>Email</th>
+                <th>Rôle</th>
+                <th>
+                  <button type="button" class="th-sort-btn" (click)="toggleSort('createdAt')">
+                    Date création
+                    <span *ngIf="sortField === 'createdAt'">
+                      {{ sortDirection === 'asc' ? '↑' : '↓' }}
+                    </span>
+                  </button>
+                </th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              <tr *ngFor="let item of filteredUsers">
+                <td>{{ item.id }}</td>
+
+                <td>
+                  <div class="table-image">
+                    <img
+                      *ngIf="getUserImageUrl(item); else tableImageFallback"
+                      [src]="getUserImageUrl(item)"
+                      [alt]="item.fullName"
+                    />
+
+                    <ng-template #tableImageFallback>
+                      <span>{{ getUserInitial(item) }}</span>
+                    </ng-template>
+                  </div>
+                </td>
+
+                <td>
+                  <strong class="user-name">
+                    {{ item.fullName }}
+                  </strong>
+                </td>
+
+                <td>
+                  <span class="email-text">
+                    {{ item.email }}
+                  </span>
+                </td>
+
+                <td>
+                  <span
+                    class="role-badge"
+                    [class.role-admin]="item.roleName.toUpperCase() === 'ADMIN'"
+                    [class.role-responsable]="item.roleName.toUpperCase() === 'RESPONSABLE'"
+                    [class.role-employe]="item.roleName.toUpperCase() === 'EMPLOYE' || item.roleName.toUpperCase() === 'EMPLOYÉ'"
+                  >
+                    {{ item.roleName }}
+                  </span>
+                </td>
+
+                <td>
+                  <span class="date-badge">
+                    {{ formatCreationDate(item) }}
+                  </span>
+                </td>
+
+                <td class="actions">
+                  <button type="button" class="table-btn" (click)="openEditModal(item)">
+                    Modifier
+                  </button>
+
+                  <button type="button" class="table-btn danger" (click)="deleteUser(item)">
+                    Supprimer
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="images-grid" *ngIf="viewMode === 'images'">
+          <article class="user-image-card" *ngFor="let item of filteredUsers">
+            <div class="image-preview">
+              <img
+                *ngIf="getUserImageUrl(item); else cardImageFallback"
+                [src]="getUserImageUrl(item)"
+                [alt]="item.fullName"
+              />
+
+              <ng-template #cardImageFallback>
+                <div class="image-fallback">
+                  <span>{{ getUserInitial(item) }}</span>
+                </div>
+              </ng-template>
+            </div>
+
+            <div class="image-card-body">
+              <span
+                class="role-badge"
+                [class.role-admin]="item.roleName.toUpperCase() === 'ADMIN'"
+                [class.role-responsable]="item.roleName.toUpperCase() === 'RESPONSABLE'"
+                [class.role-employe]="item.roleName.toUpperCase() === 'EMPLOYE' || item.roleName.toUpperCase() === 'EMPLOYÉ'"
+              >
+                {{ item.roleName }}
+              </span>
+
+              <h3>{{ item.fullName }}</h3>
+
+              <p>Email : {{ item.email }}</p>
+              <p>ID : {{ item.id }}</p>
+              <p>Créé le : {{ formatCreationDate(item) }}</p>
+            </div>
+
+            <div class="image-card-actions">
+              <button type="button" class="table-btn" (click)="openEditModal(item)">
+                Modifier
+              </button>
+
+              <button type="button" class="table-btn danger" (click)="deleteUser(item)">
+                Supprimer
+              </button>
+            </div>
+          </article>
+        </div>
+      </ng-container>
+
+      <ng-template #emptyState>
+        <p class="empty-text">Aucun utilisateur trouvé.</p>
+      </ng-template>
+    </div>
+  </section>
+</div>
+
+<div class="it-modal-overlay" *ngIf="showModal" (click)="closeModal()">
+  <div class="it-modal" (click)="$event.stopPropagation()">
+    <div class="it-modal-inner">
+      <div class="it-modal-header">
+        <div>
+          <span class="section-kicker">Utilisateur</span>
+
+          <h2 class="it-modal-title">
+            {{ isEditMode ? 'Modifier utilisateur' : 'Ajouter utilisateur' }}
+          </h2>
+
+          <p class="it-modal-subtitle">
+            Complète les informations puis valide l’enregistrement.
+          </p>
+        </div>
+
+        <button type="button" class="it-modal-close" (click)="closeModal()">×</button>
+      </div>
+
+      <div class="alert error" *ngIf="errorMessage">
+        {{ errorMessage }}
+      </div>
+
+      <form (ngSubmit)="submit()" class="users-form modal-form">
+        <div class="form-group">
+          <label>Nom complet</label>
+          <input
+            class="form-control"
+            type="text"
+            name="fullName"
+            [(ngModel)]="form.fullName"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label>Email</label>
+          <input
+            class="form-control"
+            type="email"
+            name="email"
+            [(ngModel)]="form.email"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label>
+            Mot de passe
+            <span class="hint" *ngIf="isEditMode">(laisser vide pour ne pas changer)</span>
+          </label>
+          <input
+            class="form-control"
+            type="password"
+            name="password"
+            [(ngModel)]="form.password"
+            [required]="!isEditMode"
+          />
+        </div>
+
+        <div class="form-group">
+          <label>Rôle</label>
+          <select
+            class="form-control"
+            name="roleId"
+            [(ngModel)]="form.roleId"
+            required
+          >
+            <option *ngFor="let role of roles" [value]="role.id">
+              {{ role.name }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-note">
+          La photo utilisateur et la date de création seront affichées si le backend les renvoie.
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="action-btn">
+            {{ isEditMode ? 'Enregistrer' : 'Ajouter' }}
+          </button>
+
+          <button type="button" class="secondary-btn" (click)="closeModal()">
+            Annuler
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="it-modal-overlay" *ngIf="showImportModal" (click)="closeImportModal()">
+  <div class="it-modal import-modal" (click)="$event.stopPropagation()">
+    <div class="it-modal-inner">
+      <div class="it-modal-header">
+        <div>
+          <span class="section-kicker">Import</span>
+
+          <h2 class="it-modal-title">Import en masse</h2>
+
+          <p class="it-modal-subtitle">
+            Téléverse un fichier Excel ou CSV contenant la liste des nouveaux utilisateurs.
+          </p>
+        </div>
+
+        <button type="button" class="it-modal-close" (click)="closeImportModal()">×</button>
+      </div>
+
+      <div class="alert success" *ngIf="importSuccessMessage">
+        {{ importSuccessMessage }}
+      </div>
+
+      <div class="alert error" *ngIf="importErrorMessage">
+        {{ importErrorMessage }}
+      </div>
+
+      <div class="import-box">
+        <label class="import-label">Fichier Excel / CSV</label>
+
+        <input
+          class="file-input"
+          type="file"
+          accept=".xlsx,.xls,.csv"
+          (change)="onFileSelected($event)"
+        />
+
+        <p class="file-name" *ngIf="selectedImportFile">
+          Fichier sélectionné : {{ selectedImportFile.name }}
+        </p>
+      </div>
+
+      <div class="import-help">
+        Colonnes acceptées :
+        <strong>fullName</strong>,
+        <strong>email</strong>,
+        <strong>password</strong>,
+        <strong>roleName</strong>,
+        <strong>imageUrl</strong>,
+        <strong>createdAt</strong>.
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="action-btn" (click)="importUsers()">
+          Importer
+        </button>
+
+        <button type="button" class="secondary-btn" (click)="closeImportModal()">
+          Annuler
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

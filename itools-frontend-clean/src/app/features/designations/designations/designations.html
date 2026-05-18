@@ -1,0 +1,559 @@
+<div class="designations-page">
+  <section class="designations-card page-header">
+    <div class="card-inner header-inner">
+      <div>
+        <span class="section-kicker">Référentiel</span>
+        <h1>Désignations</h1>
+        <p>
+          Gestion des désignations utilisées dans les emplacements et les outillages.
+        </p>
+      </div>
+
+      <div class="header-actions">
+        <button type="button" class="secondary-btn" (click)="downloadDesignationsData()">
+          Télécharger les données
+        </button>
+
+        <button type="button" class="secondary-btn" (click)="downloadTemplate()">
+          Télécharger modèle à remplir
+        </button>
+
+        <button type="button" class="secondary-btn" (click)="openImportModal()">
+          Import en masse
+        </button>
+
+        <button type="button" class="action-btn" (click)="openCreateModal()">
+          Nouveau
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <div class="alert success" *ngIf="successMessage">
+    {{ successMessage }}
+  </div>
+
+  <div class="alert error" *ngIf="errorMessage && !showModal">
+    {{ errorMessage }}
+  </div>
+
+  <section class="designations-card filters-card">
+    <div class="card-inner">
+      <div class="filters-top">
+        <div>
+          <span class="section-kicker">Filtres</span>
+          <h2>Vue globale des désignations</h2>
+          <p>
+            Recherche, filtre par type, tri et choix du mode d’affichage.
+          </p>
+        </div>
+
+        <div class="view-switch">
+          <button
+            type="button"
+            [class.active]="viewMode === 'list'"
+            (click)="setViewMode('list')"
+          >
+            Liste
+          </button>
+
+          <button
+            type="button"
+            [class.active]="viewMode === 'images'"
+            (click)="setViewMode('images')"
+          >
+            Images
+          </button>
+        </div>
+      </div>
+
+      <div class="filters-grid">
+        <div class="form-group search-field">
+          <label>Recherche</label>
+          <input
+            class="form-control"
+            type="text"
+            placeholder="Rechercher par nom, ID, type, date..."
+            [(ngModel)]="searchText"
+            (input)="applyFilters()"
+          />
+        </div>
+
+        <div class="form-group">
+          <label>Type</label>
+          <select
+            class="form-control"
+            [(ngModel)]="selectedType"
+            (change)="applyFilters()"
+          >
+            <option value="">Tous les types</option>
+
+            <option
+              *ngFor="let type of typeOptions"
+              [value]="type"
+            >
+              {{ type }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Trier par</label>
+          <select
+            class="form-control"
+            [(ngModel)]="sortField"
+            (change)="applyFilters()"
+          >
+            <option value="name">Nom</option>
+            <option value="createdAt">Date de création</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Ordre</label>
+          <select
+            class="form-control"
+            [(ngModel)]="sortDirection"
+            (change)="applyFilters()"
+          >
+            <option value="asc">Croissant</option>
+            <option value="desc">Décroissant</option>
+          </select>
+        </div>
+
+        <div class="filters-actions">
+          <button type="button" class="secondary-btn" (click)="resetFilters()">
+            Réinitialiser
+          </button>
+        </div>
+      </div>
+
+      <div class="summary-grid">
+        <div class="summary-card">
+          <span>Total</span>
+          <strong>{{ designations.length }}</strong>
+        </div>
+
+        <div class="summary-card">
+          <span>Affichées</span>
+          <strong>{{ filteredDesignations.length }}</strong>
+        </div>
+
+        <div class="summary-card">
+          <span>Types</span>
+          <strong>{{ typeOptions.length }}</strong>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="designations-card list-card">
+    <div class="card-inner">
+      <div class="list-header">
+        <div>
+          <span class="section-kicker">Liste</span>
+          <h2>Liste des désignations</h2>
+          <p>{{ filteredDesignations.length }} désignation(s) trouvée(s)</p>
+        </div>
+
+        <div class="sort-state">
+          <span>Tri actuel</span>
+          <strong>
+            {{ sortField === 'name' ? 'Nom' : 'Date de création' }}
+            —
+            {{ sortDirection === 'asc' ? 'Croissant' : 'Décroissant' }}
+          </strong>
+        </div>
+      </div>
+
+      <ng-container *ngIf="filteredDesignations.length > 0; else emptyState">
+        <div class="table-wrap" *ngIf="viewMode === 'list'">
+          <table class="designations-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Image</th>
+                <th>
+                  <button type="button" class="th-sort-btn" (click)="toggleSort('name')">
+                    Nom désignation
+                    <span *ngIf="sortField === 'name'">
+                      {{ sortDirection === 'asc' ? '↑' : '↓' }}
+                    </span>
+                  </button>
+                </th>
+                <th>Type</th>
+                <th>
+                  <button type="button" class="th-sort-btn" (click)="toggleSort('createdAt')">
+                    Date création
+                    <span *ngIf="sortField === 'createdAt'">
+                      {{ sortDirection === 'asc' ? '↑' : '↓' }}
+                    </span>
+                  </button>
+                </th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              <tr *ngFor="let item of filteredDesignations">
+                <td>{{ item.id }}</td>
+
+                <td>
+                  <div class="table-image">
+                    <img
+                      *ngIf="getDesignationImageUrl(item); else tableImageFallback"
+                      [src]="getDesignationImageUrl(item)"
+                      [alt]="item.name"
+                    />
+
+                    <ng-template #tableImageFallback>
+                      <span>{{ getDesignationInitial(item) }}</span>
+                    </ng-template>
+                  </div>
+                </td>
+
+                <td>
+                  <strong class="designation-name">
+                    {{ item.name }}
+                  </strong>
+                </td>
+
+                <td>
+                  <span class="type-badge">
+                    {{ getDesignationType(item) }}
+                  </span>
+                </td>
+
+                <td>
+                  <span class="date-badge">
+                    {{ formatCreationDate(item) }}
+                  </span>
+                </td>
+
+                <td class="actions">
+                  <button type="button" class="table-btn" (click)="openEditModal(item)">
+                    Modifier
+                  </button>
+
+                  <button
+                    *ngIf="canCreateReclamation()"
+                    type="button"
+                    class="table-btn reclamation"
+                    (click)="openReclamationModal(item)"
+                  >
+                    Passer réclamation
+                  </button>
+
+                  <button type="button" class="table-btn danger" (click)="deleteDesignation(item)">
+                    Supprimer
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="images-grid" *ngIf="viewMode === 'images'">
+          <article class="designation-image-card" *ngFor="let item of filteredDesignations">
+            <div class="image-preview">
+              <img
+                *ngIf="getDesignationImageUrl(item); else cardImageFallback"
+                [src]="getDesignationImageUrl(item)"
+                [alt]="item.name"
+              />
+
+              <ng-template #cardImageFallback>
+                <div class="image-fallback">
+                  <span>{{ getDesignationInitial(item) }}</span>
+                </div>
+              </ng-template>
+            </div>
+
+            <div class="image-card-body">
+              <span class="type-badge">
+                {{ getDesignationType(item) }}
+              </span>
+
+              <h3>{{ item.name }}</h3>
+
+              <p>ID : {{ item.id }}</p>
+              <p>Créée le : {{ formatCreationDate(item) }}</p>
+            </div>
+
+            <div class="image-card-actions">
+              <button type="button" class="table-btn" (click)="openEditModal(item)">
+                Modifier
+              </button>
+
+              <button
+                *ngIf="canCreateReclamation()"
+                type="button"
+                class="table-btn reclamation"
+                (click)="openReclamationModal(item)"
+              >
+                Réclamation
+              </button>
+
+              <button type="button" class="table-btn danger" (click)="deleteDesignation(item)">
+                Supprimer
+              </button>
+            </div>
+          </article>
+        </div>
+      </ng-container>
+
+      <ng-template #emptyState>
+        <p class="empty-text">Aucune désignation trouvée.</p>
+      </ng-template>
+    </div>
+  </section>
+</div>
+
+<div class="it-modal-overlay" *ngIf="showModal" (click)="closeModal()">
+  <div class="it-modal" (click)="$event.stopPropagation()">
+    <div class="it-modal-inner">
+      <div class="it-modal-header">
+        <div>
+          <span class="section-kicker">Désignation</span>
+
+          <h2 class="it-modal-title">
+            {{ isEditMode ? 'Modifier désignation' : 'Ajouter désignation' }}
+          </h2>
+
+          <p class="it-modal-subtitle">
+            Complète les informations puis valide l’enregistrement.
+          </p>
+        </div>
+
+        <button type="button" class="it-modal-close" (click)="closeModal()">×</button>
+      </div>
+
+      <div class="alert error" *ngIf="errorMessage">
+        {{ errorMessage }}
+      </div>
+
+      <form (ngSubmit)="submit()" class="designations-form modal-form">
+        <div class="form-group">
+          <label>Nom désignation</label>
+          <input
+            class="form-control"
+            type="text"
+            name="name"
+            [(ngModel)]="form.name"
+            placeholder="Exemple : cadre de vague léger"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label>Type</label>
+          <select
+            class="form-control"
+            name="type"
+            [(ngModel)]="form.type"
+            required
+          >
+            <option value="">Sélectionner un type</option>
+            <option *ngFor="let type of designationTypeChoices" [value]="type">
+              {{ type }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Date de création</label>
+          <input
+            class="form-control"
+            type="date"
+            name="createdAt"
+            [(ngModel)]="form.createdAt"
+            required
+          />
+        </div>
+
+        <div class="form-note">
+          Le type et la date de création sont maintenant saisis lors de l’ajout.
+          Si le backend n’a pas encore ces champs, il faut aussi les ajouter côté API pour les sauvegarder définitivement.
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="action-btn">
+            {{ isEditMode ? 'Enregistrer' : 'Ajouter' }}
+          </button>
+
+          <button type="button" class="secondary-btn" (click)="closeModal()">
+            Annuler
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="it-modal-overlay" *ngIf="showImportModal" (click)="closeImportModal()">
+  <div class="it-modal import-modal" (click)="$event.stopPropagation()">
+    <div class="it-modal-inner">
+      <div class="it-modal-header">
+        <div>
+          <span class="section-kicker">Import</span>
+
+          <h2 class="it-modal-title">Import en masse</h2>
+
+          <p class="it-modal-subtitle">
+            Téléverse un fichier Excel ou CSV contenant la liste des nouvelles désignations.
+          </p>
+        </div>
+
+        <button type="button" class="it-modal-close" (click)="closeImportModal()">×</button>
+      </div>
+
+      <div class="alert success" *ngIf="importSuccessMessage">
+        {{ importSuccessMessage }}
+      </div>
+
+      <div class="alert error" *ngIf="importErrorMessage">
+        {{ importErrorMessage }}
+      </div>
+
+      <div class="import-box">
+        <label class="import-label">Fichier Excel / CSV</label>
+
+        <input
+          class="file-input"
+          type="file"
+          accept=".xlsx,.xls,.csv"
+          (change)="onFileSelected($event)"
+        />
+
+        <p class="file-name" *ngIf="selectedImportFile">
+          Fichier sélectionné : {{ selectedImportFile.name }}
+        </p>
+      </div>
+
+      <div class="import-help">
+        Colonnes acceptées :
+        <strong>name</strong>,
+        <strong>type</strong>,
+        <strong>imageUrl</strong>,
+        <strong>createdAt</strong>.
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="action-btn" (click)="importDesignations()">
+          Importer
+        </button>
+
+        <button type="button" class="secondary-btn" (click)="closeImportModal()">
+          Annuler
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="it-modal-overlay" *ngIf="showReclamationModal" (click)="closeReclamationModal()">
+  <div class="it-modal reclamation-modal" (click)="$event.stopPropagation()">
+    <div class="it-modal-inner">
+      <div class="it-modal-header">
+        <div>
+          <span class="section-kicker">Assistance</span>
+
+          <h2 class="it-modal-title">Passer une réclamation</h2>
+
+          <p class="it-modal-subtitle">
+            La réclamation sera envoyée pour traitement.
+          </p>
+        </div>
+
+        <button type="button" class="it-modal-close" (click)="closeReclamationModal()">×</button>
+      </div>
+
+      <div class="alert success" *ngIf="reclamationSuccessMessage">
+        {{ reclamationSuccessMessage }}
+      </div>
+
+      <div class="alert error" *ngIf="reclamationErrorMessage">
+        {{ reclamationErrorMessage }}
+      </div>
+
+      <div class="selected-item-box" *ngIf="selectedReclamationDesignation">
+        <span>Désignation concernée</span>
+        <strong>{{ getDesignationReclamationLabel(selectedReclamationDesignation) }}</strong>
+      </div>
+
+      <form class="designations-form modal-form" (ngSubmit)="submitReclamation()">
+        <div class="form-group">
+          <label>Titre</label>
+          <input
+            class="form-control"
+            type="text"
+            name="reclamationTitle"
+            [(ngModel)]="reclamationForm.title"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label>Type de problème</label>
+          <select
+            class="form-control"
+            name="problemType"
+            [(ngModel)]="reclamationForm.problemType"
+            required
+          >
+            <option *ngFor="let problemType of reclamationProblemTypes" [value]="problemType">
+              {{ problemType }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Date de réclamation</label>
+          <input
+            class="form-control"
+            type="date"
+            name="reclamationDate"
+            [(ngModel)]="reclamationForm.reclamationDate"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label>Priorité</label>
+          <select
+            class="form-control"
+            name="priority"
+            [(ngModel)]="reclamationForm.priority"
+            required
+          >
+            <option *ngFor="let priority of priorityOptions" [value]="priority">
+              {{ priority }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Description du problème</label>
+          <textarea
+            class="form-control textarea-control"
+            name="description"
+            [(ngModel)]="reclamationForm.description"
+            rows="5"
+            placeholder="Décris clairement le problème rencontré..."
+            required
+          ></textarea>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="action-btn">
+            Envoyer réclamation
+          </button>
+
+          <button type="button" class="secondary-btn" (click)="closeReclamationModal()">
+            Annuler
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,239 @@
+<div class="notifications-page">
+  <section class="notifications-card page-header">
+    <div class="card-inner header-inner">
+      <div>
+        <span class="section-kicker">Centre de notifications</span>
+        <h1>Notifications</h1>
+        <p>
+          Consulte les alertes de profil, sécurité, réclamations et actions importantes.
+        </p>
+      </div>
+
+      <div class="header-stats">
+        <div class="header-stat">
+          <strong>{{ notifications.length }}</strong>
+          <span>Total</span>
+        </div>
+
+        <div class="header-stat unread">
+          <strong>{{ unreadCount }}</strong>
+          <span>Non lues</span>
+        </div>
+
+        <div class="header-stat read">
+          <strong>{{ readCount }}</strong>
+          <span>Vues</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="alert success" *ngIf="successMessage">
+    {{ successMessage }}
+  </div>
+
+  <div class="alert error" *ngIf="errorMessage">
+    {{ errorMessage }}
+  </div>
+
+  <section class="notifications-card filters-card">
+    <div class="card-inner">
+      <div class="tabs">
+        <button
+          type="button"
+          [class.active]="selectedReadFilter === 'ALL'"
+          (click)="setReadFilter('ALL')"
+        >
+          Toutes
+        </button>
+
+        <button
+          type="button"
+          [class.active]="selectedReadFilter === 'UNREAD'"
+          (click)="setReadFilter('UNREAD')"
+        >
+          Non lues
+        </button>
+
+        <button
+          type="button"
+          [class.active]="selectedReadFilter === 'READ'"
+          (click)="setReadFilter('READ')"
+        >
+          Vues
+        </button>
+      </div>
+
+      <div class="filters-grid">
+        <div class="form-group search-field">
+          <label>Recherche</label>
+          <input
+            type="text"
+            placeholder="Titre, message, type..."
+            [(ngModel)]="searchText"
+            (input)="applyFilters()"
+          />
+        </div>
+
+        <div class="form-group">
+          <label>Type</label>
+          <select [(ngModel)]="selectedType" (change)="applyFilters()">
+            <option value="">Tous les types</option>
+            <option *ngFor="let type of typeOptions" [value]="type">
+              {{ getTypeLabel(type) }}
+            </option>
+          </select>
+        </div>
+
+        <div class="filters-actions">
+          <button type="button" class="secondary-btn" (click)="resetFilters()">
+            Réinitialiser
+          </button>
+
+          <button type="button" class="secondary-btn" (click)="loadNotifications()">
+            Actualiser
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="notifications-card list-card">
+    <div class="card-inner">
+      <div class="list-header">
+        <div>
+          <span class="section-kicker">Liste</span>
+          <h2>Liste des notifications</h2>
+          <p>
+            {{ filteredNotifications.length }} notification(s) trouvée(s),
+            {{ unreadCount }} non lue(s)
+          </p>
+        </div>
+
+        <div class="list-actions">
+          <button
+            type="button"
+            class="secondary-btn"
+            (click)="markSelectedAsRead()"
+            [disabled]="selectedIds.length === 0"
+          >
+            Marquer sélection comme lue
+          </button>
+
+          <button
+            type="button"
+            class="secondary-btn danger-soft"
+            (click)="deleteSelectedNotifications()"
+            [disabled]="selectedIds.length === 0"
+          >
+            Supprimer sélection
+          </button>
+
+          <button
+            type="button"
+            class="delete-btn"
+            (click)="deleteAllNotifications()"
+            [disabled]="notifications.length === 0"
+          >
+            Tout supprimer
+          </button>
+        </div>
+      </div>
+
+      <div class="selection-row" *ngIf="filteredNotifications.length > 0">
+        <label class="select-all">
+          <input
+            type="checkbox"
+            [checked]="areAllFilteredSelected()"
+            (change)="toggleSelectAllFiltered($event)"
+          />
+          <span>Tout sélectionner les notifications filtrées</span>
+        </label>
+      </div>
+
+      <div class="loading" *ngIf="isLoading">
+        Chargement des notifications...
+      </div>
+
+      <div
+        class="notification-list"
+        *ngIf="!isLoading && filteredNotifications.length > 0; else emptyState"
+      >
+        <article
+          class="notification-item"
+          *ngFor="let item of filteredNotifications"
+          [class.unread-item]="!item.isRead"
+          [class.selected]="isSelected(item)"
+        >
+          <div class="select-box" (click)="$event.stopPropagation()">
+            <input
+              type="checkbox"
+              [checked]="isSelected(item)"
+              (change)="toggleSelection(item, $event)"
+            />
+          </div>
+
+          <div class="type-icon" [ngClass]="getTypeClass(item.type)">
+            <span>{{ getTypeInitial(item.type) }}</span>
+          </div>
+
+          <div class="notification-content">
+            <div class="notification-top">
+              <span class="type-badge" [ngClass]="getTypeClass(item.type)">
+                {{ getTypeLabel(item.type) }}
+              </span>
+
+              <span class="read-badge" [class.is-read]="item.isRead">
+                {{ item.isRead ? 'Vue' : 'Non lue' }}
+              </span>
+
+              <span class="date-text">
+                {{ item.createdAt | date:'dd/MM/yyyy HH:mm' }}
+              </span>
+            </div>
+
+            <h3>{{ item.title }}</h3>
+
+            <p>
+              {{ item.message }}
+            </p>
+          </div>
+
+          <div class="notification-actions">
+            <button
+              type="button"
+              class="secondary-btn small-btn mark-read-btn"
+              *ngIf="!item.isRead"
+              (click)="markAsRead(item)"
+            >
+              Marquer comme lu
+            </button>
+
+            <button
+              type="button"
+              class="secondary-btn small-btn already-read-btn"
+              *ngIf="item.isRead"
+              disabled
+            >
+              Déjà lue
+            </button>
+
+            <button
+              type="button"
+              class="delete-btn small-btn"
+              (click)="deleteNotification(item)"
+            >
+              Supprimer
+            </button>
+          </div>
+        </article>
+      </div>
+
+      <ng-template #emptyState>
+        <p class="empty-text" *ngIf="!isLoading">
+          Aucune notification trouvée.
+        </p>
+      </ng-template>
+    </div>
+  </section>
+</div>

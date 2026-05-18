@@ -1,0 +1,517 @@
+<div class="reclamations-page">
+  <section class="reclamation-card page-header">
+    <div class="card-inner header-inner">
+      <div>
+        <span class="section-kicker">Assistance intelligente</span>
+        <h1>Réclamations</h1>
+        <p>
+          Gestion, suivi, traitement et escalade des réclamations du système iTools.
+        </p>
+        <p class="role-info">
+          {{ getRoleInfoText() }}
+        </p>
+      </div>
+
+      <div class="header-actions">
+        <button type="button" class="secondary-btn" (click)="loadReclamations()">
+          Actualiser
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <div class="alert success" *ngIf="successMessage">
+    {{ successMessage }}
+  </div>
+
+  <div class="alert error" *ngIf="errorMessage">
+    {{ errorMessage }}
+  </div>
+
+  <section class="reclamation-card filters-card">
+    <div class="card-inner">
+      <div class="responsable-switch" *ngIf="isResponsable">
+        <button
+          type="button"
+          [class.active]="responsableView === 'EMPLOYES'"
+          (click)="setResponsableView('EMPLOYES')"
+        >
+          Réclamations employés à traiter
+        </button>
+
+        <button
+          type="button"
+          [class.active]="responsableView === 'MINE'"
+          (click)="setResponsableView('MINE')"
+        >
+          Mes réclamations envoyées à l’admin
+        </button>
+      </div>
+
+      <div class="tabs">
+        <button
+          type="button"
+          *ngIf="!isResponsable"
+          [class.active]="activeTab === 'ALL'"
+          (click)="setTab('ALL')"
+        >
+          Toutes
+        </button>
+
+        <button
+          type="button"
+          *ngIf="isEmploye"
+          [class.active]="activeTab === 'MINE'"
+          (click)="setTab('MINE')"
+        >
+          Mes réclamations
+        </button>
+
+        <button
+          type="button"
+          *ngIf="isAdmin"
+          [class.active]="activeTab === 'ASSIGNED'"
+          (click)="setTab('ASSIGNED')"
+        >
+          À traiter
+        </button>
+
+        <button
+          type="button"
+          [class.active]="activeTab === 'PENDING'"
+          (click)="setTab('PENDING')"
+        >
+          En cours
+        </button>
+
+        <button
+          type="button"
+          [class.active]="activeTab === 'CLOSED'"
+          (click)="setTab('CLOSED')"
+        >
+          Clôturées
+        </button>
+      </div>
+
+      <div class="read-summary">
+        <div class="read-stat">
+          <span>Total</span>
+          <strong>{{ reclamations.length }}</strong>
+        </div>
+
+        <div class="read-stat unread">
+          <span>Non lues</span>
+          <strong>{{ unreadCount }}</strong>
+        </div>
+
+        <div class="read-stat read">
+          <span>Vues</span>
+          <strong>{{ readCount }}</strong>
+        </div>
+      </div>
+
+      <div class="filters-grid">
+        <div class="form-group search-field">
+          <label>Recherche</label>
+          <input
+            type="text"
+            placeholder="Titre, type, page, élément, créateur..."
+            [(ngModel)]="searchText"
+            (input)="applyFilters()"
+          />
+        </div>
+
+        <div class="form-group">
+          <label>Vision</label>
+          <select [(ngModel)]="selectedReadFilter" (change)="applyFilters()">
+            <option value="ALL">Toutes</option>
+            <option value="UNREAD">Non lues</option>
+            <option value="READ">Vues</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Champ</label>
+          <select [(ngModel)]="selectedEntityFilter" (change)="applyFilters()">
+            <option value="">Tous les champs</option>
+            <option *ngFor="let entity of entityFilterOptions" [value]="entity.value">
+              {{ entity.label }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Statut</label>
+          <select [(ngModel)]="selectedStatus" (change)="applyFilters()">
+            <option value="">Tous les statuts</option>
+            <option *ngFor="let status of statusOptions" [value]="status">
+              {{ getStatusLabel(status) }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Priorité</label>
+          <select [(ngModel)]="selectedPriority" (change)="applyFilters()">
+            <option value="">Toutes les priorités</option>
+            <option *ngFor="let priority of priorityOptions" [value]="priority">
+              {{ getPriorityLabel(priority) }}
+            </option>
+          </select>
+        </div>
+
+        <div class="filters-actions">
+          <button type="button" class="secondary-btn" (click)="resetFilters()">
+            Réinitialiser
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="reclamation-card list-card">
+    <div class="card-inner">
+      <div class="list-header">
+        <div>
+          <span class="section-kicker">Liste</span>
+          <h2>{{ getListTitle() }}</h2>
+          <p>{{ filteredReclamations.length }} réclamation(s) trouvée(s)</p>
+        </div>
+      </div>
+
+      <div class="loading" *ngIf="isLoading">
+        Chargement des réclamations...
+      </div>
+
+      <div class="reclamation-list" *ngIf="!isLoading && filteredReclamations.length > 0; else emptyState">
+        <article
+          class="reclamation-item"
+          *ngFor="let item of filteredReclamations"
+          [class.selected]="selectedReclamation?.id === item.id"
+          [class.creator-item]="isCreator(item)"
+          [class.unread-item]="!isReclamationRead(item)"
+          (click)="selectReclamation(item)"
+        >
+          <div class="item-main">
+            <div class="item-top">
+              <span class="read-badge" [class.is-read]="isReclamationRead(item)">
+                {{ isReclamationRead(item) ? 'Vue' : 'Non lue' }}
+              </span>
+
+              <span class="status-badge" [ngClass]="getStatusClass(item.status)">
+                {{ getStatusLabel(item.status) }}
+              </span>
+
+              <span class="priority-badge" [ngClass]="getPriorityClass(item.priority)">
+                {{ getPriorityLabel(item.priority) }}
+              </span>
+
+              <span class="owner-badge" *ngIf="isCreator(item)">
+                Suivi uniquement
+              </span>
+
+              <span class="date-text">
+                {{ item.createdAt | date:'dd/MM/yyyy HH:mm' }}
+              </span>
+            </div>
+
+            <h3>{{ item.title }}</h3>
+
+            <p class="description">
+              {{ item.description }}
+            </p>
+
+            <div class="meta-grid">
+              <div>
+                <span>Créateur</span>
+                <strong>{{ item.createdByUserName || '-' }}</strong>
+              </div>
+
+              <div>
+                <span>Rôle créateur</span>
+                <strong>{{ item.createdByUserRole || '-' }}</strong>
+              </div>
+
+              <div>
+                <span>Page</span>
+                <strong>{{ item.sourcePage }}</strong>
+              </div>
+
+              <div>
+                <span>Champ</span>
+                <strong>{{ getEntityTypeLabel(item) }}</strong>
+              </div>
+
+              <div>
+                <span>Élément</span>
+                <strong>{{ item.entityLabel || item.entityName }}</strong>
+              </div>
+
+              <div>
+                <span>Affectée à</span>
+                <strong>{{ item.assignedToUserName || item.assignedToRole }}</strong>
+              </div>
+
+              <div>
+                <span>Traitée par</span>
+                <strong>{{ item.treatedByUserName || '-' }}</strong>
+              </div>
+            </div>
+          </div>
+
+          <div class="item-actions" (click)="$event.stopPropagation()">
+            <button
+              type="button"
+              class="secondary-btn small-btn mark-read-btn"
+              *ngIf="!isReclamationRead(item)"
+              (click)="markAsRead(item)"
+            >
+              Marquer comme lu
+            </button>
+
+            <button
+              type="button"
+              class="secondary-btn small-btn already-read-btn"
+              *ngIf="isReclamationRead(item)"
+              disabled
+            >
+              Déjà lue
+            </button>
+
+            <ng-container *ngIf="canShowActions(item)">
+              <button
+                type="button"
+                class="secondary-btn small-btn"
+                *ngIf="canStart(item)"
+                (click)="openStartModal(item)"
+              >
+                Commencer
+              </button>
+
+              <button
+                type="button"
+                class="secondary-btn small-btn escalate-btn"
+                *ngIf="canEscalate(item)"
+                (click)="openEscalateModal(item)"
+              >
+                Escalader admin
+              </button>
+
+              <button
+                type="button"
+                class="action-btn small-btn"
+                *ngIf="canTreat(item)"
+                (click)="openTreatModal(item, 'TRAITEE')"
+              >
+                Traiter
+              </button>
+
+              <button
+                type="button"
+                class="secondary-btn small-btn danger-soft"
+                *ngIf="canTreat(item)"
+                (click)="openTreatModal(item, 'REFUSEE')"
+              >
+                Refuser
+              </button>
+
+              <button
+                type="button"
+                class="delete-btn small-btn"
+                *ngIf="canDelete(item)"
+                (click)="deleteReclamation(item)"
+              >
+                Supprimer
+              </button>
+            </ng-container>
+          </div>
+
+          <div class="follow-note" *ngIf="!canShowActions(item)">
+            <span *ngIf="isCreator(item)">
+              Vous pouvez suivre l’état de cette réclamation, mais vous ne pouvez pas la traiter.
+            </span>
+
+            <span *ngIf="!isCreator(item) && isClosed(item)">
+              Cette réclamation est déjà clôturée.
+            </span>
+          </div>
+
+          <div class="details-panel" *ngIf="selectedReclamation?.id === item.id">
+            <div class="details-grid">
+              <div class="details-box">
+                <h4>Problème</h4>
+                <p><strong>Type :</strong> {{ item.problemType }}</p>
+                <p><strong>Date réclamation :</strong> {{ item.reclamationDate | date:'dd/MM/yyyy HH:mm' }}</p>
+                <p><strong>Entité :</strong> {{ item.entityName }} #{{ item.entityId || '-' }}</p>
+              </div>
+
+              <div class="details-box">
+                <h4>Décision / Résolution</h4>
+                <p><strong>Décision :</strong> {{ item.decision || 'Pas encore définie' }}</p>
+                <p><strong>Résolution :</strong> {{ item.resolution || 'Pas encore définie' }}</p>
+                <p><strong>Traitée par :</strong> {{ item.treatedByUserName || '-' }}</p>
+                <p><strong>Date traitement :</strong> {{ item.treatedAt ? (item.treatedAt | date:'dd/MM/yyyy HH:mm') : '-' }}</p>
+              </div>
+            </div>
+
+            <div class="history-section">
+              <h4>Historique</h4>
+
+              <div class="history-list" *ngIf="item.histories && item.histories.length > 0; else noHistory">
+                <div class="history-item" *ngFor="let history of item.histories">
+                  <span class="history-date">
+                    {{ history.createdAt | date:'dd/MM/yyyy HH:mm' }}
+                  </span>
+
+                  <div>
+                    <strong>{{ getActionLabel(history.action) }}</strong>
+                    <p>
+                      {{ history.comment }}
+                    </p>
+                    <small>
+                      Par {{ history.actionByUserName || '-' }}
+                      <span *ngIf="history.oldStatus || history.newStatus">
+                        —
+                        {{ history.oldStatus || '-' }}
+                        →
+                        {{ history.newStatus || '-' }}
+                      </span>
+                    </small>
+                  </div>
+                </div>
+              </div>
+
+              <ng-template #noHistory>
+                <p class="empty-text">Aucun historique disponible.</p>
+              </ng-template>
+            </div>
+          </div>
+        </article>
+      </div>
+
+      <ng-template #emptyState>
+        <p class="empty-text" *ngIf="!isLoading">
+          Aucune réclamation trouvée.
+        </p>
+      </ng-template>
+    </div>
+  </section>
+
+  <div class="modal-backdrop" *ngIf="startModalOpen || escalateModalOpen || treatModalOpen" (click)="closeModals()"></div>
+
+  <section class="modal-card" *ngIf="startModalOpen">
+    <div class="modal-header">
+      <h2>Commencer le traitement</h2>
+      <button type="button" (click)="closeModals()">×</button>
+    </div>
+
+    <p class="modal-subtitle">
+      {{ selectedReclamation?.title }}
+    </p>
+
+    <div class="form-group">
+      <label>Commentaire</label>
+      <textarea
+        rows="5"
+        [(ngModel)]="startForm.comment"
+        placeholder="Commentaire optionnel..."
+      ></textarea>
+    </div>
+
+    <div class="modal-actions">
+      <button type="button" class="action-btn" (click)="startTreatment()">
+        Confirmer
+      </button>
+
+      <button type="button" class="secondary-btn" (click)="closeModals()">
+        Annuler
+      </button>
+    </div>
+  </section>
+
+  <section class="modal-card" *ngIf="escalateModalOpen">
+    <div class="modal-header">
+      <h2>Escalader vers ADMIN</h2>
+      <button type="button" (click)="closeModals()">×</button>
+    </div>
+
+    <p class="modal-subtitle">
+      {{ selectedReclamation?.title }}
+    </p>
+
+    <div class="form-group">
+      <label>Raison de l’escalade</label>
+      <textarea
+        rows="5"
+        [(ngModel)]="escalateForm.reason"
+        placeholder="Explique pourquoi cette réclamation doit être transmise à l’admin..."
+      ></textarea>
+    </div>
+
+    <div class="form-group">
+      <label>Priorité</label>
+      <select [(ngModel)]="escalateForm.priority">
+        <option value="HAUTE">Haute</option>
+        <option value="URGENTE">Urgente</option>
+      </select>
+    </div>
+
+    <div class="modal-actions">
+      <button type="button" class="action-btn" (click)="escalateToAdmin()">
+        Escalader
+      </button>
+
+      <button type="button" class="secondary-btn" (click)="closeModals()">
+        Annuler
+      </button>
+    </div>
+  </section>
+
+  <section class="modal-card" *ngIf="treatModalOpen">
+    <div class="modal-header">
+      <h2>Traiter la réclamation</h2>
+      <button type="button" (click)="closeModals()">×</button>
+    </div>
+
+    <p class="modal-subtitle">
+      {{ selectedReclamation?.title }}
+    </p>
+
+    <div class="form-group">
+      <label>Statut final</label>
+      <select [(ngModel)]="treatForm.status">
+        <option value="TRAITEE">Traitée</option>
+        <option value="REFUSEE">Refusée</option>
+        <option value="CLOTUREE">Clôturée</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>Décision</label>
+      <input
+        type="text"
+        [(ngModel)]="treatForm.decision"
+        placeholder="Décision prise..."
+      />
+    </div>
+
+    <div class="form-group">
+      <label>Résolution / opération effectuée</label>
+      <textarea
+        rows="6"
+        [(ngModel)]="treatForm.resolution"
+        placeholder="Décris l’opération effectuée ou la solution proposée..."
+      ></textarea>
+    </div>
+
+    <div class="modal-actions">
+      <button type="button" class="action-btn" (click)="treatReclamation()">
+        Enregistrer traitement
+      </button>
+
+      <button type="button" class="secondary-btn" (click)="closeModals()">
+        Annuler
+      </button>
+    </div>
+  </section>
+</div>
