@@ -10,15 +10,15 @@
       </div>
 
       <div class="header-actions">
-        <button type="button" class="secondary-btn" (click)="loadArchives()">
+        <button type="button" class="refresh-btn" (click)="loadArchives()">
           Actualiser
         </button>
 
-        <button type="button" class="secondary-btn" (click)="goToToday()">
+        <button type="button" class="refresh-btn" (click)="goToToday()">
           Aujourd’hui
         </button>
 
-        <button type="button" class="action-btn" (click)="downloadArchives()">
+        <button type="button" class="download-btn" (click)="downloadArchives()">
           Télécharger les archives
         </button>
       </div>
@@ -82,7 +82,7 @@
         </div>
 
         <div class="filters-actions">
-          <button type="button" class="secondary-btn" (click)="resetFilters()">
+          <button type="button" class="reset-btn" (click)="resetFilters()">
             Réinitialiser
           </button>
         </div>
@@ -179,7 +179,7 @@
 
               <button
                 type="button"
-                class="action-btn bubble-btn"
+                class="bubble-btn view-btn"
                 (click)="openDayDetails(day)"
               >
                 Voir en détail

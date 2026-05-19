@@ -1,97 +1,111 @@
 <div class="assistance-page">
-  <section class="assistance-card page-header">
-    <div class="card-inner header-inner">
+  <section class="hero-assistance">
+    <div class="ai-orbit ai-orbit-one"></div>
+    <div class="ai-orbit ai-orbit-two"></div>
+
+    <div class="ai-symbol ai-chip">
+      <span>AI</span>
+    </div>
+
+    <div class="ai-symbol ai-node">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+
+    <div class="ai-symbol ai-spark ai-spark-one">✦</div>
+    <div class="ai-symbol ai-spark ai-spark-two">✧</div>
+    <div class="ai-symbol ai-spark ai-spark-three">✦</div>
+
+    <div class="hero-content">
+      <div class="assistant-avatar">
+        {{ userInitials }}
+      </div>
+
       <div>
         <span class="section-kicker">Assistance intelligente</span>
-        <h1>Assistant iTools</h1>
+        <h1>Bonjour {{ userDisplayName }}, comment puis-je t’aider ?</h1>
         <p>
-          Guide interactif pour aider les utilisateurs à comprendre les pages,
-          les actions, les statuts, les imports et les erreurs.
+          Choisis une rubrique, sélectionne une question, puis laisse l’assistant te guider vers la solution.
         </p>
       </div>
+    </div>
 
-      <div class="header-actions">
-        <button type="button" class="secondary-btn" (click)="resetChat()">
-          Réinitialiser
+    <div class="hero-actions">
+      <button type="button" class="add-btn" (click)="createNewConversation()">
+        Nouvelle conversation
+      </button>
+
+      <button type="button" class="reset-btn" (click)="resetCurrentConversation()">
+        Réinitialiser
+      </button>
+    </div>
+  </section>
+
+  <section class="assistance-shell">
+    <aside class="history-panel">
+      <div class="panel-heading">
+        <div>
+          <span class="section-kicker">Historique</span>
+          <h2>Anciennes conversations</h2>
+        </div>
+
+        <button type="button" class="mini-danger delete-btn" (click)="clearHistory()">
+          Tout vider
         </button>
+      </div>
 
+      <div class="history-list" *ngIf="conversations.length > 0; else noHistory">
         <button
           type="button"
-          class="action-btn"
-          (click)="selectedTopic ? goToRoute(selectedTopic.route) : selectTopicById('errors')"
+          class="history-item"
+          *ngFor="let conversation of conversations"
+          [class.active]="currentConversation?.id === conversation.id"
+          (click)="openConversation(conversation.id)"
         >
-          {{ selectedTopic?.route ? 'Ouvrir la page liée' : 'J’ai une erreur' }}
+          <span class="history-icon">
+            {{ getTopicById(conversation.selectedTopicId || '')?.badge || 'AI' }}
+          </span>
+
+          <span class="history-text">
+            <strong>{{ conversation.title }}</strong>
+            <small>{{ getConversationPreview(conversation) }}</small>
+            <em>{{ formatConversationDate(conversation.updatedAt) }}</em>
+          </span>
+
+          <span
+            class="history-delete"
+            role="button"
+            tabindex="0"
+            (click)="deleteConversation(conversation.id, $event)"
+          >
+            ×
+          </span>
         </button>
       </div>
-    </div>
-  </section>
 
-  <section class="assistance-card search-card">
-    <div class="card-inner">
-      <div class="search-layout">
-        <div>
-          <span class="section-kicker">Recherche</span>
-          <h2>Que veux-tu comprendre ?</h2>
-          <p>
-            Recherche une page, un bouton, un statut, une erreur ou une action.
-          </p>
+      <ng-template #noHistory>
+        <div class="empty-history">
+          Aucun historique pour le moment.
         </div>
-
-        <div class="search-box">
-          <input
-            type="text"
-            class="form-control"
-            placeholder="Exemple : outil HS, import, mot de passe, historique..."
-            [(ngModel)]="searchText"
-          />
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section class="assistance-grid">
-    <aside class="assistance-card topics-panel">
-      <div class="card-inner">
-        <div class="panel-header">
-          <span class="section-kicker">Rubriques</span>
-          <h2>Choisis un sujet</h2>
-          <p>{{ filteredTopics.length }} rubrique(s) disponible(s)</p>
-        </div>
-
-        <div class="topics-list">
-          <button
-            type="button"
-            class="topic-btn"
-            *ngFor="let topic of filteredTopics"
-            [class.active]="selectedTopic?.id === topic.id"
-            (click)="selectTopic(topic)"
-          >
-            <span class="topic-badge">{{ topic.badge }}</span>
-
-            <span class="topic-text">
-              <strong>{{ topic.shortTitle }}</strong>
-              <small>{{ topic.description }}</small>
-            </span>
-          </button>
-        </div>
-      </div>
+      </ng-template>
     </aside>
 
-    <main class="assistance-card chatbot-panel">
-      <div class="chat-header">
+    <main class="chat-panel">
+      <div class="chat-top">
         <div>
-          <span class="section-kicker">Chatbot guidé</span>
+          <span class="section-kicker">Conversation</span>
           <h2>
-            {{ selectedTopic ? selectedTopic.title : 'Assistant de navigation' }}
+            {{ selectedTopic ? selectedTopic.title : 'Sélectionne une rubrique' }}
           </h2>
           <p>
-            {{ selectedTopic ? selectedTopic.description : 'Clique sur une rubrique ou sur une question rapide.' }}
+            {{ selectedTopic ? selectedTopic.description : 'L’assistant te proposera les questions selon la rubrique choisie.' }}
           </p>
         </div>
 
-        <div class="chat-state">
-          <span>Sujet actif</span>
-          <strong>{{ selectedTopic ? selectedTopic.shortTitle : 'Aucun' }}</strong>
+        <div class="active-state">
+          <span>Rubrique active</span>
+          <strong>{{ selectedTopic ? selectedTopic.shortTitle : 'Aucune' }}</strong>
         </div>
       </div>
 
@@ -105,11 +119,39 @@
           }"
         >
           <div class="message-avatar">
-            {{ message.from === 'bot' ? 'AI' : 'U' }}
+            {{ message.from === 'bot' ? 'AI' : userInitials }}
           </div>
 
-          <div class="message-content">
+          <div class="message-card">
             <p>{{ message.text }}</p>
+
+            <div class="topic-choice-grid" *ngIf="message.type === 'topic-selection'">
+              <button
+                type="button"
+                class="topic-choice"
+                *ngFor="let topic of filteredTopics"
+                [class.active]="selectedTopic?.id === topic.id"
+                (click)="selectTopic(topic)"
+              >
+                <span>{{ topic.badge }}</span>
+
+                <strong>{{ topic.shortTitle }}</strong>
+
+                <small>{{ topic.description }}</small>
+              </button>
+            </div>
+
+            <div class="question-choice-list" *ngIf="message.type === 'question-selection' && selectedTopic">
+              <button
+                type="button"
+                class="question-choice"
+                *ngFor="let question of activeQuestions"
+                [class.active]="selectedQuestion?.id === question.id"
+                (click)="selectQuestion(question)"
+              >
+                {{ question.label }}
+              </button>
+            </div>
 
             <div class="steps-box" *ngIf="message.question?.steps?.length">
               <h4>Étapes conseillées</h4>
@@ -122,9 +164,9 @@
             </div>
 
             <button
-              *ngIf="message.question?.relatedRoute"
               type="button"
-              class="message-route-btn"
+              class="message-route-btn view-btn"
+              *ngIf="message.question?.relatedRoute"
               (click)="goToRoute(message.question?.relatedRoute)"
             >
               {{ message.question?.relatedRouteLabel || 'Ouvrir la page' }}
@@ -133,78 +175,37 @@
         </div>
       </div>
 
-      <div class="quick-zone">
-        <div class="quick-header">
-          <span>Questions rapides</span>
-
-          <button type="button" class="mini-btn" (click)="resetChat()">
-            Recommencer
-          </button>
+      <div class="composer-zone">
+        <div class="search-box">
+          <input
+            type="text"
+            placeholder="Rechercher une rubrique ou une question..."
+            [(ngModel)]="searchText"
+          />
         </div>
 
-        <div class="quick-list">
+        <div class="composer-actions" *ngIf="selectedTopic">
           <button
             type="button"
-            class="quick-btn"
-            *ngFor="let question of quickQuestions"
+            class="quick-question"
+            *ngFor="let question of activeQuestions"
             (click)="selectQuestion(question)"
           >
             {{ question.label }}
           </button>
         </div>
-      </div>
-    </main>
-  </section>
 
-  <section class="assistance-card overview-card">
-    <div class="card-inner">
-      <div class="overview-header">
-        <div>
-          <span class="section-kicker">Accès rapide</span>
-          <h2>Parcours recommandés</h2>
-          <p>
-            Sélectionne directement une situation fréquente pour obtenir une aide guidée.
-          </p>
+        <div class="composer-actions" *ngIf="!selectedTopic">
+          <button
+            type="button"
+            class="quick-question"
+            *ngFor="let topic of filteredTopics.slice(0, 6)"
+            (click)="selectTopic(topic)"
+          >
+            {{ topic.shortTitle }}
+          </button>
         </div>
       </div>
-
-      <div class="overview-grid">
-        <button type="button" class="overview-item" (click)="selectTopicById('outils')">
-          <span>OT</span>
-          <strong>Je ne comprends pas un outil</strong>
-          <small>OTT, code outillage, valeur, stock, HS.</small>
-        </button>
-
-        <button type="button" class="overview-item" (click)="selectTopicById('emplacements')">
-          <span>EM</span>
-          <strong>Je ne comprends pas un emplacement</strong>
-          <small>Armoire, numéro, matière, désignation, statut.</small>
-        </button>
-
-        <button type="button" class="overview-item" (click)="selectTopicById('reclamations')">
-          <span>RC</span>
-          <strong>Je veux signaler un problème</strong>
-          <small>Créer, suivre ou filtrer une réclamation.</small>
-        </button>
-
-        <button type="button" class="overview-item" (click)="selectTopicById('imports')">
-          <span>IM</span>
-          <strong>Je veux importer des données</strong>
-          <small>Modèle, colonnes, fichier Excel ou CSV.</small>
-        </button>
-
-        <button type="button" class="overview-item" (click)="selectTopicById('profile')">
-          <span>PR</span>
-          <strong>Je veux modifier mon profil</strong>
-          <small>Informations, photo, mot de passe.</small>
-        </button>
-
-        <button type="button" class="overview-item" (click)="selectTopicById('errors')">
-          <span>ER</span>
-          <strong>Je rencontre une erreur</strong>
-          <small>Backend, SQL Server, rôle, mot de passe.</small>
-        </button>
-      </div>
-    </div>
+    </main>
   </section>
 </div>

@@ -13,7 +13,7 @@
       </div>
 
       <div class="header-actions">
-        <button type="button" class="secondary-btn" (click)="loadReclamations()">
+        <button type="button" class="refresh-btn" (click)="loadReclamations()">
           Actualiser
         </button>
       </div>
@@ -34,8 +34,7 @@
         <button
           type="button"
           [class.active]="responsableView === 'EMPLOYES'"
-          (click)="setResponsableView('EMPLOYES')"
-        >
+          (click)="setResponsableView('EMPLOYES')" class="save-btn">
           Réclamations employés à traiter
         </button>
 
@@ -161,7 +160,7 @@
         </div>
 
         <div class="filters-actions">
-          <button type="button" class="secondary-btn" (click)="resetFilters()">
+          <button type="button" class="reset-btn" (click)="resetFilters()">
             Réinitialiser
           </button>
         </div>
@@ -262,7 +261,7 @@
           <div class="item-actions" (click)="$event.stopPropagation()">
             <button
               type="button"
-              class="secondary-btn small-btn mark-read-btn"
+              class="small-btn mark-read-btn"
               *ngIf="!isReclamationRead(item)"
               (click)="markAsRead(item)"
             >
@@ -281,7 +280,7 @@
             <ng-container *ngIf="canShowActions(item)">
               <button
                 type="button"
-                class="secondary-btn small-btn"
+                class="small-btn save-btn"
                 *ngIf="canStart(item)"
                 (click)="openStartModal(item)"
               >
@@ -290,7 +289,7 @@
 
               <button
                 type="button"
-                class="secondary-btn small-btn escalate-btn"
+                class="small-btn escalate-btn save-btn"
                 *ngIf="canEscalate(item)"
                 (click)="openEscalateModal(item)"
               >
@@ -299,7 +298,7 @@
 
               <button
                 type="button"
-                class="action-btn small-btn"
+                class="small-btn save-btn"
                 *ngIf="canTreat(item)"
                 (click)="openTreatModal(item, 'TRAITEE')"
               >
@@ -308,7 +307,7 @@
 
               <button
                 type="button"
-                class="secondary-btn small-btn danger-soft"
+                class="small-btn danger-soft delete-btn"
                 *ngIf="canTreat(item)"
                 (click)="openTreatModal(item, 'REFUSEE')"
               >
@@ -317,7 +316,7 @@
 
               <button
                 type="button"
-                class="delete-btn small-btn"
+                class="small-btn delete-btn"
                 *ngIf="canDelete(item)"
                 (click)="deleteReclamation(item)"
               >
@@ -419,11 +418,11 @@
     </div>
 
     <div class="modal-actions">
-      <button type="button" class="action-btn" (click)="startTreatment()">
+      <button type="button" class="save-btn" (click)="startTreatment()">
         Confirmer
       </button>
 
-      <button type="button" class="secondary-btn" (click)="closeModals()">
+      <button type="button" class="cancel-btn" (click)="closeModals()">
         Annuler
       </button>
     </div>
@@ -457,11 +456,11 @@
     </div>
 
     <div class="modal-actions">
-      <button type="button" class="action-btn" (click)="escalateToAdmin()">
+      <button type="button" class="save-btn" (click)="escalateToAdmin()">
         Escalader
       </button>
 
-      <button type="button" class="secondary-btn" (click)="closeModals()">
+      <button type="button" class="cancel-btn" (click)="closeModals()">
         Annuler
       </button>
     </div>
@@ -505,11 +504,11 @@
     </div>
 
     <div class="modal-actions">
-      <button type="button" class="action-btn" (click)="treatReclamation()">
+      <button type="button" class="save-btn" (click)="treatReclamation()">
         Enregistrer traitement
       </button>
 
-      <button type="button" class="secondary-btn" (click)="closeModals()">
+      <button type="button" class="cancel-btn" (click)="closeModals()">
         Annuler
       </button>
     </div>

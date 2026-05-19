@@ -10,19 +10,19 @@
       </div>
 
       <div class="header-actions">
-        <button type="button" class="secondary-btn" (click)="downloadOutilsData()">
+        <button type="button" class="download-btn" (click)="downloadOutilsData()">
           Télécharger les données
         </button>
 
-        <button type="button" class="secondary-btn" (click)="downloadTemplate()">
+        <button type="button" class="download-btn" (click)="downloadTemplate()">
           Télécharger modèle à remplir
         </button>
 
-        <button type="button" class="secondary-btn" (click)="openImportModal()">
+        <button type="button" class="import-btn" (click)="openImportModal()">
           Import en masse
         </button>
 
-        <button type="button" class="action-btn" (click)="openCreateModal()">
+        <button type="button" class="add-btn" (click)="openCreateModal()">
           Nouveau
         </button>
       </div>
@@ -189,7 +189,7 @@
         </div>
 
         <div class="filters-actions">
-          <button type="button" class="secondary-btn" (click)="resetFilters()">
+          <button type="button" class="reset-btn" (click)="resetFilters()">
             Réinitialiser
           </button>
         </div>
@@ -352,14 +352,14 @@
                 </td>
 
                 <td class="actions">
-                  <button type="button" class="table-btn" (click)="openEditModal(item)">
+                  <button type="button" class="table-btn edit-btn" (click)="openEditModal(item)">
                     Modifier
                   </button>
 
                   <button
                     *ngIf="canCreateReclamation()"
                     type="button"
-                    class="table-btn reclamation"
+                    class="table-btn reclamation add-btn"
                     [class.urgent]="getStockState(item) === 'EPUISE'"
                     [class.warning]="getStockState(item) === 'RISQUE'"
                     (click)="openReclamationModal(item)"
@@ -367,7 +367,7 @@
                     {{ getStockState(item) === 'NORMAL' ? 'Passer réclamation' : 'Réclamation stock' }}
                   </button>
 
-                  <button type="button" class="table-btn danger" (click)="deleteOutil(item)">
+                  <button type="button" class="table-btn delete-btn" (click)="deleteOutil(item)">
                     Supprimer
                   </button>
                 </td>
@@ -425,14 +425,14 @@
             </div>
 
             <div class="image-card-actions">
-              <button type="button" class="table-btn" (click)="openEditModal(item)">
+              <button type="button" class="table-btn edit-btn" (click)="openEditModal(item)">
                 Modifier
               </button>
 
               <button
                 *ngIf="canCreateReclamation()"
                 type="button"
-                class="table-btn reclamation"
+                class="table-btn reclamation add-btn"
                 [class.urgent]="getStockState(item) === 'EPUISE'"
                 [class.warning]="getStockState(item) === 'RISQUE'"
                 (click)="openReclamationModal(item)"
@@ -440,7 +440,7 @@
                 Réclamation
               </button>
 
-              <button type="button" class="table-btn danger" (click)="deleteOutil(item)">
+              <button type="button" class="table-btn delete-btn" (click)="deleteOutil(item)">
                 Supprimer
               </button>
             </div>
@@ -569,11 +569,11 @@
         </div>
 
         <div class="form-actions">
-          <button type="submit" class="action-btn">
+          <button type="submit" class="form-submit-btn" [class.save-btn]="isEditMode" [class.add-btn]="!isEditMode">
             {{ isEditMode ? 'Enregistrer' : 'Ajouter' }}
           </button>
 
-          <button type="button" class="secondary-btn" (click)="closeModal()">
+          <button type="button" class="cancel-btn" (click)="closeModal()">
             Annuler
           </button>
         </div>
@@ -644,11 +644,11 @@
       </div>
 
       <div class="form-actions">
-        <button type="button" class="action-btn" (click)="importOutils()">
+        <button type="button" class="import-btn" (click)="importOutils()">
           Importer
         </button>
 
-        <button type="button" class="secondary-btn" (click)="closeImportModal()">
+        <button type="button" class="cancel-btn" (click)="closeImportModal()">
           Annuler
         </button>
       </div>
@@ -728,11 +728,11 @@
         </div>
 
         <div class="form-actions">
-          <button type="submit" class="action-btn">
+          <button type="submit" class="save-btn">
             Envoyer réclamation
           </button>
 
-          <button type="button" class="secondary-btn" (click)="closeReclamationModal()">
+          <button type="button" class="cancel-btn" (click)="closeReclamationModal()">
             Annuler
           </button>
         </div>

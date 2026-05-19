@@ -86,11 +86,11 @@
         </div>
 
         <div class="filters-actions">
-          <button type="button" class="secondary-btn" (click)="resetFilters()">
+          <button type="button" class="reset-btn" (click)="resetFilters()">
             Réinitialiser
           </button>
 
-          <button type="button" class="secondary-btn" (click)="loadNotifications()">
+          <button type="button" class="refresh-btn" (click)="loadNotifications()">
             Actualiser
           </button>
         </div>
@@ -113,7 +113,7 @@
         <div class="list-actions">
           <button
             type="button"
-            class="secondary-btn"
+            class="mark-read-btn"
             (click)="markSelectedAsRead()"
             [disabled]="selectedIds.length === 0"
           >
@@ -122,7 +122,7 @@
 
           <button
             type="button"
-            class="secondary-btn danger-soft"
+            class="danger-soft delete-btn"
             (click)="deleteSelectedNotifications()"
             [disabled]="selectedIds.length === 0"
           >
@@ -202,7 +202,7 @@
           <div class="notification-actions">
             <button
               type="button"
-              class="secondary-btn small-btn mark-read-btn"
+              class="small-btn mark-read-btn"
               *ngIf="!item.isRead"
               (click)="markAsRead(item)"
             >
@@ -220,7 +220,7 @@
 
             <button
               type="button"
-              class="delete-btn small-btn"
+              class="small-btn delete-btn"
               (click)="deleteNotification(item)"
             >
               Supprimer

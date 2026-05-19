@@ -86,7 +86,7 @@
           <p>Consulte tes informations de compte. Clique sur modifier pour les mettre à jour.</p>
         </div>
 
-        <button type="button" class="action-btn edit-profile-btn" (click)="openPersonalInfoModal()">
+        <button type="button" class="edit-profile-btn edit-btn" (click)="openPersonalInfoModal()">
           Modifier
         </button>
       </div>
@@ -179,7 +179,7 @@
           <div class="photo-action-grid">
             <button
               type="button"
-              class="photo-action-btn view"
+              class="photo-action-btn view view-btn"
               (click)="openViewPhotoModal()"
             >
               <span class="photo-action-icon">
@@ -190,7 +190,7 @@
 
             <button
               type="button"
-              class="photo-action-btn edit"
+              class="photo-action-btn edit edit-btn"
               (click)="openPhotoChoiceModal()"
             >
               <span class="photo-action-icon">
@@ -201,7 +201,7 @@
 
             <button
               type="button"
-              class="photo-action-btn delete"
+              class="photo-action-btn delete delete-btn"
               (click)="deletePhoto()"
               [disabled]="isDeletingPhoto || !getProfilePhotoUrl()"
             >
@@ -283,7 +283,7 @@
 
           <button
             type="submit"
-            class="action-btn"
+            class="save-btn"
             [disabled]="isChangingPassword"
           >
             {{ isChangingPassword ? 'Modification...' : 'Changer mot de passe' }}
@@ -426,7 +426,7 @@
       <div class="form-actions modal-actions">
         <button
           type="button"
-          class="secondary-outline-btn"
+          class="secondary-outline-btn cancel-btn"
           (click)="closePersonalInfoModal()"
         >
           Annuler
@@ -434,7 +434,7 @@
 
         <button
           type="submit"
-          class="action-btn"
+          class="save-btn"
           [disabled]="isSavingProfile"
         >
           {{ isSavingProfile ? 'Enregistrement...' : 'Conserver' }}
@@ -466,7 +466,7 @@
       </div>
     </ng-template>
 
-    <button type="button" class="action-btn" (click)="closePhotoModal()">
+    <button type="button" class="cancel-btn" (click)="closePhotoModal()">
       Fermer
     </button>
   </div>
@@ -494,7 +494,7 @@
         <small>Utiliser la caméra de l’appareil</small>
       </button>
 
-      <button type="button" class="choice-btn" (click)="openFileSelector()">
+      <button type="button" class="choice-btn import-btn" (click)="openFileSelector()">
         <span class="choice-icon">
           <img src="/icons/profile/upload.png" alt="Importer une image" />
         </span>
@@ -524,11 +524,11 @@
     </div>
 
     <div class="form-actions split-actions">
-      <button type="button" class="secondary-outline-btn" (click)="cancelCameraModal()">
+      <button type="button" class="secondary-outline-btn cancel-btn" (click)="cancelCameraModal()">
         Annuler
       </button>
 
-      <button type="button" class="action-btn" (click)="capturePhoto()">
+      <button type="button" class="save-btn" (click)="capturePhoto()">
         Capturer
       </button>
     </div>
@@ -563,7 +563,7 @@
 
       <button
         type="button"
-        class="action-btn"
+        class="save-btn"
         (click)="confirmSelectedPhoto()"
         [disabled]="isUploadingPhoto"
       >
