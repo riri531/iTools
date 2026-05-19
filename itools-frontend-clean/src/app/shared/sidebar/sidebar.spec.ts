@@ -26,4 +26,3 @@ describe('SidebarComponent', () => {
     expect(component).toBeTruthy();
   });
 });
-//12345

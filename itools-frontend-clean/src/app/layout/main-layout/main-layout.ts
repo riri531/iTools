@@ -197,18 +197,21 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
     },
     {
       label: 'Assistance intelligente',
-      route: '/app/reclamations',
+      route: '/app/assistance',
       icon: '/icons/assistance-intelligente.png',
       keywords: [
         'assistance',
         'intelligente',
+        'aide',
+        'guide',
+        'chatbot',
+        'support',
         'réclamation',
         'reclamation',
         'reclamations',
         'réclamations',
         'message',
-        'messages',
-        'support'
+        'messages'
       ]
     },
     {
