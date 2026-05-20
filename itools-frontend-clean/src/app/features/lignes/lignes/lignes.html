@@ -1,5 +1,16 @@
 <div class="lignes-page">
   <section class="lignes-card page-header">
+    <div class="header-context-symbols" aria-hidden="true">
+      <span class="context-symbol symbol-grid"></span>
+      <span class="context-symbol symbol-tag"></span>
+      <span class="context-symbol symbol-image"></span>
+      <span class="context-orbit orbit-one"></span>
+      <span class="context-orbit orbit-two"></span>
+      <span class="context-dot dot-one"></span>
+      <span class="context-dot dot-two"></span>
+      <span class="context-dot dot-three"></span>
+    </div>
+
     <div class="card-inner header-inner">
       <div>
         <span class="section-kicker">Référentiel</span>
@@ -236,12 +247,12 @@
                   </button>
 
                   <button
-                    *ngIf="canCreateReclamation()"
+                    *ngIf="canDownloadLigneCard()"
                     type="button"
-                    class="table-btn reclamation add-btn"
-                    (click)="openReclamationModal(item)"
+                    class="table-btn identity-card-btn"
+                    (click)="downloadLigneCard(item)"
                   >
-                    Passer réclamation
+                    Fiche PDF
                   </button>
 
                   <button type="button" class="table-btn delete-btn" (click)="deleteLigne(item)">
@@ -286,12 +297,12 @@
               </button>
 
               <button
-                *ngIf="canCreateReclamation()"
+                *ngIf="canDownloadLigneCard()"
                 type="button"
-                class="table-btn reclamation add-btn"
-                (click)="openReclamationModal(item)"
+                class="table-btn identity-card-btn"
+                (click)="downloadLigneCard(item)"
               >
-                Réclamation
+                Fiche PDF
               </button>
 
               <button type="button" class="table-btn delete-btn" (click)="deleteLigne(item)">
@@ -321,7 +332,7 @@
           </h2>
 
           <p class="it-modal-subtitle">
-            Complète les informations puis valide l’enregistrement.
+            Complète les informations, ajoute une photo si disponible, puis valide l’enregistrement.
           </p>
         </div>
 
@@ -371,9 +382,60 @@
           />
         </div>
 
+        <div class="form-group image-upload-group">
+          <label>Photo associée à la ligne</label>
+
+          <div class="image-upload-box">
+            <div class="image-upload-preview">
+              <img
+                *ngIf="form.imagePreview || form.imageUrl; else noSelectedImage"
+                [src]="form.imagePreview || form.imageUrl"
+                alt="Aperçu photo ligne"
+              />
+
+              <ng-template #noSelectedImage>
+                <div class="image-upload-empty">
+                  <span>{{ form.nom ? form.nom.charAt(0).toUpperCase() : 'L' }}</span>
+                  <small>Aucune photo</small>
+                </div>
+              </ng-template>
+            </div>
+
+            <div class="image-upload-content">
+              <strong>Image de la ligne</strong>
+              <p>
+                Ajoute une photo pour identifier visuellement cette ligne dans la liste,
+                la vue images et la fiche PDF.
+              </p>
+
+              <input
+                #ligneImageInput
+                type="file"
+                accept="image/*"
+                hidden
+                (change)="onImageSelected($event)"
+              />
+
+              <div class="image-upload-actions">
+                <button type="button" class="import-btn" (click)="ligneImageInput.click()">
+                  Choisir une photo
+                </button>
+
+                <button
+                  type="button"
+                  class="delete-btn"
+                  *ngIf="form.imagePreview || form.imageUrl"
+                  (click)="removeSelectedImage()"
+                >
+                  Retirer photo
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="form-note">
-          L’image pourra être ajoutée plus tard. Si le backend n’a pas encore les champs
-          nomenclature et date de création, il faudra aussi les ajouter côté API pour les sauvegarder.
+          La photo sera sauvegardée avec la ligne. Elle apparaîtra dans la liste, la vue images et la fiche PDF.
         </div>
 
         <div class="form-actions">

@@ -23,18 +23,8 @@ interface DesignationItem {
   createdOn?: string | null;
   createdDate?: string | null;
   dateCreation?: string | null;
-}
 
-interface CreateDesignationRequest {
-  name: string;
-  type: string;
-  createdAt: string;
-}
-
-interface UpdateDesignationRequest {
-  name: string;
-  type: string;
-  createdAt: string;
+  updatedAt?: string | null;
 }
 
 interface ImportedDesignationRow {
@@ -142,7 +132,11 @@ export class DesignationsComponent implements OnInit {
     id: 0,
     name: '',
     type: '',
-    createdAt: ''
+    createdAt: '',
+    imageUrl: '',
+    imagePreview: '',
+    imageFile: null as File | null,
+    removeImage: false
   };
 
   isEditMode = false;
@@ -158,8 +152,13 @@ export class DesignationsComponent implements OnInit {
   }
 
   canCreateReclamation(): boolean {
-    const role = this.authService.getRole();
-    return role === 'EMPLOYE' || role === 'RESPONSABLE';
+    const role = String(this.authService.getRole() || '').toUpperCase();
+    return role === 'EMPLOYE' || role === 'EMPLOYÉ' || role === 'RESPONSABLE';
+  }
+
+  canDownloadDesignationCard(): boolean {
+    const role = String(this.authService.getRole() || '').toUpperCase();
+    return role === 'ADMIN' || role === 'RESPONSABLE';
   }
 
   loadDesignations(): void {
@@ -245,7 +244,11 @@ export class DesignationsComponent implements OnInit {
       id: item.id,
       name: item.name,
       type: this.getDesignationType(item),
-      createdAt: this.toDateInputValue(this.getCreationDateValue(item))
+      createdAt: this.toDateInputValue(this.getCreationDateValue(item)),
+      imageUrl: this.getDesignationImageUrl(item),
+      imagePreview: '',
+      imageFile: null,
+      removeImage: false
     };
 
     this.isEditMode = true;
@@ -278,14 +281,10 @@ export class DesignationsComponent implements OnInit {
       return;
     }
 
-    const payload: CreateDesignationRequest | UpdateDesignationRequest = {
-      name: this.form.name.trim(),
-      type: this.form.type.trim(),
-      createdAt: this.form.createdAt
-    };
+    const formData = this.buildDesignationFormData();
 
     if (this.isEditMode) {
-      this.http.put<void>(`${this.apiUrl}/${this.form.id}`, payload, {
+      this.http.put<void>(`${this.apiUrl}/${this.form.id}`, formData, {
         headers: this.getAuthHeaders()
       }).subscribe({
         next: () => {
@@ -303,7 +302,7 @@ export class DesignationsComponent implements OnInit {
         }
       });
     } else {
-      this.http.post<DesignationItem>(this.apiUrl, payload, {
+      this.http.post<DesignationItem>(this.apiUrl, formData, {
         headers: this.getAuthHeaders()
       }).subscribe({
         next: () => {
@@ -321,6 +320,48 @@ export class DesignationsComponent implements OnInit {
         }
       });
     }
+  }
+
+  onImageSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    if (!file.type.startsWith('image/')) {
+      this.showError('Veuillez sélectionner un fichier image valide.');
+      return;
+    }
+
+    const maxSizeInMb = 5;
+    const maxSizeInBytes = maxSizeInMb * 1024 * 1024;
+
+    if (file.size > maxSizeInBytes) {
+      this.showError(`La taille de l’image ne doit pas dépasser ${maxSizeInMb} Mo.`);
+      return;
+    }
+
+    this.form.imageFile = file;
+    this.form.removeImage = false;
+
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      this.form.imagePreview = String(reader.result || '');
+      this.cdr.detectChanges();
+    };
+
+    reader.readAsDataURL(file);
+  }
+
+  removeSelectedImage(): void {
+    this.form.imageFile = null;
+    this.form.imagePreview = '';
+    this.form.imageUrl = '';
+    this.form.removeImage = true;
+    this.cdr.detectChanges();
   }
 
   deleteDesignation(item: DesignationItem): void {
@@ -356,7 +397,11 @@ export class DesignationsComponent implements OnInit {
       id: 0,
       name: '',
       type: '',
-      createdAt: ''
+      createdAt: '',
+      imageUrl: '',
+      imagePreview: '',
+      imageFile: null,
+      removeImage: false
     };
 
     this.isEditMode = false;
@@ -552,6 +597,7 @@ export class DesignationsComponent implements OnInit {
       name: item.name,
       type: this.getDesignationType(item),
       createdAt: this.formatCreationDate(item),
+      updatedAt: item.updatedAt || '',
       imageUrl: this.getDesignationImageUrl(item)
     }));
 
@@ -560,6 +606,7 @@ export class DesignationsComponent implements OnInit {
     worksheet['!cols'] = [
       { wch: 10 },
       { wch: 40 },
+      { wch: 24 },
       { wch: 24 },
       { wch: 24 },
       { wch: 48 }
@@ -578,6 +625,26 @@ export class DesignationsComponent implements OnInit {
     });
 
     saveAs(fileData, 'designations_export.xlsx');
+  }
+
+  downloadDesignationCard(item: DesignationItem): void {
+    if (!this.canDownloadDesignationCard()) {
+      this.showError("Vous n'avez pas le droit de télécharger la fiche PDF.");
+      return;
+    }
+
+    this.http.get(`${this.apiUrl}/${item.id}/identity-card`, {
+      headers: this.getAuthHeaders(),
+      responseType: 'blob'
+    }).subscribe({
+      next: (blob) => {
+        saveAs(blob, `fiche_designation_${item.id}_${this.safeFileName(item.name)}.pdf`);
+      },
+      error: (err: any) => {
+        console.error('Erreur téléchargement fiche désignation :', err);
+        this.showError(this.extractBackendError(err, 'Erreur lors du téléchargement de la fiche PDF.'));
+      }
+    });
   }
 
   openReclamationModal(item: DesignationItem): void {
@@ -758,6 +825,21 @@ export class DesignationsComponent implements OnInit {
     });
   }
 
+  private buildDesignationFormData(): FormData {
+    const formData = new FormData();
+
+    formData.append('Name', this.form.name.trim());
+    formData.append('Type', this.form.type.trim());
+    formData.append('CreatedAt', this.form.createdAt);
+    formData.append('RemoveImage', String(this.form.removeImage));
+
+    if (this.form.imageFile) {
+      formData.append('Image', this.form.imageFile);
+    }
+
+    return formData;
+  }
+
   private sortDesignations(items: DesignationItem[]): DesignationItem[] {
     return [...items].sort((a, b) => {
       let comparison = 0;
@@ -801,13 +883,14 @@ export class DesignationsComponent implements OnInit {
     const backendErrors: string[] = [];
 
     designations.forEach((designation, index) => {
-      const payload: CreateDesignationRequest = {
-        name: designation.name,
-        type: designation.type?.trim() || this.inferTypeFromName(designation.name),
-        createdAt: designation.createdAt?.trim() || this.getTodayForInput()
-      };
+      const formData = new FormData();
 
-      this.http.post<DesignationItem>(this.apiUrl, payload, {
+      formData.append('Name', designation.name);
+      formData.append('Type', designation.type?.trim() || this.inferTypeFromName(designation.name));
+      formData.append('CreatedAt', designation.createdAt?.trim() || this.getTodayForInput());
+      formData.append('RemoveImage', 'false');
+
+      this.http.post<DesignationItem>(this.apiUrl, formData, {
         headers: this.getAuthHeaders()
       }).subscribe({
         next: () => {
@@ -996,6 +1079,12 @@ export class DesignationsComponent implements OnInit {
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
       .trim();
+  }
+
+  private safeFileName(value: string): string {
+    return this.normalizeText(value)
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/^_+|_+$/g, '') || 'designation';
   }
 
   private extractBackendError(err: any, fallback: string): string {

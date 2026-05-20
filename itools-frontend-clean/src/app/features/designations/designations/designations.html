@@ -1,5 +1,16 @@
 <div class="designations-page">
   <section class="designations-card page-header">
+    <div class="header-context-symbols" aria-hidden="true">
+      <span class="context-symbol symbol-grid"></span>
+      <span class="context-symbol symbol-tag"></span>
+      <span class="context-symbol symbol-image"></span>
+      <span class="context-orbit orbit-one"></span>
+      <span class="context-orbit orbit-two"></span>
+      <span class="context-dot dot-one"></span>
+      <span class="context-dot dot-two"></span>
+      <span class="context-dot dot-three"></span>
+    </div>
+
     <div class="card-inner header-inner">
       <div>
         <span class="section-kicker">Référentiel</span>
@@ -236,6 +247,15 @@
                   </button>
 
                   <button
+                    *ngIf="canDownloadDesignationCard()"
+                    type="button"
+                    class="table-btn identity-card-btn"
+                    (click)="downloadDesignationCard(item)"
+                  >
+                    Fiche PDF
+                  </button>
+
+                  <button
                     *ngIf="canCreateReclamation()"
                     type="button"
                     class="table-btn reclamation add-btn"
@@ -286,6 +306,15 @@
               </button>
 
               <button
+                *ngIf="canDownloadDesignationCard()"
+                type="button"
+                class="table-btn identity-card-btn"
+                (click)="downloadDesignationCard(item)"
+              >
+                Fiche PDF
+              </button>
+
+              <button
                 *ngIf="canCreateReclamation()"
                 type="button"
                 class="table-btn reclamation add-btn"
@@ -321,7 +350,7 @@
           </h2>
 
           <p class="it-modal-subtitle">
-            Complète les informations puis valide l’enregistrement.
+            Complète les informations, ajoute une photo si disponible, puis valide l’enregistrement.
           </p>
         </div>
 
@@ -371,9 +400,60 @@
           />
         </div>
 
+        <div class="form-group image-upload-group">
+          <label>Photo associée à la désignation</label>
+
+          <div class="image-upload-box">
+            <div class="image-upload-preview">
+              <img
+                *ngIf="form.imagePreview || form.imageUrl; else noSelectedImage"
+                [src]="form.imagePreview || form.imageUrl"
+                alt="Aperçu photo désignation"
+              />
+
+              <ng-template #noSelectedImage>
+                <div class="image-upload-empty">
+                  <span>{{ form.name ? form.name.charAt(0).toUpperCase() : 'D' }}</span>
+                  <small>Aucune photo</small>
+                </div>
+              </ng-template>
+            </div>
+
+            <div class="image-upload-content">
+              <strong>Image de la désignation</strong>
+              <p>
+                Ajoute une photo pour identifier visuellement cette désignation dans la liste,
+                la vue images et la fiche PDF.
+              </p>
+
+              <input
+                #designationImageInput
+                type="file"
+                accept="image/*"
+                hidden
+                (change)="onImageSelected($event)"
+              />
+
+              <div class="image-upload-actions">
+                <button type="button" class="import-btn" (click)="designationImageInput.click()">
+                  Choisir une photo
+                </button>
+
+                <button
+                  type="button"
+                  class="delete-btn"
+                  *ngIf="form.imagePreview || form.imageUrl"
+                  (click)="removeSelectedImage()"
+                >
+                  Retirer photo
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="form-note">
-          Le type et la date de création sont maintenant saisis lors de l’ajout.
-          Si le backend n’a pas encore ces champs, il faut aussi les ajouter côté API pour les sauvegarder définitivement.
+          La photo sera sauvegardée avec la désignation. Elle apparaîtra aussi dans la fiche PDF de l’élément.
         </div>
 
         <div class="form-actions">

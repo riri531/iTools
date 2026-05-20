@@ -23,18 +23,8 @@ interface LigneItem {
   createdOn?: string | null;
   createdDate?: string | null;
   dateCreation?: string | null;
-}
 
-interface CreateLigneRequest {
-  nom: string;
-  nomenclature: string;
-  createdAt: string;
-}
-
-interface UpdateLigneRequest {
-  nom: string;
-  nomenclature: string;
-  createdAt: string;
+  updatedAt?: string | null;
 }
 
 interface ImportedLigneRow {
@@ -145,7 +135,11 @@ export class LignesComponent implements OnInit {
     id: 0,
     nom: '',
     nomenclature: '',
-    createdAt: ''
+    createdAt: '',
+    imageUrl: '',
+    imagePreview: '',
+    imageFile: null as File | null,
+    removeImage: false
   };
 
   isEditMode = false;
@@ -161,8 +155,13 @@ export class LignesComponent implements OnInit {
   }
 
   canCreateReclamation(): boolean {
-    const role = this.authService.getRole();
-    return role === 'EMPLOYE' || role === 'RESPONSABLE';
+    const role = String(this.authService.getRole() || '').toUpperCase();
+    return role === 'EMPLOYE' || role === 'EMPLOYÉ' || role === 'RESPONSABLE';
+  }
+
+  canDownloadLigneCard(): boolean {
+    const role = String(this.authService.getRole() || '').toUpperCase();
+    return role === 'ADMIN' || role === 'RESPONSABLE';
   }
 
   loadLignes(): void {
@@ -248,7 +247,11 @@ export class LignesComponent implements OnInit {
       id: item.id,
       nom: item.nom,
       nomenclature: this.getLigneNomenclature(item),
-      createdAt: this.toDateInputValue(this.getCreationDateValue(item))
+      createdAt: this.toDateInputValue(this.getCreationDateValue(item)),
+      imageUrl: this.getLigneImageUrl(item),
+      imagePreview: '',
+      imageFile: null,
+      removeImage: false
     };
 
     this.isEditMode = true;
@@ -281,14 +284,10 @@ export class LignesComponent implements OnInit {
       return;
     }
 
-    const payload: CreateLigneRequest | UpdateLigneRequest = {
-      nom: this.form.nom.trim(),
-      nomenclature: this.form.nomenclature.trim(),
-      createdAt: this.form.createdAt
-    };
+    const formData = this.buildLigneFormData();
 
     if (this.isEditMode) {
-      this.http.put<void>(`${this.apiUrl}/${this.form.id}`, payload, {
+      this.http.put<void>(`${this.apiUrl}/${this.form.id}`, formData, {
         headers: this.getAuthHeaders()
       }).subscribe({
         next: () => {
@@ -306,7 +305,7 @@ export class LignesComponent implements OnInit {
         }
       });
     } else {
-      this.http.post<LigneItem>(this.apiUrl, payload, {
+      this.http.post<LigneItem>(this.apiUrl, formData, {
         headers: this.getAuthHeaders()
       }).subscribe({
         next: () => {
@@ -324,6 +323,48 @@ export class LignesComponent implements OnInit {
         }
       });
     }
+  }
+
+  onImageSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    if (!file.type.startsWith('image/')) {
+      this.showError('Veuillez sélectionner un fichier image valide.');
+      return;
+    }
+
+    const maxSizeInMb = 5;
+    const maxSizeInBytes = maxSizeInMb * 1024 * 1024;
+
+    if (file.size > maxSizeInBytes) {
+      this.showError(`La taille de l’image ne doit pas dépasser ${maxSizeInMb} Mo.`);
+      return;
+    }
+
+    this.form.imageFile = file;
+    this.form.removeImage = false;
+
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      this.form.imagePreview = String(reader.result || '');
+      this.cdr.detectChanges();
+    };
+
+    reader.readAsDataURL(file);
+  }
+
+  removeSelectedImage(): void {
+    this.form.imageFile = null;
+    this.form.imagePreview = '';
+    this.form.imageUrl = '';
+    this.form.removeImage = true;
+    this.cdr.detectChanges();
   }
 
   deleteLigne(item: LigneItem): void {
@@ -359,7 +400,11 @@ export class LignesComponent implements OnInit {
       id: 0,
       nom: '',
       nomenclature: '',
-      createdAt: ''
+      createdAt: '',
+      imageUrl: '',
+      imagePreview: '',
+      imageFile: null,
+      removeImage: false
     };
 
     this.isEditMode = false;
@@ -547,6 +592,7 @@ export class LignesComponent implements OnInit {
       nom: item.nom,
       nomenclature: this.getLigneNomenclature(item),
       createdAt: this.formatCreationDate(item),
+      updatedAt: item.updatedAt || '',
       imageUrl: this.getLigneImageUrl(item)
     }));
 
@@ -555,6 +601,7 @@ export class LignesComponent implements OnInit {
     worksheet['!cols'] = [
       { wch: 10 },
       { wch: 30 },
+      { wch: 24 },
       { wch: 24 },
       { wch: 24 },
       { wch: 48 }
@@ -573,6 +620,26 @@ export class LignesComponent implements OnInit {
     });
 
     saveAs(fileData, 'lignes_export.xlsx');
+  }
+
+  downloadLigneCard(item: LigneItem): void {
+    if (!this.canDownloadLigneCard()) {
+      this.showError("Vous n'avez pas le droit de télécharger la fiche PDF.");
+      return;
+    }
+
+    this.http.get(`${this.apiUrl}/${item.id}/identity-card`, {
+      headers: this.getAuthHeaders(),
+      responseType: 'blob'
+    }).subscribe({
+      next: (blob) => {
+        saveAs(blob, `fiche_ligne_${item.id}_${this.safeFileName(item.nom)}.pdf`);
+      },
+      error: (err: any) => {
+        console.error('Erreur téléchargement fiche ligne :', err);
+        this.showError(this.extractBackendError(err, 'Erreur lors du téléchargement de la fiche PDF.'));
+      }
+    });
   }
 
   openReclamationModal(item: LigneItem): void {
@@ -753,6 +820,21 @@ export class LignesComponent implements OnInit {
     });
   }
 
+  private buildLigneFormData(): FormData {
+    const formData = new FormData();
+
+    formData.append('Nom', this.form.nom.trim());
+    formData.append('Nomenclature', this.form.nomenclature.trim());
+    formData.append('CreatedAt', this.form.createdAt);
+    formData.append('RemoveImage', String(this.form.removeImage));
+
+    if (this.form.imageFile) {
+      formData.append('Image', this.form.imageFile);
+    }
+
+    return formData;
+  }
+
   private sortLignes(items: LigneItem[]): LigneItem[] {
     return [...items].sort((a, b) => {
       let comparison = 0;
@@ -796,13 +878,14 @@ export class LignesComponent implements OnInit {
     const backendErrors: string[] = [];
 
     lignes.forEach((ligne, index) => {
-      const payload: CreateLigneRequest = {
-        nom: ligne.nom,
-        nomenclature: ligne.nomenclature?.trim() || this.inferNomenclatureFromName(ligne.nom),
-        createdAt: ligne.createdAt?.trim() || this.getTodayForInput()
-      };
+      const formData = new FormData();
 
-      this.http.post<LigneItem>(this.apiUrl, payload, {
+      formData.append('Nom', ligne.nom);
+      formData.append('Nomenclature', ligne.nomenclature?.trim() || this.inferNomenclatureFromName(ligne.nom));
+      formData.append('CreatedAt', ligne.createdAt?.trim() || this.getTodayForInput());
+      formData.append('RemoveImage', 'false');
+
+      this.http.post<LigneItem>(this.apiUrl, formData, {
         headers: this.getAuthHeaders()
       }).subscribe({
         next: () => {
@@ -975,6 +1058,12 @@ export class LignesComponent implements OnInit {
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
       .trim();
+  }
+
+  private safeFileName(value: string): string {
+    return this.normalizeText(value)
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/^_+|_+$/g, '') || 'ligne';
   }
 
   private extractBackendError(err: any, fallback: string): string {

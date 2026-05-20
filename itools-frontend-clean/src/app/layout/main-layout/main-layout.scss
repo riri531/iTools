@@ -12,6 +12,11 @@
   --red-dark: #980000;
   --red-deep: #720000;
 
+  --sidebar-width: 236px;
+  --layout-gap: 18px;
+  --topbar-height: 76px;
+  --topbar-top: 14px;
+
   --sidebar-grad-1: #ff2b2b;
   --sidebar-grad-2: #df0000;
   --sidebar-grad-3: #b30000;
@@ -43,25 +48,26 @@
 
 .app-shell {
   min-height: 100vh;
-  display: flex;
-  align-items: stretch;
+  width: 100%;
+  display: block;
   background: var(--page-bg);
   overflow-x: hidden;
 }
 
 /* =========================================================
-   SIDEBAR
+   SIDEBAR FIXE
    ========================================================= */
 
 .sidebar {
-  width: 236px;
-  min-width: 236px;
+  width: var(--sidebar-width);
+  min-width: var(--sidebar-width);
   height: 100vh;
   max-height: 100vh;
 
-  position: sticky;
+  position: fixed;
   top: 0;
-  z-index: 30;
+  left: 0;
+  z-index: 1000;
 
   display: flex;
   flex-direction: column;
@@ -274,27 +280,18 @@
   z-index: 2;
 }
 
-/* Courbure inversée supérieure */
 .nav-link.active::before {
   top: -34px;
-
   border-bottom-right-radius: 34px;
   box-shadow: 13px 13px 0 11px var(--page-bg);
 }
 
-/* Courbure inversée inférieure */
 .nav-link.active::after {
   bottom: -34px;
-
   border-top-right-radius: 34px;
   box-shadow: 13px -13px 0 11px var(--page-bg);
 }
 
-/*
-  Lobe organique intérieur.
-  Il donne une impression de goutte/page qui entre dans le sidebar,
-  sans transformer le côté droit en pilule.
-*/
 .nav-link.active .nav-label::after {
   content: '';
   position: absolute;
@@ -461,11 +458,11 @@
    ========================================================= */
 
 .main-shell {
-  flex: 1;
+  min-height: 100vh;
   min-width: 0;
 
-  padding: 14px 18px 18px 18px;
-  margin-left: -4px;
+  margin-left: calc(var(--sidebar-width) - 4px);
+  padding: var(--topbar-top) 18px 18px 18px;
 
   overflow-x: hidden;
 
@@ -475,12 +472,18 @@
 }
 
 /* =========================================================
-   TOPBAR
+   TOPBAR FIXE
    ========================================================= */
 
 .topbar {
-  height: 76px;
-  margin-bottom: 18px;
+  height: var(--topbar-height);
+
+  position: fixed;
+  top: var(--topbar-top);
+  left: calc(var(--sidebar-width) + var(--layout-gap));
+  right: 18px;
+  z-index: 900;
+
   padding: 0 22px;
 
   display: grid;
@@ -768,10 +771,18 @@
   display: flex;
   flex-direction: column;
   gap: 18px;
-  padding: 0;
+
+  padding: calc(var(--topbar-height) + 18px) 0 0 0;
+
   min-width: 0;
   max-width: 100%;
   overflow-x: hidden;
+}
+
+router-outlet + * {
+  display: block;
+  width: 100%;
+  max-width: 100%;
 }
 
 /* =========================================================
@@ -904,6 +915,12 @@
    ========================================================= */
 
 @media (max-width: 1150px) {
+  :host {
+    --sidebar-width: 100%;
+    --topbar-height: auto;
+    --topbar-top: 0;
+  }
+
   .app-shell {
     display: block;
   }
@@ -962,14 +979,25 @@
   }
 
   .main-shell {
-    padding: 14px 16px 16px;
     margin-left: 0;
+    padding: 14px 16px 16px;
   }
 
   .topbar {
     height: auto;
+    position: sticky;
+    top: 0;
+    left: auto;
+    right: auto;
+    z-index: 900;
+
     grid-template-columns: 1fr;
     padding: 18px;
+    margin-bottom: 18px;
+  }
+
+  .page-content {
+    padding-top: 0;
   }
 
   .search-box {

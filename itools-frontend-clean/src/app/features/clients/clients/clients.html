@@ -1,5 +1,16 @@
 <div class="clients-page">
   <section class="clients-card page-header">
+    <div class="header-context-symbols" aria-hidden="true">
+      <span class="context-symbol symbol-client"></span>
+      <span class="context-symbol symbol-family"></span>
+      <span class="context-symbol symbol-reference"></span>
+      <span class="context-orbit orbit-one"></span>
+      <span class="context-orbit orbit-two"></span>
+      <span class="context-dot dot-one"></span>
+      <span class="context-dot dot-two"></span>
+      <span class="context-dot dot-three"></span>
+    </div>
+
     <div class="card-inner header-inner">
       <div>
         <span class="section-kicker">Référentiel</span>
@@ -243,6 +254,15 @@
                   </button>
 
                   <button
+                    *ngIf="canDownloadClientCard()"
+                    type="button"
+                    class="table-btn identity-card-btn"
+                    (click)="downloadClientCard(item)"
+                  >
+                    Fiche PDF
+                  </button>
+
+                  <button
                     *ngIf="canCreateReclamation()"
                     type="button"
                     class="table-btn reclamation add-btn"
@@ -294,6 +314,15 @@
               </button>
 
               <button
+                *ngIf="canDownloadClientCard()"
+                type="button"
+                class="table-btn identity-card-btn"
+                (click)="downloadClientCard(item)"
+              >
+                Fiche PDF
+              </button>
+
+              <button
                 *ngIf="canCreateReclamation()"
                 type="button"
                 class="table-btn reclamation add-btn"
@@ -329,7 +358,7 @@
           </h2>
 
           <p class="it-modal-subtitle">
-            Complète les informations puis valide l’enregistrement.
+            Complète les informations, ajoute une photo si disponible, puis valide l’enregistrement.
           </p>
         </div>
 
@@ -386,9 +415,60 @@
           />
         </div>
 
+        <div class="form-group image-upload-group">
+          <label>Photo associée au client</label>
+
+          <div class="image-upload-box">
+            <div class="image-upload-preview">
+              <img
+                *ngIf="form.imagePreview || form.imageUrl; else noSelectedImage"
+                [src]="form.imagePreview || form.imageUrl"
+                alt="Aperçu photo client"
+              />
+
+              <ng-template #noSelectedImage>
+                <div class="image-upload-empty">
+                  <span>{{ form.nomClient ? form.nomClient.charAt(0).toUpperCase() : 'C' }}</span>
+                  <small>Aucune photo</small>
+                </div>
+              </ng-template>
+            </div>
+
+            <div class="image-upload-content">
+              <strong>Image du client</strong>
+              <p>
+                Ajoute une photo ou un logo pour identifier visuellement ce client dans la liste,
+                la vue images et la fiche PDF.
+              </p>
+
+              <input
+                #clientImageInput
+                type="file"
+                accept="image/*"
+                hidden
+                (change)="onImageSelected($event)"
+              />
+
+              <div class="image-upload-actions">
+                <button type="button" class="import-btn" (click)="clientImageInput.click()">
+                  Choisir une photo
+                </button>
+
+                <button
+                  type="button"
+                  class="delete-btn"
+                  *ngIf="form.imagePreview || form.imageUrl"
+                  (click)="removeSelectedImage()"
+                >
+                  Retirer photo
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="form-note">
-          La photo du client pourra être importée plus tard. Si le backend ne sauvegarde pas encore
-          la date de création ou l’image, il faudra aussi ajouter ces champs côté API.
+          La photo sera sauvegardée avec le client. Elle apparaîtra aussi dans la fiche PDF de l’élément.
         </div>
 
         <div class="form-actions">

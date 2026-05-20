@@ -21,20 +21,8 @@ interface ClientItem {
   createdOn?: string | null;
   createdDate?: string | null;
   dateCreation?: string | null;
-}
 
-interface CreateClientRequest {
-  nomClient: string;
-  nomFamille: string;
-  nomReference: string;
-  createdAt: string;
-}
-
-interface UpdateClientRequest {
-  nomClient: string;
-  nomFamille: string;
-  nomReference: string;
-  createdAt: string;
+  updatedAt?: string | null;
 }
 
 interface ImportedClientRow {
@@ -130,7 +118,11 @@ export class ClientsComponent implements OnInit {
     nomClient: '',
     nomFamille: '',
     nomReference: '',
-    createdAt: ''
+    createdAt: '',
+    imageUrl: '',
+    imagePreview: '',
+    imageFile: null as File | null,
+    removeImage: false
   };
 
   isEditMode = false;
@@ -146,8 +138,13 @@ export class ClientsComponent implements OnInit {
   }
 
   canCreateReclamation(): boolean {
-    const role = this.authService.getRole();
-    return role === 'EMPLOYE' || role === 'RESPONSABLE';
+    const role = String(this.authService.getRole() || '').toUpperCase();
+    return role === 'EMPLOYE' || role === 'EMPLOYÉ' || role === 'RESPONSABLE';
+  }
+
+  canDownloadClientCard(): boolean {
+    const role = String(this.authService.getRole() || '').toUpperCase();
+    return role === 'ADMIN' || role === 'RESPONSABLE';
   }
 
   loadClients(): void {
@@ -236,7 +233,11 @@ export class ClientsComponent implements OnInit {
       nomClient: item.nomClient,
       nomFamille: item.nomFamille,
       nomReference: item.nomReference,
-      createdAt: this.toDateInputValue(this.getCreationDateValue(item))
+      createdAt: this.toDateInputValue(this.getCreationDateValue(item)),
+      imageUrl: this.getClientImageUrl(item),
+      imagePreview: '',
+      imageFile: null,
+      removeImage: false
     };
 
     this.isEditMode = true;
@@ -274,15 +275,10 @@ export class ClientsComponent implements OnInit {
       return;
     }
 
-    const payload: CreateClientRequest | UpdateClientRequest = {
-      nomClient: this.form.nomClient.trim(),
-      nomFamille: this.form.nomFamille.trim(),
-      nomReference: this.form.nomReference.trim(),
-      createdAt: this.form.createdAt
-    };
+    const formData = this.buildClientFormData();
 
     if (this.isEditMode) {
-      this.http.put<void>(`${this.apiUrl}/${this.form.id}`, payload, {
+      this.http.put<void>(`${this.apiUrl}/${this.form.id}`, formData, {
         headers: this.getAuthHeaders()
       }).subscribe({
         next: () => {
@@ -300,7 +296,7 @@ export class ClientsComponent implements OnInit {
         }
       });
     } else {
-      this.http.post<ClientItem>(this.apiUrl, payload, {
+      this.http.post<ClientItem>(this.apiUrl, formData, {
         headers: this.getAuthHeaders()
       }).subscribe({
         next: () => {
@@ -318,6 +314,48 @@ export class ClientsComponent implements OnInit {
         }
       });
     }
+  }
+
+  onImageSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    if (!file.type.startsWith('image/')) {
+      this.showError('Veuillez sélectionner un fichier image valide.');
+      return;
+    }
+
+    const maxSizeInMb = 5;
+    const maxSizeInBytes = maxSizeInMb * 1024 * 1024;
+
+    if (file.size > maxSizeInBytes) {
+      this.showError(`La taille de l’image ne doit pas dépasser ${maxSizeInMb} Mo.`);
+      return;
+    }
+
+    this.form.imageFile = file;
+    this.form.removeImage = false;
+
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      this.form.imagePreview = String(reader.result || '');
+      this.cdr.detectChanges();
+    };
+
+    reader.readAsDataURL(file);
+  }
+
+  removeSelectedImage(): void {
+    this.form.imageFile = null;
+    this.form.imagePreview = '';
+    this.form.imageUrl = '';
+    this.form.removeImage = true;
+    this.cdr.detectChanges();
   }
 
   deleteClient(item: ClientItem): void {
@@ -354,7 +392,11 @@ export class ClientsComponent implements OnInit {
       nomClient: '',
       nomFamille: '',
       nomReference: '',
-      createdAt: ''
+      createdAt: '',
+      imageUrl: '',
+      imagePreview: '',
+      imageFile: null,
+      removeImage: false
     };
 
     this.isEditMode = false;
@@ -566,6 +608,7 @@ export class ClientsComponent implements OnInit {
       nomFamille: item.nomFamille,
       nomReference: item.nomReference,
       createdAt: this.formatCreationDate(item),
+      updatedAt: item.updatedAt || '',
       imageUrl: this.getClientImageUrl(item)
     }));
 
@@ -576,6 +619,7 @@ export class ClientsComponent implements OnInit {
       { wch: 30 },
       { wch: 30 },
       { wch: 30 },
+      { wch: 24 },
       { wch: 24 },
       { wch: 48 }
     ];
@@ -593,6 +637,26 @@ export class ClientsComponent implements OnInit {
     });
 
     saveAs(fileData, 'clients_export.xlsx');
+  }
+
+  downloadClientCard(item: ClientItem): void {
+    if (!this.canDownloadClientCard()) {
+      this.showError("Vous n'avez pas le droit de télécharger la fiche PDF.");
+      return;
+    }
+
+    this.http.get(`${this.apiUrl}/${item.id}/identity-card`, {
+      headers: this.getAuthHeaders(),
+      responseType: 'blob'
+    }).subscribe({
+      next: (blob) => {
+        saveAs(blob, `fiche_client_${item.id}_${this.safeFileName(item.nomClient)}.pdf`);
+      },
+      error: (err: any) => {
+        console.error('Erreur téléchargement fiche client :', err);
+        this.showError(this.extractBackendError(err, 'Erreur lors du téléchargement de la fiche PDF.'));
+      }
+    });
   }
 
   openReclamationModal(item: ClientItem): void {
@@ -765,6 +829,22 @@ export class ClientsComponent implements OnInit {
     });
   }
 
+  private buildClientFormData(): FormData {
+    const formData = new FormData();
+
+    formData.append('NomClient', this.form.nomClient.trim());
+    formData.append('NomFamille', this.form.nomFamille.trim());
+    formData.append('NomReference', this.form.nomReference.trim());
+    formData.append('CreatedAt', this.form.createdAt);
+    formData.append('RemoveImage', String(this.form.removeImage));
+
+    if (this.form.imageFile) {
+      formData.append('Image', this.form.imageFile);
+    }
+
+    return formData;
+  }
+
   private sortClients(items: ClientItem[]): ClientItem[] {
     return [...items].sort((a, b) => {
       let comparison = 0;
@@ -808,14 +888,16 @@ export class ClientsComponent implements OnInit {
     const backendErrors: string[] = [];
 
     clients.forEach((client, index) => {
-      const payload: CreateClientRequest = {
-        nomClient: client.nomClient,
-        nomFamille: client.nomFamille,
-        nomReference: client.nomReference,
-        createdAt: client.createdAt?.trim() || this.getTodayForInput()
-      };
+      const formData = new FormData();
 
-      this.http.post<ClientItem>(this.apiUrl, payload, {
+      formData.append('NomClient', client.nomClient);
+      formData.append('NomFamille', client.nomFamille);
+      formData.append('NomReference', client.nomReference);
+      formData.append('CreatedAt', client.createdAt?.trim() || this.getTodayForInput());
+      formData.append('ImageUrl', client.imageUrl?.trim() || '');
+      formData.append('RemoveImage', 'false');
+
+      this.http.post<ClientItem>(this.apiUrl, formData, {
         headers: this.getAuthHeaders()
       }).subscribe({
         next: () => {
@@ -954,6 +1036,12 @@ export class ClientsComponent implements OnInit {
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
       .trim();
+  }
+
+  private safeFileName(value: string): string {
+    return this.normalizeText(value)
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/^_+|_+$/g, '') || 'client';
   }
 
   private extractBackendError(err: any, fallback: string): string {
