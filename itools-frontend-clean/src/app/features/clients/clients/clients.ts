@@ -29,7 +29,6 @@ interface ImportedClientRow {
   nomClient: string;
   nomFamille: string;
   nomReference: string;
-  imageUrl?: string;
   createdAt?: string;
 }
 
@@ -501,18 +500,6 @@ export class ClientsComponent implements OnInit {
               ''
             ).trim();
 
-            const imageUrl = String(
-              row.imageUrl ||
-              row.ImageUrl ||
-              row.image ||
-              row.Image ||
-              row.photoUrl ||
-              row.PhotoUrl ||
-              row.photo ||
-              row.Photo ||
-              ''
-            ).trim();
-
             const createdAt = String(
               row.createdAt ||
               row.CreatedAt ||
@@ -533,7 +520,6 @@ export class ClientsComponent implements OnInit {
               nomClient,
               nomFamille,
               nomReference,
-              imageUrl,
               createdAt
             };
           })
@@ -571,7 +557,6 @@ export class ClientsComponent implements OnInit {
         nomClient: '',
         nomFamille: '',
         nomReference: '',
-        imageUrl: '',
         createdAt: ''
       }
     ];
@@ -582,7 +567,6 @@ export class ClientsComponent implements OnInit {
       { wch: 30 },
       { wch: 30 },
       { wch: 30 },
-      { wch: 48 },
       { wch: 24 }
     ];
 
@@ -894,7 +878,6 @@ export class ClientsComponent implements OnInit {
       formData.append('NomFamille', client.nomFamille);
       formData.append('NomReference', client.nomReference);
       formData.append('CreatedAt', client.createdAt?.trim() || this.getTodayForInput());
-      formData.append('ImageUrl', client.imageUrl?.trim() || '');
       formData.append('RemoveImage', 'false');
 
       this.http.post<ClientItem>(this.apiUrl, formData, {

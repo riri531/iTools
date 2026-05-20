@@ -30,7 +30,6 @@ interface DesignationItem {
 interface ImportedDesignationRow {
   name: string;
   type?: string;
-  imageUrl?: string;
   createdAt?: string;
 }
 
@@ -498,18 +497,6 @@ export class DesignationsComponent implements OnInit {
               ''
             ).trim();
 
-            const imageUrl = String(
-              row.imageUrl ||
-              row.ImageUrl ||
-              row.image ||
-              row.Image ||
-              row.photoUrl ||
-              row.PhotoUrl ||
-              row.photo ||
-              row.Photo ||
-              ''
-            ).trim();
-
             const createdAt = String(
               row.createdAt ||
               row.CreatedAt ||
@@ -529,7 +516,6 @@ export class DesignationsComponent implements OnInit {
             return {
               name,
               type,
-              imageUrl,
               createdAt
             };
           })
@@ -562,7 +548,6 @@ export class DesignationsComponent implements OnInit {
       {
         name: '',
         type: '',
-        imageUrl: '',
         createdAt: ''
       }
     ];
@@ -572,7 +557,6 @@ export class DesignationsComponent implements OnInit {
     worksheet['!cols'] = [
       { wch: 40 },
       { wch: 24 },
-      { wch: 48 },
       { wch: 24 }
     ];
 

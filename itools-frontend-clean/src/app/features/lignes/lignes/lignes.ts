@@ -30,7 +30,6 @@ interface LigneItem {
 interface ImportedLigneRow {
   nom: string;
   nomenclature?: string;
-  imageUrl?: string;
   createdAt?: string;
 }
 
@@ -493,18 +492,6 @@ export class LignesComponent implements OnInit {
               ''
             ).trim();
 
-            const imageUrl = String(
-              row.imageUrl ||
-              row.ImageUrl ||
-              row.image ||
-              row.Image ||
-              row.photoUrl ||
-              row.PhotoUrl ||
-              row.photo ||
-              row.Photo ||
-              ''
-            ).trim();
-
             const createdAt = String(
               row.createdAt ||
               row.CreatedAt ||
@@ -524,7 +511,6 @@ export class LignesComponent implements OnInit {
             return {
               nom,
               nomenclature,
-              imageUrl,
               createdAt
             };
           })
@@ -557,7 +543,6 @@ export class LignesComponent implements OnInit {
       {
         nom: '',
         nomenclature: '',
-        imageUrl: '',
         createdAt: ''
       }
     ];
@@ -567,7 +552,6 @@ export class LignesComponent implements OnInit {
     worksheet['!cols'] = [
       { wch: 30 },
       { wch: 24 },
-      { wch: 48 },
       { wch: 24 }
     ];
 
