@@ -61,6 +61,9 @@ namespace iTools.Api.Data
 
                 entity.Property(e => e.ProfilePhotoUrl)
                     .HasMaxLength(500);
+
+                entity.Property(e => e.CreatedAt)
+                    .HasDefaultValueSql("GETDATE()");
             });
 
             modelBuilder.Entity<Fournisseur>(entity =>

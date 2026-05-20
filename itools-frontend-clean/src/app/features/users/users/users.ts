@@ -2,8 +2,17 @@ import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { NgFor, NgIf } from '@angular/common';
 import { UserService, UserItem, RoleItem } from '../../../core/services/user';
+import { AuthService } from '../../../core/services/auth';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
+
+interface ImportedUserRow {
+  fullName: string;
+  email: string;
+  password: string;
+  roleName: string;
+  createdAt?: string;
+}
 
 type UserViewMode = 'list' | 'images';
 type SortField = 'fullName' | 'createdAt';
@@ -18,6 +27,7 @@ type SortDirection = 'asc' | 'desc';
 })
 export class UsersComponent implements OnInit {
   private userService = inject(UserService);
+  private authService = inject(AuthService);
   private cdr = inject(ChangeDetectorRef);
 
   private baseUrl = 'http://localhost:5160';
@@ -50,7 +60,12 @@ export class UsersComponent implements OnInit {
     fullName: '',
     email: '',
     password: '',
-    roleId: 0
+    roleId: 0,
+    createdAt: '',
+    profilePhotoUrl: '',
+    imagePreview: '',
+    imageFile: null as File | null,
+    removeImage: false
   };
 
   isEditMode = false;
@@ -64,6 +79,11 @@ export class UsersComponent implements OnInit {
     this.restoreSortPreferences();
     this.loadUsers();
     this.loadRoles();
+  }
+
+  canDownloadUserCard(): boolean {
+    const role = String(this.authService.getRole() || '').toUpperCase();
+    return role === 'ADMIN' || role === 'RESPONSABLE';
   }
 
   loadUsers(): void {
@@ -169,7 +189,12 @@ export class UsersComponent implements OnInit {
       fullName: item.fullName,
       email: item.email,
       password: '',
-      roleId: role ? role.id : 0
+      roleId: role ? role.id : item.roleId || 0,
+      createdAt: this.toDateInputValue(this.getCreationDateValue(item)),
+      profilePhotoUrl: this.getUserImageUrl(item),
+      imagePreview: '',
+      imageFile: null,
+      removeImage: false
     };
 
     this.isEditMode = true;
@@ -181,6 +206,48 @@ export class UsersComponent implements OnInit {
   closeModal(): void {
     this.showModal = false;
     this.errorMessage = '';
+    this.cdr.detectChanges();
+  }
+
+  onImageSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    if (!file.type.startsWith('image/')) {
+      this.showError('Veuillez sélectionner un fichier image valide.');
+      return;
+    }
+
+    const maxSizeInMb = 5;
+    const maxSizeInBytes = maxSizeInMb * 1024 * 1024;
+
+    if (file.size > maxSizeInBytes) {
+      this.showError(`La taille de l’image ne doit pas dépasser ${maxSizeInMb} Mo.`);
+      return;
+    }
+
+    this.form.imageFile = file;
+    this.form.removeImage = false;
+
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      this.form.imagePreview = String(reader.result || '');
+      this.cdr.detectChanges();
+    };
+
+    reader.readAsDataURL(file);
+  }
+
+  removeSelectedImage(): void {
+    this.form.imageFile = null;
+    this.form.imagePreview = '';
+    this.form.profilePhotoUrl = '';
+    this.form.removeImage = true;
     this.cdr.detectChanges();
   }
 
@@ -224,22 +291,194 @@ export class UsersComponent implements OnInit {
       return;
     }
 
-    this.userService.importUsers(this.selectedImportFile).subscribe({
-      next: () => {
-        this.importSuccessMessage = 'Import en masse effectué avec succès.';
-        this.showSuccess('Import utilisateurs réussi.');
+    const reader = new FileReader();
 
-        setTimeout(() => {
-          this.loadUsers();
-          this.closeImportModal();
-        }, 800);
-      },
-      error: (err: any) => {
-        console.error(err);
-        this.importErrorMessage = this.extractBackendError(err, 'Erreur lors de l’import.');
+    reader.onload = () => {
+      try {
+        const data = reader.result;
+        const workbook = XLSX.read(data, { type: 'array' });
+        const firstSheetName = workbook.SheetNames[0];
+
+        if (!firstSheetName) {
+          this.importErrorMessage = 'Le fichier ne contient aucune feuille.';
+          this.cdr.detectChanges();
+          return;
+        }
+
+        const worksheet = workbook.Sheets[firstSheetName];
+        const rows = XLSX.utils.sheet_to_json<any>(worksheet, { defval: '' });
+
+        const users: ImportedUserRow[] = rows
+          .map(row => {
+            const fullName = String(
+              row.fullName ||
+              row.FullName ||
+              row['Nom complet'] ||
+              row['nom complet'] ||
+              row.name ||
+              row.Name ||
+              ''
+            ).trim();
+
+            const email = String(
+              row.email ||
+              row.Email ||
+              row.mail ||
+              row.Mail ||
+              ''
+            ).trim();
+
+            const password = String(
+              row.password ||
+              row.Password ||
+              row['Mot de passe'] ||
+              row['mot de passe'] ||
+              ''
+            ).trim();
+
+            const roleName = String(
+              row.roleName ||
+              row.RoleName ||
+              row.role ||
+              row.Role ||
+              row['Rôle'] ||
+              row['rôle'] ||
+              ''
+            ).trim();
+
+            const createdAt = String(
+              row.createdAt ||
+              row.CreatedAt ||
+              row.creationDate ||
+              row.CreationDate ||
+              row.createdOn ||
+              row.CreatedOn ||
+              row.createdDate ||
+              row.CreatedDate ||
+              row.dateCreation ||
+              row.DateCreation ||
+              row['Date de création'] ||
+              row['date de création'] ||
+              ''
+            ).trim();
+
+            return {
+              fullName,
+              email,
+              password,
+              roleName,
+              createdAt
+            };
+          })
+          .filter(item =>
+            item.fullName.length > 0 &&
+            item.email.length > 0 &&
+            item.password.length > 0 &&
+            item.roleName.length > 0
+          );
+
+        if (users.length === 0) {
+          this.importErrorMessage = 'Aucun utilisateur valide trouvé dans le fichier.';
+          this.cdr.detectChanges();
+          return;
+        }
+
+        this.createImportedUsers(users);
+      } catch (error) {
+        console.error('Erreur lecture fichier import utilisateurs :', error);
+        this.importErrorMessage = 'Erreur lors de la lecture du fichier.';
         this.cdr.detectChanges();
       }
+    };
+
+    reader.onerror = () => {
+      this.importErrorMessage = 'Impossible de lire le fichier sélectionné.';
+      this.cdr.detectChanges();
+    };
+
+    reader.readAsArrayBuffer(this.selectedImportFile);
+  }
+
+  private createImportedUsers(users: ImportedUserRow[]): void {
+    let successCount = 0;
+    let errorCount = 0;
+    let completed = 0;
+    const backendErrors: string[] = [];
+
+    users.forEach((user, index) => {
+      const role = this.roles.find(r =>
+        this.normalizeText(r.name) === this.normalizeText(user.roleName)
+      );
+
+      if (!role) {
+        backendErrors.push(`Ligne ${index + 1} : rôle introuvable (${user.roleName}).`);
+        errorCount++;
+        completed++;
+        this.finishImportIfDone(completed, users.length, successCount, errorCount, backendErrors);
+        return;
+      }
+
+      const formData = new FormData();
+
+      formData.append('FullName', user.fullName);
+      formData.append('Email', user.email);
+      formData.append('Password', user.password);
+      formData.append('RoleId', String(role.id));
+      formData.append('CreatedAt', user.createdAt?.trim() || this.getTodayForInput());
+      formData.append('RemoveImage', 'false');
+
+      this.userService.createUser(formData).subscribe({
+        next: () => {
+          successCount++;
+          completed++;
+          this.finishImportIfDone(completed, users.length, successCount, errorCount, backendErrors);
+        },
+        error: (err: any) => {
+          const backendMessage = this.extractBackendError(
+            err,
+            `Erreur backend sur la ligne ${index + 1}.`
+          );
+
+          backendErrors.push(`Ligne ${index + 1} : ${backendMessage}`);
+
+          errorCount++;
+          completed++;
+          this.finishImportIfDone(completed, users.length, successCount, errorCount, backendErrors);
+        }
+      });
     });
+  }
+
+  private finishImportIfDone(
+    completed: number,
+    total: number,
+    successCount: number,
+    errorCount: number,
+    backendErrors: string[]
+  ): void {
+    if (completed !== total) {
+      return;
+    }
+
+    if (errorCount === 0) {
+      this.importSuccessMessage = 'Import en masse effectué avec succès.';
+      this.showSuccess(`${successCount} utilisateur(s) importé(s) avec succès.`);
+
+      setTimeout(() => {
+        this.loadUsers();
+        this.closeImportModal();
+      }, 800);
+    } else {
+      const details = backendErrors.length > 0
+        ? ` Détail : ${backendErrors[0]}`
+        : '';
+
+      this.importErrorMessage =
+        `${successCount} importé(s), ${errorCount} erreur(s). Vérifiez les données.${details}`;
+
+      this.loadUsers();
+      this.cdr.detectChanges();
+    }
   }
 
   downloadTemplate(): void {
@@ -249,7 +488,6 @@ export class UsersComponent implements OnInit {
         email: '',
         password: '',
         roleName: '',
-        imageUrl: '',
         createdAt: ''
       }
     ];
@@ -261,7 +499,6 @@ export class UsersComponent implements OnInit {
       { wch: 30 },
       { wch: 20 },
       { wch: 18 },
-      { wch: 48 },
       { wch: 24 }
     ];
 
@@ -287,7 +524,8 @@ export class UsersComponent implements OnInit {
       email: user.email,
       roleName: user.roleName,
       createdAt: this.formatCreationDate(user),
-      imageUrl: this.getUserImageUrl(user)
+      updatedAt: (user as any).updatedAt || '',
+      profilePhotoUrl: this.getUserImageUrl(user)
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(rows);
@@ -297,6 +535,7 @@ export class UsersComponent implements OnInit {
       { wch: 28 },
       { wch: 34 },
       { wch: 18 },
+      { wch: 24 },
       { wch: 24 },
       { wch: 48 }
     ];
@@ -316,13 +555,35 @@ export class UsersComponent implements OnInit {
     saveAs(fileData, 'utilisateurs_export.xlsx');
   }
 
+  downloadUserCard(item: UserItem): void {
+    if (!this.canDownloadUserCard()) {
+      this.showError("Vous n'avez pas le droit de télécharger la fiche PDF.");
+      return;
+    }
+
+    this.userService.downloadUserCard(item.id).subscribe({
+      next: (blob) => {
+        saveAs(blob, `fiche_utilisateur_${item.id}_${this.safeFileName(item.fullName)}.pdf`);
+      },
+      error: (err: any) => {
+        console.error('Erreur téléchargement fiche utilisateur :', err);
+        this.showError(this.extractBackendError(err, 'Erreur lors du téléchargement de la fiche PDF.'));
+      }
+    });
+  }
+
   resetForm(): void {
     this.form = {
       id: 0,
       fullName: '',
       email: '',
       password: '',
-      roleId: this.roles.length > 0 ? this.roles[0].id : 0
+      roleId: this.roles.length > 0 ? this.roles[0].id : 0,
+      createdAt: this.getTodayForInput(),
+      profilePhotoUrl: '',
+      imagePreview: '',
+      imageFile: null,
+      removeImage: false
     };
 
     this.isEditMode = false;
@@ -353,23 +614,10 @@ export class UsersComponent implements OnInit {
       return;
     }
 
+    const formData = this.buildUserFormData();
+
     if (this.isEditMode) {
-      const payload: {
-        fullName: string;
-        email: string;
-        roleId: number;
-        password?: string;
-      } = {
-        fullName: this.form.fullName.trim(),
-        email: this.form.email.trim(),
-        roleId: Number(this.form.roleId)
-      };
-
-      if (this.form.password && this.form.password.trim() !== '') {
-        payload.password = this.form.password.trim();
-      }
-
-      this.userService.updateUser(this.form.id, payload).subscribe({
+      this.userService.updateUser(this.form.id, formData).subscribe({
         next: () => {
           this.showSuccess('Utilisateur modifié avec succès.');
           this.closeModal();
@@ -385,12 +633,7 @@ export class UsersComponent implements OnInit {
         }
       });
     } else {
-      this.userService.createUser({
-        fullName: this.form.fullName.trim(),
-        email: this.form.email.trim(),
-        password: this.form.password.trim(),
-        roleId: Number(this.form.roleId)
-      }).subscribe({
+      this.userService.createUser(formData).subscribe({
         next: () => {
           this.showSuccess('Utilisateur ajouté avec succès.');
           this.closeModal();
@@ -446,9 +689,9 @@ export class UsersComponent implements OnInit {
     const userAsAny = item as any;
 
     const rawUrl =
+      userAsAny.profilePhotoUrl ||
       userAsAny.imageUrl ||
       userAsAny.photoUrl ||
-      userAsAny.profilePhotoUrl ||
       userAsAny.avatarUrl ||
       userAsAny.image ||
       userAsAny.photo ||
@@ -498,6 +741,26 @@ export class UsersComponent implements OnInit {
       month: '2-digit',
       day: '2-digit'
     });
+  }
+
+  private buildUserFormData(): FormData {
+    const formData = new FormData();
+
+    formData.append('FullName', this.form.fullName.trim());
+    formData.append('Email', this.form.email.trim());
+    formData.append('RoleId', String(Number(this.form.roleId)));
+    formData.append('CreatedAt', this.form.createdAt || this.getTodayForInput());
+    formData.append('RemoveImage', String(this.form.removeImage));
+
+    if (this.form.password && this.form.password.trim() !== '') {
+      formData.append('Password', this.form.password.trim());
+    }
+
+    if (this.form.imageFile) {
+      formData.append('Image', this.form.imageFile);
+    }
+
+    return formData;
   }
 
   private sortUsers(items: UserItem[]): UserItem[] {
@@ -584,12 +847,41 @@ export class UsersComponent implements OnInit {
     localStorage.setItem(this.sortDirectionStorageKey, this.sortDirection);
   }
 
+  private getTodayForInput(): string {
+    const date = new Date();
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+
+    return `${year}-${month}-${day}`;
+  }
+
+  private toDateInputValue(value: string): string {
+    if (!value) {
+      return this.getTodayForInput();
+    }
+
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
+      return value.slice(0, 10);
+    }
+
+    return date.toISOString().slice(0, 10);
+  }
+
   private normalizeText(value: string | null | undefined): string {
     return String(value || '')
       .toLowerCase()
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
       .trim();
+  }
+
+  private safeFileName(value: string): string {
+    return this.normalizeText(value)
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/^_+|_+$/g, '') || 'utilisateur';
   }
 
   private extractBackendError(err: any, fallback: string): string {

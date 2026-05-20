@@ -16,6 +16,10 @@ public class User
 
     public string? ProfilePhotoUrl { get; set; }
 
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    public DateTime? UpdatedAt { get; set; }
+
     public int RoleId { get; set; }
 
     public Role? Role { get; set; }

@@ -6,7 +6,13 @@ export interface UserItem {
   id: number;
   fullName: string;
   email: string;
+  roleId: number;
   roleName: string;
+  profilePhotoUrl?: string | null;
+  imageUrl?: string | null;
+  photoUrl?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
 }
 
 export interface RoleItem {
@@ -43,11 +49,11 @@ export class UserService {
     return this.http.get<RoleItem[]>(`${this.apiUrl}/Roles`);
   }
 
-  createUser(payload: CreateUserRequest): Observable<any> {
+  createUser(payload: CreateUserRequest | FormData): Observable<any> {
     return this.http.post(`${this.apiUrl}/Users`, payload);
   }
 
-  updateUser(id: number, payload: UpdateUserRequest): Observable<any> {
+  updateUser(id: number, payload: UpdateUserRequest | FormData): Observable<any> {
     return this.http.put(`${this.apiUrl}/Users/${id}`, payload);
   }
 
@@ -59,5 +65,11 @@ export class UserService {
     const formData = new FormData();
     formData.append('file', file);
     return this.http.post(`${this.apiUrl}/Users/import`, formData);
+  }
+
+  downloadUserCard(id: number): Observable<Blob> {
+    return this.http.get(`${this.apiUrl}/Users/${id}/identity-card`, {
+      responseType: 'blob'
+    });
   }
 }

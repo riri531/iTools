@@ -508,7 +508,7 @@ select.form-control {
 
 .fournisseurs-table {
   width: 100%;
-  min-width: 1360px;
+  min-width: 1120px;
   border-collapse: collapse;
   color: var(--text-dark);
   table-layout: fixed;
@@ -576,7 +576,7 @@ select.form-control {
 
 .fournisseurs-table th:nth-child(7),
 .fournisseurs-table td:nth-child(7) {
-  width: 470px;
+  width: 350px;
 }
 
 .fournisseur-name {
