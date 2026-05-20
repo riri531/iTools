@@ -27,6 +27,7 @@ interface NavItem {
   route: string;
   icon: string;
   keywords: string[];
+  roles?: string[];
 }
 
 interface ProfileDto {
@@ -74,161 +75,81 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
   userRole = localStorage.getItem('role') || 'ADMIN';
   profilePhotoUrl = '';
 
-  navItems: NavItem[] = [
+  private allNavItems: NavItem[] = [
     {
       label: 'Dashboard',
       route: '/app/dashboard',
       icon: '/icons/dashboard.png',
-      keywords: [
-        'dashboard',
-        'tableau de bord',
-        'statistiques',
-        'accueil',
-        'home'
-      ]
+      keywords: ['dashboard', 'tableau de bord', 'statistiques', 'accueil', 'home']
     },
     {
       label: 'Désignations',
       route: '/app/designations',
       icon: '/icons/designation.png',
-      keywords: [
-        'designation',
-        'désignation',
-        'designations',
-        'désignations',
-        'référentiel',
-        'referentiel'
-      ]
+      keywords: ['designation', 'désignation', 'designations', 'désignations', 'référentiel', 'referentiel']
     },
     {
       label: 'Lignes',
       route: '/app/lignes',
       icon: '/icons/lignes.png',
-      keywords: [
-        'ligne',
-        'lignes',
-        'production'
-      ]
+      keywords: ['ligne', 'lignes', 'production']
     },
     {
       label: 'Clients',
       route: '/app/clients',
       icon: '/icons/clients.png',
-      keywords: [
-        'client',
-        'clients'
-      ]
+      keywords: ['client', 'clients']
     },
     {
       label: 'Fournisseurs',
       route: '/app/fournisseurs',
       icon: '/icons/fournisseurs.png',
-      keywords: [
-        'fournisseur',
-        'fournisseurs',
-        'supplier',
-        'suppliers'
-      ]
+      keywords: ['fournisseur', 'fournisseurs', 'supplier', 'suppliers']
     },
     {
       label: 'Utilisateurs inscrits',
       route: '/app/users',
       icon: '/icons/utilisateur.png',
-      keywords: [
-        'utilisateur',
-        'utilisateurs',
-        'users',
-        'user',
-        'admin',
-        'administrateur',
-        'responsable',
-        'employé',
-        'employe'
-      ]
+      keywords: ['utilisateur', 'utilisateurs', 'users', 'user', 'admin', 'administrateur'],
+      roles: ['ADMIN']
     },
     {
       label: 'Emplacements',
       route: '/app/emplacements',
       icon: '/icons/emplacement.png',
-      keywords: [
-        'emplacement',
-        'emplacements',
-        'libre',
-        'libres',
-        'occupé',
-        'occupe',
-        'occupés',
-        'occupes',
-        'hs',
-        'hors service',
-        'stockage'
-      ]
+      keywords: ['emplacement', 'emplacements', 'libre', 'libres', 'occupé', 'occupe', 'hs', 'hors service', 'stockage']
     },
     {
       label: 'Matières',
       route: '/app/matieres',
       icon: '/icons/matiere.png',
-      keywords: [
-        'matiere',
-        'matières',
-        'matieres',
-        'matière',
-        'matières premières',
-        'matieres premieres',
-        'zinc',
-        'plomb',
-        'pb',
-        'zi',
-        'matiere premiere'
-      ]
+      keywords: ['matiere', 'matières', 'matieres', 'matière', 'zinc', 'plomb', 'pb']
     },
     {
       label: 'Outils',
       route: '/app/outils',
       icon: '/icons/outils.png',
-      keywords: [
-        'outil',
-        'outils',
-        'outillage',
-        'outillages',
-        'tool',
-        'tools'
-      ]
+      keywords: ['outil', 'outils', 'outillage', 'outillages', 'tool', 'tools']
     },
     {
       label: 'Assistance intelligente',
       route: '/app/assistance',
       icon: '/icons/assistance-intelligente.png',
-      keywords: [
-        'assistance',
-        'intelligente',
-        'aide',
-        'guide',
-        'chatbot',
-        'support',
-        'réclamation',
-        'reclamation',
-        'reclamations',
-        'réclamations',
-        'message',
-        'messages'
-      ]
+      keywords: ['assistance', 'intelligente', 'aide', 'guide', 'chatbot', 'support', 'réclamation']
     },
     {
       label: 'Historique',
       route: '/app/archives',
       icon: '/icons/historique.png',
-      keywords: [
-        'historique',
-        'archive',
-        'archives',
-        'traçabilité',
-        'tracabilite',
-        'journal',
-        'logs'
-      ]
+      keywords: ['historique', 'archive', 'archives', 'traçabilité', 'journal', 'logs'],
+      roles: ['ADMIN']
     }
   ];
+
+  get navItems(): NavItem[] {
+    const role = this.userRole.toUpperCase();
+    return this.allNavItems.filter(item => !item.roles || item.roles.includes(role));
+  }
 
   private profileUpdatedHandler = () => {
     this.loadTopbarProfile();
@@ -284,17 +205,9 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
   get roleLabel(): string {
     const role = this.userRole.toUpperCase();
 
-    if (role === 'ADMIN') {
-      return 'Administrateur';
-    }
-
-    if (role === 'RESPONSABLE') {
-      return 'Responsable';
-    }
-
-    if (role === 'EMPLOYE' || role === 'EMPLOYÉ') {
-      return 'Employé';
-    }
+    if (role === 'ADMIN') return 'Administrateur';
+    if (role === 'RESPONSABLE') return 'Responsable';
+    if (role === 'EMPLOYE' || role === 'EMPLOYÉ') return 'Employé';
 
     return this.userRole;
   }
@@ -304,14 +217,8 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
   }
 
   getTopbarProfilePhotoUrl(): string {
-    if (!this.profilePhotoUrl) {
-      return '';
-    }
-
-    if (this.profilePhotoUrl.startsWith('http')) {
-      return this.profilePhotoUrl;
-    }
-
+    if (!this.profilePhotoUrl) return '';
+    if (this.profilePhotoUrl.startsWith('http')) return this.profilePhotoUrl;
     return `${this.baseUrl}${this.profilePhotoUrl}`;
   }
 
@@ -419,9 +326,7 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
   private getPageResults(keyword: string): GlobalSearchResult[] {
     const q = this.normalizeText(keyword);
 
-    if (!q) {
-      return [];
-    }
+    if (!q) return [];
 
     return this.navItems
       .filter(item => {
@@ -454,9 +359,7 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
   private getAuthHeaders(): HttpHeaders {
     const token = this.authService.getToken();
 
-    if (!token) {
-      return new HttpHeaders();
-    }
+    if (!token) return new HttpHeaders();
 
     return new HttpHeaders({
       Authorization: `Bearer ${token}`

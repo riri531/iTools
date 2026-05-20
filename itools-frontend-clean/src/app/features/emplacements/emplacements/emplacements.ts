@@ -34,6 +34,7 @@ interface EmplacementItem {
   photoUrl?: string | null;
   image?: string | null;
 
+  updatedAt?: string | null;
   createdAt?: string | null;
   creationDate?: string | null;
   createdOn?: string | null;
@@ -63,6 +64,7 @@ interface ImportedEmplacementRow {
   numero: string;
   designationId: number;
   status: string;
+  createdAt?: string;
 }
 
 interface CreateReclamationRequest {
@@ -166,7 +168,12 @@ export class EmplacementsComponent implements OnInit {
     armoire: '',
     numero: '',
     designationId: 0,
-    status: 'Libre'
+    status: 'Libre',
+    createdAt: '',
+    imageUrl: '',
+    imagePreview: '',
+    imageFile: null as File | null,
+    removeImage: false
   };
 
   isEditMode = false;
@@ -183,10 +190,19 @@ export class EmplacementsComponent implements OnInit {
     this.loadEmplacements();
   }
 
-  canCreateReclamation(): boolean {
-    const role = this.authService.getRole();
-    return role === 'EMPLOYE' || role === 'RESPONSABLE';
+  canManageData(): boolean {
+    const role = String(this.authService.getRole() || localStorage.getItem('role') || '').toUpperCase();
+    return role === 'ADMIN' || role === 'RESPONSABLE';
   }
+  canCreateReclamation(): boolean {
+    const role = String(this.authService.getRole() || localStorage.getItem('role') || '').toUpperCase();
+    return role === 'ADMIN' || role === 'RESPONSABLE';
+  }
+  canDownloadEmplacementCard(): boolean {
+    const role = String(this.authService.getRole() || localStorage.getItem('role') || '').toUpperCase();
+    return role === 'ADMIN' || role === 'RESPONSABLE' || role === 'EMPLOYE' || role === 'EMPLOYÉ';
+  }
+
 
   loadEmplacements(): void {
     this.http.get<EmplacementItem[]>(this.apiUrl, {
@@ -322,6 +338,11 @@ export class EmplacementsComponent implements OnInit {
   }
 
   openCreateModal(): void {
+    if (!this.canManageData()) {
+      this.showError("Vous n'avez pas le droit d'ajouter des éléments.");
+      return;
+    }
+
     this.resetForm();
     this.isEditMode = false;
     this.showModal = true;
@@ -329,13 +350,23 @@ export class EmplacementsComponent implements OnInit {
   }
 
   openEditModal(item: EmplacementItem): void {
+    if (!this.canManageData()) {
+      this.showError("Vous n'avez pas le droit de modifier des éléments.");
+      return;
+    }
+
     this.form = {
       id: item.id,
       matiereId: item.matiereId,
       armoire: item.armoire,
       numero: item.numero,
       designationId: item.designationId,
-      status: this.normalizeStatus(item.status)
+      status: this.normalizeStatus(item.status),
+      createdAt: this.toDateInputValue(this.getCreationDateValue(item)),
+      imageUrl: this.getEmplacementImageUrl(item),
+      imagePreview: '',
+      imageFile: null,
+      removeImage: false
     };
 
     this.isEditMode = true;
@@ -351,6 +382,11 @@ export class EmplacementsComponent implements OnInit {
   }
 
   openImportModal(): void {
+    if (!this.canManageData()) {
+      this.showError("Vous n'avez pas le droit d'importer en masse.");
+      return;
+    }
+
     this.showImportModal = true;
     this.selectedImportFile = null;
     this.importErrorMessage = '';
@@ -501,6 +537,48 @@ export class EmplacementsComponent implements OnInit {
     });
   }
 
+  onImageSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    if (!file.type.startsWith('image/')) {
+      this.showError('Veuillez sélectionner un fichier image valide.');
+      return;
+    }
+
+    const maxSizeInMb = 5;
+    const maxSizeInBytes = maxSizeInMb * 1024 * 1024;
+
+    if (file.size > maxSizeInBytes) {
+      this.showError(`La taille de l’image ne doit pas dépasser ${maxSizeInMb} Mo.`);
+      return;
+    }
+
+    this.form.imageFile = file;
+    this.form.removeImage = false;
+
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      this.form.imagePreview = String(reader.result || '');
+      this.cdr.detectChanges();
+    };
+
+    reader.readAsDataURL(file);
+  }
+
+  removeSelectedImage(): void {
+    this.form.imageFile = null;
+    this.form.imagePreview = '';
+    this.form.imageUrl = '';
+    this.form.removeImage = true;
+    this.cdr.detectChanges();
+  }
+
   onFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
 
@@ -514,6 +592,11 @@ export class EmplacementsComponent implements OnInit {
   }
 
   submit(): void {
+    if (!this.canManageData()) {
+      this.showError("Vous n'avez pas le droit d'enregistrer des modifications.");
+      return;
+    }
+
     this.errorMessage = '';
 
     if (!this.form.matiereId) {
@@ -541,16 +624,10 @@ export class EmplacementsComponent implements OnInit {
       return;
     }
 
-    const payload: CreateEmplacementRequest | UpdateEmplacementRequest = {
-      matiereId: Number(this.form.matiereId),
-      armoire: this.form.armoire.trim(),
-      numero: this.form.numero.trim(),
-      designationId: Number(this.form.designationId),
-      status: this.normalizeStatus(this.form.status.trim())
-    };
+    const formData = this.buildEmplacementFormData();
 
     if (this.isEditMode) {
-      this.http.put<void>(`${this.apiUrl}/${this.form.id}`, payload, {
+      this.http.put<void>(`${this.apiUrl}/${this.form.id}`, formData, {
         headers: this.getAuthHeaders()
       }).subscribe({
         next: () => {
@@ -568,7 +645,7 @@ export class EmplacementsComponent implements OnInit {
         }
       });
     } else {
-      this.http.post<EmplacementItem>(this.apiUrl, payload, {
+      this.http.post<EmplacementItem>(this.apiUrl, formData, {
         headers: this.getAuthHeaders()
       }).subscribe({
         next: () => {
@@ -589,6 +666,11 @@ export class EmplacementsComponent implements OnInit {
   }
 
   deleteEmplacement(item: EmplacementItem): void {
+    if (!this.canManageData()) {
+      this.showError("Vous n'avez pas le droit de supprimer des éléments.");
+      return;
+    }
+
     const confirmed = confirm(`Supprimer l’emplacement "${item.armoire}-${item.numero}" ?`);
 
     if (!confirmed) {
@@ -623,7 +705,12 @@ export class EmplacementsComponent implements OnInit {
       armoire: '',
       numero: '',
       designationId: this.designations.length > 0 ? this.designations[0].id : 0,
-      status: 'Libre'
+      status: 'Libre',
+      createdAt: this.getTodayForInput(),
+      imageUrl: '',
+      imagePreview: '',
+      imageFile: null,
+      removeImage: false
     };
 
     this.isEditMode = false;
@@ -763,7 +850,6 @@ export class EmplacementsComponent implements OnInit {
         numero: '',
         designation: '',
         status: 'Libre',
-        imageUrl: '',
         createdAt: ''
       }
     ];
@@ -776,7 +862,6 @@ export class EmplacementsComponent implements OnInit {
       { wch: 18 },
       { wch: 34 },
       { wch: 16 },
-      { wch: 48 },
       { wch: 24 }
     ];
 
@@ -806,6 +891,7 @@ export class EmplacementsComponent implements OnInit {
       designation: this.getDesignationName(item),
       status: this.getStatusLabel(item.status),
       createdAt: this.formatCreationDate(item),
+      updatedAt: item.updatedAt || '',
       imageUrl: this.getEmplacementImageUrl(item)
     }));
 
@@ -840,6 +926,11 @@ export class EmplacementsComponent implements OnInit {
   }
 
   importEmplacements(): void {
+    if (!this.canManageData()) {
+      this.showError("Vous n'avez pas le droit d'importer en masse.");
+      return;
+    }
+
     this.importErrorMessage = '';
     this.importSuccessMessage = '';
 
@@ -930,6 +1021,22 @@ export class EmplacementsComponent implements OnInit {
               ).trim()
             );
 
+            const createdAt = String(
+              row.createdAt ||
+              row.CreatedAt ||
+              row.creationDate ||
+              row.CreationDate ||
+              row.createdOn ||
+              row.CreatedOn ||
+              row.createdDate ||
+              row.CreatedDate ||
+              row.dateCreation ||
+              row.DateCreation ||
+              row['Date de création'] ||
+              row['date de création'] ||
+              ''
+            ).trim();
+
             const matiereId = this.resolveMatiereId(matiereValue);
             const designationId = this.resolveDesignationId(designationValue);
 
@@ -938,7 +1045,8 @@ export class EmplacementsComponent implements OnInit {
               armoire,
               numero,
               designationId,
-              status
+              status,
+              createdAt
             };
           })
           .filter(emplacement =>
@@ -1114,13 +1222,23 @@ export class EmplacementsComponent implements OnInit {
     return designation ? designation.id : 0;
   }
 
-  private createImportedEmplacements(emplacements: CreateEmplacementRequest[]): void {
+  private createImportedEmplacements(emplacements: ImportedEmplacementRow[]): void {
     let successCount = 0;
     let errorCount = 0;
     let completed = 0;
 
     emplacements.forEach((emplacement) => {
-      this.http.post<EmplacementItem>(this.apiUrl, emplacement, {
+      const formData = new FormData();
+
+      formData.append('MatiereId', String(emplacement.matiereId));
+      formData.append('Armoire', emplacement.armoire);
+      formData.append('Numero', emplacement.numero);
+      formData.append('DesignationId', String(emplacement.designationId));
+      formData.append('Status', emplacement.status);
+      formData.append('CreatedAt', emplacement.createdAt?.trim() || this.getTodayForInput());
+      formData.append('RemoveImage', 'false');
+
+      this.http.post<EmplacementItem>(this.apiUrl, formData, {
         headers: this.getAuthHeaders()
       }).subscribe({
         next: () => {
@@ -1160,6 +1278,64 @@ export class EmplacementsComponent implements OnInit {
         `${successCount} importé(s), ${errorCount} erreur(s). Vérifiez les données, les matières ou les désignations.`;
       this.cdr.detectChanges();
     }
+  }
+
+  downloadEmplacementCard(item: EmplacementItem): void {
+    if (!this.canDownloadEmplacementCard()) {
+      this.showError("Vous n'avez pas le droit de télécharger la fiche PDF.");
+      return;
+    }
+
+    this.http.get(`${this.apiUrl}/${item.id}/identity-card`, {
+      headers: this.getAuthHeaders(),
+      responseType: 'blob'
+    }).subscribe({
+      next: (blob) => {
+        saveAs(blob, `fiche_emplacement_${item.id}_${this.safeFileName(item.armoire + '_' + item.numero)}.pdf`);
+      },
+      error: (err: any) => {
+        console.error('Erreur téléchargement fiche emplacement :', err);
+        this.showError(this.extractBackendError(err, 'Erreur lors du téléchargement de la fiche PDF.'));
+      }
+    });
+  }
+
+  private buildEmplacementFormData(): FormData {
+    const formData = new FormData();
+
+    formData.append('MatiereId', String(Number(this.form.matiereId)));
+    formData.append('Armoire', this.form.armoire.trim());
+    formData.append('Numero', this.form.numero.trim());
+    formData.append('DesignationId', String(Number(this.form.designationId)));
+    formData.append('Status', this.normalizeStatus(this.form.status.trim()));
+    formData.append('CreatedAt', this.form.createdAt || this.getTodayForInput());
+    formData.append('RemoveImage', String(this.form.removeImage));
+
+    if (this.form.imageFile) {
+      formData.append('Image', this.form.imageFile);
+    }
+
+    return formData;
+  }
+
+  private toDateInputValue(value: string): string {
+    if (!value) {
+      return this.getTodayForInput();
+    }
+
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
+      return value.slice(0, 10);
+    }
+
+    return date.toISOString().slice(0, 10);
+  }
+
+  private safeFileName(value: string): string {
+    return this.normalizeText(value)
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/^_+|_+$/g, '') || 'emplacement';
   }
 
   private restoreViewMode(): void {

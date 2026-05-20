@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Http;
+
 namespace iTools.Api.DTOs;
 
 public class CreateOutilDto
@@ -13,4 +15,7 @@ public class CreateOutilDto
     public decimal Valeur { get; set; }
     public string? JustificationHS { get; set; }
     public DateTime? DateAffectation { get; set; }
+    public DateTime? CreatedAt { get; set; }
+
+    public IFormFile? Image { get; set; }
 }

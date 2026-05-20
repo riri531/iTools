@@ -11,6 +11,9 @@ export interface EmplacementItem {
   designationId: number;
   designationName: string;
   status: string;
+  imageUrl?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
 }
 
 export interface CreateEmplacementRequest {
@@ -53,16 +56,22 @@ export class EmplacementService {
     return this.http.get<EmplacementItem[]>(this.emplacementsApi);
   }
 
-  createEmplacement(data: CreateEmplacementRequest): Observable<EmplacementItem> {
+  createEmplacement(data: CreateEmplacementRequest | FormData): Observable<EmplacementItem> {
     return this.http.post<EmplacementItem>(this.emplacementsApi, data);
   }
 
-  updateEmplacement(id: number, data: UpdateEmplacementRequest): Observable<void> {
+  updateEmplacement(id: number, data: UpdateEmplacementRequest | FormData): Observable<void> {
     return this.http.put<void>(`${this.emplacementsApi}/${id}`, data);
   }
 
   deleteEmplacement(id: number): Observable<void> {
     return this.http.delete<void>(`${this.emplacementsApi}/${id}`);
+  }
+
+  downloadEmplacementCard(id: number): Observable<Blob> {
+    return this.http.get(`${this.emplacementsApi}/${id}/identity-card`, {
+      responseType: 'blob'
+    });
   }
 
   getMatieres(): Observable<SimpleMatiereItem[]> {

@@ -6,6 +6,9 @@ export interface MatiereItem {
   id: number;
   nomMatiere: string;
   process: string;
+  imageUrl?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
 }
 
 export interface CreateMatiereRequest {
@@ -29,15 +32,21 @@ export class MatiereService {
     return this.http.get<MatiereItem[]>(this.apiUrl);
   }
 
-  createMatiere(data: CreateMatiereRequest): Observable<MatiereItem> {
+  createMatiere(data: CreateMatiereRequest | FormData): Observable<MatiereItem> {
     return this.http.post<MatiereItem>(this.apiUrl, data);
   }
 
-  updateMatiere(id: number, data: UpdateMatiereRequest): Observable<void> {
+  updateMatiere(id: number, data: UpdateMatiereRequest | FormData): Observable<void> {
     return this.http.put<void>(`${this.apiUrl}/${id}`, data);
   }
 
   deleteMatiere(id: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
+  }
+
+  downloadMatiereCard(id: number): Observable<Blob> {
+    return this.http.get(`${this.apiUrl}/${id}/identity-card`, {
+      responseType: 'blob'
+    });
   }
 }

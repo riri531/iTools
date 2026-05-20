@@ -18,6 +18,9 @@ export interface OutilItem {
   valeur: number;
   justificationHS?: string;
   dateAffectation?: string;
+  imageUrl?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
 }
 
 export interface CreateOutilRequest {
@@ -31,6 +34,7 @@ export interface CreateOutilRequest {
   valeur: number;
   justificationHS?: string | null;
   dateAffectation?: string | null;
+  createdAt?: string | null;
 }
 
 export interface UpdateOutilRequest {
@@ -44,6 +48,7 @@ export interface UpdateOutilRequest {
   valeur: number;
   justificationHS?: string | null;
   dateAffectation?: string | null;
+  createdAt?: string | null;
 }
 
 export interface SimpleLigneItem {
@@ -83,16 +88,22 @@ export class OutilService {
     return this.http.get<OutilItem[]>(this.outilsApi);
   }
 
-  createOutil(data: CreateOutilRequest): Observable<OutilItem> {
+  createOutil(data: CreateOutilRequest | FormData): Observable<OutilItem> {
     return this.http.post<OutilItem>(this.outilsApi, data);
   }
 
-  updateOutil(id: number, data: UpdateOutilRequest): Observable<void> {
+  updateOutil(id: number, data: UpdateOutilRequest | FormData): Observable<void> {
     return this.http.put<void>(`${this.outilsApi}/${id}`, data);
   }
 
   deleteOutil(id: number): Observable<void> {
     return this.http.delete<void>(`${this.outilsApi}/${id}`);
+  }
+
+  downloadOutilCard(id: number): Observable<Blob> {
+    return this.http.get(`${this.outilsApi}/${id}/identity-card`, {
+      responseType: 'blob'
+    });
   }
 
   getLignes(): Observable<SimpleLigneItem[]> {

@@ -1,5 +1,16 @@
 <div class="matieres-page">
   <section class="matieres-card page-header">
+    <div class="header-context-symbols" aria-hidden="true">
+      <span class="context-symbol symbol-material"></span>
+      <span class="context-symbol symbol-process"></span>
+      <span class="context-symbol symbol-recycle"></span>
+      <span class="context-orbit orbit-one"></span>
+      <span class="context-orbit orbit-two"></span>
+      <span class="context-dot dot-one"></span>
+      <span class="context-dot dot-two"></span>
+      <span class="context-dot dot-three"></span>
+    </div>
+
     <div class="card-inner header-inner">
       <div>
         <span class="section-kicker">Référentiel</span>
@@ -14,15 +25,15 @@
           Télécharger les données
         </button>
 
-        <button type="button" class="download-btn" (click)="downloadTemplate()">
+        <button *ngIf="canManageData()" type="button" class="download-btn" (click)="downloadTemplate()">
           Télécharger modèle à remplir
         </button>
 
-        <button type="button" class="import-btn" (click)="openImportModal()">
+        <button *ngIf="canManageData()" type="button" class="import-btn" (click)="openImportModal()">
           Import en masse
         </button>
 
-        <button type="button" class="add-btn" (click)="openCreateModal()">
+        <button *ngIf="canManageData()" type="button" class="add-btn" (click)="openCreateModal()">
           Nouveau
         </button>
       </div>
@@ -232,8 +243,17 @@
                 </td>
 
                 <td class="actions">
-                  <button type="button" class="table-btn edit-btn" (click)="openEditModal(item)">
+                  <button *ngIf="canManageData()" type="button" class="table-btn edit-btn" (click)="openEditModal(item)">
                     Modifier
+                  </button>
+
+                  <button
+                    *ngIf="canDownloadMatiereCard()"
+                    type="button"
+                    class="table-btn identity-card-btn"
+                    (click)="downloadMatiereCard(item)"
+                  >
+                    Fiche PDF
                   </button>
 
                   <button
@@ -245,7 +265,7 @@
                     Passer réclamation
                   </button>
 
-                  <button type="button" class="table-btn delete-btn" (click)="deleteMatiere(item)">
+                  <button *ngIf="canManageData()" type="button" class="table-btn delete-btn" (click)="deleteMatiere(item)">
                     Supprimer
                   </button>
                 </td>
@@ -286,8 +306,17 @@
             </div>
 
             <div class="image-card-actions">
-              <button type="button" class="table-btn edit-btn" (click)="openEditModal(item)">
+              <button *ngIf="canManageData()" type="button" class="table-btn edit-btn" (click)="openEditModal(item)">
                 Modifier
+              </button>
+
+              <button
+                *ngIf="canDownloadMatiereCard()"
+                type="button"
+                class="table-btn identity-card-btn"
+                (click)="downloadMatiereCard(item)"
+              >
+                Fiche PDF
               </button>
 
               <button
@@ -299,7 +328,7 @@
                 Réclamation
               </button>
 
-              <button type="button" class="table-btn delete-btn" (click)="deleteMatiere(item)">
+              <button *ngIf="canManageData()" type="button" class="table-btn delete-btn" (click)="deleteMatiere(item)">
                 Supprimer
               </button>
             </div>
@@ -326,7 +355,7 @@
           </h2>
 
           <p class="it-modal-subtitle">
-            Complète les informations puis valide l’enregistrement.
+            Complète les informations, ajoute une photo si disponible, puis valide l’enregistrement.
           </p>
         </div>
 
@@ -361,8 +390,71 @@
           />
         </div>
 
+        <div class="form-group">
+          <label>Date de création</label>
+          <input
+            class="form-control"
+            type="date"
+            name="createdAt"
+            [(ngModel)]="form.createdAt"
+            required
+          />
+        </div>
+
+        <div class="form-group image-upload-group">
+          <label>Photo associée à la matière</label>
+
+          <div class="image-upload-box">
+            <div class="image-upload-preview">
+              <img
+                *ngIf="form.imagePreview || form.imageUrl; else noSelectedImage"
+                [src]="form.imagePreview || form.imageUrl"
+                alt="Aperçu photo matière"
+              />
+
+              <ng-template #noSelectedImage>
+                <div class="image-upload-empty">
+                  <span>{{ form.nomMatiere ? form.nomMatiere.charAt(0).toUpperCase() : 'M' }}</span>
+                  <small>Aucune photo</small>
+                </div>
+              </ng-template>
+            </div>
+
+            <div class="image-upload-content">
+              <strong>Image de la matière</strong>
+              <p>
+                Ajoute une photo pour identifier visuellement cette matière dans la liste,
+                la vue images et la fiche PDF.
+              </p>
+
+              <input
+                #matiereImageInput
+                type="file"
+                accept="image/*"
+                hidden
+                (change)="onImageSelected($event)"
+              />
+
+              <div class="image-upload-actions">
+                <button type="button" class="import-btn" (click)="matiereImageInput.click()">
+                  Choisir une photo
+                </button>
+
+                <button
+                  type="button"
+                  class="delete-btn"
+                  *ngIf="form.imagePreview || form.imageUrl"
+                  (click)="removeSelectedImage()"
+                >
+                  Retirer photo
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="form-note">
-          La photo matière pourra être importée plus tard. La date de création sera affichée si le backend la renvoie.
+          La photo sera sauvegardée avec la matière. Elle apparaîtra aussi dans la fiche PDF.
         </div>
 
         <div class="form-actions">
@@ -423,7 +515,6 @@
         Colonnes acceptées :
         <strong>nomMatiere</strong>,
         <strong>process</strong>,
-        <strong>imageUrl</strong>,
         <strong>createdAt</strong>.
       </div>
 

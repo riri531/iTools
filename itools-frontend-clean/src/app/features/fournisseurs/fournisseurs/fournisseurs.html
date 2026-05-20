@@ -25,15 +25,15 @@
           Télécharger les données
         </button>
 
-        <button type="button" class="download-btn" (click)="downloadTemplate()">
+        <button *ngIf="canManageData()" type="button" class="download-btn" (click)="downloadTemplate()">
           Télécharger modèle à remplir
         </button>
 
-        <button type="button" class="import-btn" (click)="openImportModal()">
+        <button *ngIf="canManageData()" type="button" class="import-btn" (click)="openImportModal()">
           Import en masse
         </button>
 
-        <button type="button" class="add-btn" (click)="openCreateModal()">
+        <button *ngIf="canManageData()" type="button" class="add-btn" (click)="openCreateModal()">
           Nouveau
         </button>
       </div>
@@ -249,7 +249,7 @@
                 </td>
 
                 <td class="actions">
-                  <button type="button" class="table-btn edit-btn" (click)="openEditModal(item)">
+                  <button *ngIf="canManageData()" type="button" class="table-btn edit-btn" (click)="openEditModal(item)">
                     Modifier
                   </button>
 
@@ -271,7 +271,7 @@
                     Passer réclamation
                   </button>
 
-                  <button type="button" class="table-btn delete-btn" (click)="deleteFournisseur(item)">
+                  <button *ngIf="canManageData()" type="button" class="table-btn delete-btn" (click)="deleteFournisseur(item)">
                     Supprimer
                   </button>
                 </td>
@@ -309,7 +309,7 @@
             </div>
 
             <div class="image-card-actions">
-              <button type="button" class="table-btn edit-btn" (click)="openEditModal(item)">
+              <button *ngIf="canManageData()" type="button" class="table-btn edit-btn" (click)="openEditModal(item)">
                 Modifier
               </button>
 
@@ -331,7 +331,7 @@
                 Réclamation
               </button>
 
-              <button type="button" class="table-btn delete-btn" (click)="deleteFournisseur(item)">
+              <button *ngIf="canManageData()" type="button" class="table-btn delete-btn" (click)="deleteFournisseur(item)">
                 Supprimer
               </button>
             </div>

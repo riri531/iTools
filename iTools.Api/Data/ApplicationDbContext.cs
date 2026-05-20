@@ -86,8 +86,67 @@ namespace iTools.Api.Data
                     .HasDefaultValueSql("GETDATE()");
             });
 
+            modelBuilder.Entity<Emplacement>(entity =>
+            {
+                entity.Property(e => e.Armoire)
+                    .IsRequired()
+                    .HasMaxLength(100);
+
+                entity.Property(e => e.Numero)
+                    .IsRequired()
+                    .HasMaxLength(100);
+
+                entity.Property(e => e.Status)
+                    .IsRequired()
+                    .HasMaxLength(50);
+
+                entity.Property(e => e.ImageUrl)
+                    .HasMaxLength(500);
+
+                entity.Property(e => e.CreatedAt)
+                    .HasDefaultValueSql("GETDATE()");
+            });
+
+            modelBuilder.Entity<Matiere>(entity =>
+            {
+                entity.Property(e => e.NomMatiere)
+                    .IsRequired()
+                    .HasMaxLength(150);
+
+                entity.Property(e => e.Process)
+                    .IsRequired()
+                    .HasMaxLength(100);
+
+                entity.Property(e => e.ImageUrl)
+                    .HasMaxLength(500);
+
+                entity.Property(e => e.CreatedAt)
+                    .HasDefaultValueSql("GETDATE()");
+            });
+
             modelBuilder.Entity<Outil>(entity =>
             {
+                entity.Property(e => e.OTT)
+                    .IsRequired()
+                    .HasMaxLength(100);
+
+                entity.Property(e => e.CodeOutillage)
+                    .IsRequired()
+                    .HasMaxLength(150);
+
+                entity.Property(e => e.Status)
+                    .IsRequired()
+                    .HasMaxLength(50);
+
+                entity.Property(e => e.JustificationHS)
+                    .HasMaxLength(500);
+
+                entity.Property(e => e.ImageUrl)
+                    .HasMaxLength(500);
+
+                entity.Property(e => e.CreatedAt)
+                    .HasDefaultValueSql("GETDATE()");
+
                 entity.Property(e => e.Valeur)
                     .HasPrecision(18, 2);
             });

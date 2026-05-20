@@ -431,7 +431,7 @@ public class FournisseursController : ControllerBase
 
         role = role.Trim().ToUpperInvariant();
 
-        return role == "ADMIN" || role == "RESPONSABLE";
+        return role == "ADMIN" || role == "RESPONSABLE" || role == "EMPLOYE" || role == "EMPLOYÉ";
     }
 
     private byte[] BuildFournisseurPdf(Fournisseur item, List<ArchiveLog> history)

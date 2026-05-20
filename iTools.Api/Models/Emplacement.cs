@@ -14,4 +14,10 @@ public class Emplacement
     public Designation? Designation { get; set; }
 
     public string Status { get; set; } = "LIBRE";
+
+    public string? ImageUrl { get; set; }
+
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    public DateTime? UpdatedAt { get; set; }
 }

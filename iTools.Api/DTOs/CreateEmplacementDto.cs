@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Http;
+
 namespace iTools.Api.DTOs;
 
 public class CreateEmplacementDto
@@ -7,4 +9,6 @@ public class CreateEmplacementDto
     public string Numero { get; set; } = string.Empty;
     public int DesignationId { get; set; }
     public string Status { get; set; } = string.Empty;
+    public DateTime? CreatedAt { get; set; }
+    public IFormFile? Image { get; set; }
 }

@@ -70,6 +70,7 @@ interface OutilItem {
   photoUrl?: string | null;
   image?: string | null;
 
+  updatedAt?: string | null;
   createdAt?: string | null;
   creationDate?: string | null;
   createdOn?: string | null;
@@ -88,6 +89,7 @@ interface CreateOutilRequest {
   valeur: number;
   justificationHS?: string;
   dateAffectation?: string;
+  createdAt?: string;
 }
 
 interface UpdateOutilRequest {
@@ -101,6 +103,7 @@ interface UpdateOutilRequest {
   valeur: number;
   justificationHS?: string;
   dateAffectation?: string;
+  createdAt?: string;
 }
 
 interface CreateReclamationRequest {
@@ -228,7 +231,12 @@ export class OutilsComponent implements OnInit {
     status: 'S',
     valeur: 0,
     justificationHS: '',
-    dateAffectation: ''
+    dateAffectation: '',
+    createdAt: '',
+    imageUrl: '',
+    imagePreview: '',
+    imageFile: null as File | null,
+    removeImage: false
   };
 
   isEditMode = false;
@@ -244,10 +252,19 @@ export class OutilsComponent implements OnInit {
     this.loadOutils();
   }
 
-  canCreateReclamation(): boolean {
-    const role = this.authService.getRole();
-    return role === 'EMPLOYE' || role === 'RESPONSABLE';
+  canManageData(): boolean {
+    const role = String(this.authService.getRole() || localStorage.getItem('role') || '').toUpperCase();
+    return role === 'ADMIN' || role === 'RESPONSABLE';
   }
+  canCreateReclamation(): boolean {
+    const role = String(this.authService.getRole() || localStorage.getItem('role') || '').toUpperCase();
+    return role === 'ADMIN' || role === 'RESPONSABLE';
+  }
+  canDownloadOutilCard(): boolean {
+    const role = String(this.authService.getRole() || localStorage.getItem('role') || '').toUpperCase();
+    return role === 'ADMIN' || role === 'RESPONSABLE' || role === 'EMPLOYE' || role === 'EMPLOYÉ';
+  }
+
 
   loadDependencies(): void {
     this.loadLignes();
@@ -463,6 +480,11 @@ export class OutilsComponent implements OnInit {
   }
 
   openCreateModal(): void {
+    if (!this.canManageData()) {
+      this.showError("Vous n'avez pas le droit d'ajouter des éléments.");
+      return;
+    }
+
     this.resetForm();
     this.isEditMode = false;
     this.showModal = true;
@@ -470,6 +492,11 @@ export class OutilsComponent implements OnInit {
   }
 
   openEditModal(item: OutilItem): void {
+    if (!this.canManageData()) {
+      this.showError("Vous n'avez pas le droit de modifier des éléments.");
+      return;
+    }
+
     this.form = {
       id: item.id,
       ligneId: item.ligneId,
@@ -481,7 +508,12 @@ export class OutilsComponent implements OnInit {
       status: this.normalizeStatus(item.status),
       valeur: item.valeur,
       justificationHS: item.justificationHS || '',
-      dateAffectation: this.formatDateForInput(item.dateAffectation)
+      dateAffectation: this.formatDateForInput(item.dateAffectation),
+      createdAt: this.toDateInputValue(this.getCreationDateValue(item)),
+      imageUrl: this.getOutilImageUrl(item),
+      imagePreview: '',
+      imageFile: null,
+      removeImage: false
     };
 
     this.isEditMode = true;
@@ -497,6 +529,11 @@ export class OutilsComponent implements OnInit {
   }
 
   openImportModal(): void {
+    if (!this.canManageData()) {
+      this.showError("Vous n'avez pas le droit d'importer en masse.");
+      return;
+    }
+
     this.showImportModal = true;
     this.selectedImportFile = null;
     this.importErrorMessage = '';
@@ -648,6 +685,48 @@ export class OutilsComponent implements OnInit {
     });
   }
 
+  onImageSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    if (!file.type.startsWith('image/')) {
+      this.showError('Veuillez sélectionner un fichier image valide.');
+      return;
+    }
+
+    const maxSizeInMb = 5;
+    const maxSizeInBytes = maxSizeInMb * 1024 * 1024;
+
+    if (file.size > maxSizeInBytes) {
+      this.showError(`La taille de l’image ne doit pas dépasser ${maxSizeInMb} Mo.`);
+      return;
+    }
+
+    this.form.imageFile = file;
+    this.form.removeImage = false;
+
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      this.form.imagePreview = String(reader.result || '');
+      this.cdr.detectChanges();
+    };
+
+    reader.readAsDataURL(file);
+  }
+
+  removeSelectedImage(): void {
+    this.form.imageFile = null;
+    this.form.imagePreview = '';
+    this.form.imageUrl = '';
+    this.form.removeImage = true;
+    this.cdr.detectChanges();
+  }
+
   onFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
 
@@ -663,6 +742,11 @@ export class OutilsComponent implements OnInit {
   }
 
   submit(): void {
+    if (!this.canManageData()) {
+      this.showError("Vous n'avez pas le droit d'enregistrer des modifications.");
+      return;
+    }
+
     this.errorMessage = '';
 
     if (!this.form.ligneId) {
@@ -707,21 +791,10 @@ export class OutilsComponent implements OnInit {
       return;
     }
 
-    const payload: CreateOutilRequest | UpdateOutilRequest = {
-      ligneId: Number(this.form.ligneId),
-      clientId: Number(this.form.clientId),
-      fournisseurId: Number(this.form.fournisseurId),
-      emplacementId: Number(this.form.emplacementId),
-      ott: this.form.ott.trim(),
-      codeOutillage: this.form.codeOutillage.trim(),
-      status: normalizedStatus,
-      valeur: Number(this.form.valeur) || 0,
-      justificationHS: normalizedStatus === 'HS' ? this.form.justificationHS.trim() : '',
-      dateAffectation: this.form.dateAffectation || undefined
-    };
+    const formData = this.buildOutilFormData(normalizedStatus);
 
     if (this.isEditMode) {
-      this.http.put<void>(`${this.apiUrl}/${this.form.id}`, payload, {
+      this.http.put<void>(`${this.apiUrl}/${this.form.id}`, formData, {
         headers: this.getAuthHeaders()
       }).subscribe({
         next: () => {
@@ -739,7 +812,7 @@ export class OutilsComponent implements OnInit {
         }
       });
     } else {
-      this.http.post<OutilItem>(this.apiUrl, payload, {
+      this.http.post<OutilItem>(this.apiUrl, formData, {
         headers: this.getAuthHeaders()
       }).subscribe({
         next: () => {
@@ -760,6 +833,11 @@ export class OutilsComponent implements OnInit {
   }
 
   deleteOutil(item: OutilItem): void {
+    if (!this.canManageData()) {
+      this.showError("Vous n'avez pas le droit de supprimer des éléments.");
+      return;
+    }
+
     const confirmed = confirm(`Supprimer l’outil "${item.codeOutillage}" ?`);
 
     if (!confirmed) {
@@ -799,7 +877,12 @@ export class OutilsComponent implements OnInit {
       status: 'S',
       valeur: 0,
       justificationHS: '',
-      dateAffectation: ''
+      dateAffectation: '',
+      createdAt: this.getTodayForInput(),
+      imageUrl: '',
+      imagePreview: '',
+      imageFile: null,
+      removeImage: false
     };
 
     this.isEditMode = false;
@@ -1013,7 +1096,6 @@ export class OutilsComponent implements OnInit {
         valeur: 0,
         justificationHS: '',
         dateAffectation: '',
-        imageUrl: '',
         createdAt: ''
       }
     ];
@@ -1031,7 +1113,6 @@ export class OutilsComponent implements OnInit {
       { wch: 14 },
       { wch: 32 },
       { wch: 18 },
-      { wch: 48 },
       { wch: 24 }
     ];
 
@@ -1071,6 +1152,7 @@ export class OutilsComponent implements OnInit {
       justificationHS: item.justificationHS || '',
       dateAffectation: this.formatDateForInput(item.dateAffectation),
       dateCreation: this.formatCreationDate(item),
+      updatedAt: item.updatedAt || '',
       imageUrl: this.getOutilImageUrl(item)
     }));
 
@@ -1115,6 +1197,11 @@ export class OutilsComponent implements OnInit {
   }
 
   importOutils(): void {
+    if (!this.canManageData()) {
+      this.showError("Vous n'avez pas le droit d'importer en masse.");
+      return;
+    }
+
     this.importErrorMessage = '';
     this.importSuccessMessage = '';
 
@@ -1241,6 +1328,22 @@ export class OutilsComponent implements OnInit {
               ''
             );
 
+            const createdAt = this.normalizeDateValue(
+              row.createdAt ||
+              row.CreatedAt ||
+              row.creationDate ||
+              row.CreationDate ||
+              row.createdOn ||
+              row.CreatedOn ||
+              row.createdDate ||
+              row.CreatedDate ||
+              row.dateCreation ||
+              row.DateCreation ||
+              row['Date de création'] ||
+              row['date de création'] ||
+              ''
+            );
+
             const ligneId = this.resolveLigneId(ligneValue);
             const clientId = this.resolveClientId(clientValue);
             const fournisseurId = this.resolveFournisseurId(fournisseurValue);
@@ -1256,7 +1359,8 @@ export class OutilsComponent implements OnInit {
               status,
               valeur,
               justificationHS,
-              dateAffectation
+              dateAffectation,
+              createdAt
             };
           })
           .filter(outil =>
@@ -1323,6 +1427,69 @@ export class OutilsComponent implements OnInit {
     }
 
     return date.toISOString().slice(0, 10);
+  }
+
+  downloadOutilCard(item: OutilItem): void {
+    if (!this.canDownloadOutilCard()) {
+      this.showError("Vous n'avez pas le droit de télécharger la fiche PDF.");
+      return;
+    }
+
+    this.http.get(`${this.apiUrl}/${item.id}/identity-card`, {
+      headers: this.getAuthHeaders(),
+      responseType: 'blob'
+    }).subscribe({
+      next: (blob) => {
+        saveAs(blob, `fiche_outil_${item.id}_${this.safeFileName(item.codeOutillage)}.pdf`);
+      },
+      error: (err: any) => {
+        console.error('Erreur téléchargement fiche outil :', err);
+        this.showError(this.extractBackendError(err, 'Erreur lors du téléchargement de la fiche PDF.'));
+      }
+    });
+  }
+
+  private buildOutilFormData(normalizedStatus: string): FormData {
+    const formData = new FormData();
+
+    formData.append('LigneId', String(Number(this.form.ligneId)));
+    formData.append('ClientId', String(Number(this.form.clientId)));
+    formData.append('FournisseurId', String(Number(this.form.fournisseurId)));
+    formData.append('EmplacementId', String(Number(this.form.emplacementId)));
+    formData.append('OTT', this.form.ott.trim());
+    formData.append('CodeOutillage', this.form.codeOutillage.trim());
+    formData.append('Status', normalizedStatus);
+    formData.append('Valeur', String(Number(this.form.valeur) || 0));
+    formData.append('JustificationHS', normalizedStatus === 'HS' ? this.form.justificationHS.trim() : '');
+    formData.append('DateAffectation', this.form.dateAffectation || '');
+    formData.append('CreatedAt', this.form.createdAt || this.getTodayForInput());
+    formData.append('RemoveImage', String(this.form.removeImage));
+
+    if (this.form.imageFile) {
+      formData.append('Image', this.form.imageFile);
+    }
+
+    return formData;
+  }
+
+  private toDateInputValue(value: string): string {
+    if (!value) {
+      return this.getTodayForInput();
+    }
+
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
+      return value.slice(0, 10);
+    }
+
+    return date.toISOString().slice(0, 10);
+  }
+
+  private safeFileName(value: string): string {
+    return this.normalizeText(value)
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/^_+|_+$/g, '') || 'outil';
   }
 
   private refreshView(): void {
@@ -1529,7 +1696,22 @@ export class OutilsComponent implements OnInit {
     const backendErrors: string[] = [];
 
     outils.forEach((outil, index) => {
-      this.http.post<OutilItem>(this.apiUrl, outil, {
+      const formData = new FormData();
+
+      formData.append('LigneId', String(outil.ligneId));
+      formData.append('ClientId', String(outil.clientId));
+      formData.append('FournisseurId', String(outil.fournisseurId));
+      formData.append('EmplacementId', String(outil.emplacementId));
+      formData.append('OTT', outil.ott);
+      formData.append('CodeOutillage', outil.codeOutillage);
+      formData.append('Status', outil.status);
+      formData.append('Valeur', String(outil.valeur || 0));
+      formData.append('JustificationHS', outil.justificationHS || '');
+      formData.append('DateAffectation', outil.dateAffectation || '');
+      formData.append('CreatedAt', outil.createdAt || this.getTodayForInput());
+      formData.append('RemoveImage', 'false');
+
+      this.http.post<OutilItem>(this.apiUrl, formData, {
         headers: this.getAuthHeaders()
       }).subscribe({
         next: () => {

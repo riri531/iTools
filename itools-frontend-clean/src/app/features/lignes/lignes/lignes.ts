@@ -153,15 +153,19 @@ export class LignesComponent implements OnInit {
     this.loadLignes();
   }
 
-  canCreateReclamation(): boolean {
-    const role = String(this.authService.getRole() || '').toUpperCase();
-    return role === 'EMPLOYE' || role === 'EMPLOYÉ' || role === 'RESPONSABLE';
-  }
-
-  canDownloadLigneCard(): boolean {
-    const role = String(this.authService.getRole() || '').toUpperCase();
+  canManageData(): boolean {
+    const role = String(this.authService.getRole() || localStorage.getItem('role') || '').toUpperCase();
     return role === 'ADMIN' || role === 'RESPONSABLE';
   }
+  canCreateReclamation(): boolean {
+    const role = String(this.authService.getRole() || localStorage.getItem('role') || '').toUpperCase();
+    return role === 'ADMIN' || role === 'RESPONSABLE';
+  }
+  canDownloadLigneCard(): boolean {
+    const role = String(this.authService.getRole() || localStorage.getItem('role') || '').toUpperCase();
+    return role === 'ADMIN' || role === 'RESPONSABLE' || role === 'EMPLOYE' || role === 'EMPLOYÉ';
+  }
+
 
   loadLignes(): void {
     this.http.get<LigneItem[]>(this.apiUrl, {
@@ -234,6 +238,11 @@ export class LignesComponent implements OnInit {
   }
 
   openCreateModal(): void {
+    if (!this.canManageData()) {
+      this.showError("Vous n'avez pas le droit d'ajouter des éléments.");
+      return;
+    }
+
     this.resetForm();
     this.form.createdAt = this.getTodayForInput();
     this.isEditMode = false;
@@ -242,6 +251,11 @@ export class LignesComponent implements OnInit {
   }
 
   openEditModal(item: LigneItem): void {
+    if (!this.canManageData()) {
+      this.showError("Vous n'avez pas le droit de modifier des éléments.");
+      return;
+    }
+
     this.form = {
       id: item.id,
       nom: item.nom,
@@ -266,6 +280,11 @@ export class LignesComponent implements OnInit {
   }
 
   submit(): void {
+    if (!this.canManageData()) {
+      this.showError("Vous n'avez pas le droit d'enregistrer des modifications.");
+      return;
+    }
+
     this.errorMessage = '';
 
     if (!this.form.nom.trim()) {
@@ -367,6 +386,11 @@ export class LignesComponent implements OnInit {
   }
 
   deleteLigne(item: LigneItem): void {
+    if (!this.canManageData()) {
+      this.showError("Vous n'avez pas le droit de supprimer des éléments.");
+      return;
+    }
+
     const confirmed = confirm(`Supprimer la ligne "${item.nom}" ?`);
 
     if (!confirmed) {
@@ -412,6 +436,11 @@ export class LignesComponent implements OnInit {
   }
 
   openImportModal(): void {
+    if (!this.canManageData()) {
+      this.showError("Vous n'avez pas le droit d'importer en masse.");
+      return;
+    }
+
     this.showImportModal = true;
     this.selectedImportFile = null;
     this.importErrorMessage = '';
@@ -442,6 +471,11 @@ export class LignesComponent implements OnInit {
   }
 
   importLignes(): void {
+    if (!this.canManageData()) {
+      this.showError("Vous n'avez pas le droit d'importer en masse.");
+      return;
+    }
+
     this.importErrorMessage = '';
     this.importSuccessMessage = '';
 

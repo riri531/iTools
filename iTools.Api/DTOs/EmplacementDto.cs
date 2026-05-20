@@ -14,4 +14,10 @@ public class EmplacementDto
     public string DesignationName { get; set; } = string.Empty;
 
     public string Status { get; set; } = string.Empty;
+
+    public string? ImageUrl { get; set; }
+
+    public DateTime CreatedAt { get; set; }
+
+    public DateTime? UpdatedAt { get; set; }
 }

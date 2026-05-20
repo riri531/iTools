@@ -150,15 +150,19 @@ export class DesignationsComponent implements OnInit {
     this.loadDesignations();
   }
 
-  canCreateReclamation(): boolean {
-    const role = String(this.authService.getRole() || '').toUpperCase();
-    return role === 'EMPLOYE' || role === 'EMPLOYÉ' || role === 'RESPONSABLE';
-  }
-
-  canDownloadDesignationCard(): boolean {
-    const role = String(this.authService.getRole() || '').toUpperCase();
+  canManageData(): boolean {
+    const role = String(this.authService.getRole() || localStorage.getItem('role') || '').toUpperCase();
     return role === 'ADMIN' || role === 'RESPONSABLE';
   }
+  canCreateReclamation(): boolean {
+    const role = String(this.authService.getRole() || localStorage.getItem('role') || '').toUpperCase();
+    return role === 'ADMIN' || role === 'RESPONSABLE';
+  }
+  canDownloadDesignationCard(): boolean {
+    const role = String(this.authService.getRole() || localStorage.getItem('role') || '').toUpperCase();
+    return role === 'ADMIN' || role === 'RESPONSABLE' || role === 'EMPLOYE' || role === 'EMPLOYÉ';
+  }
+
 
   loadDesignations(): void {
     this.http.get<DesignationItem[]>(this.apiUrl, {
@@ -231,6 +235,11 @@ export class DesignationsComponent implements OnInit {
   }
 
   openCreateModal(): void {
+    if (!this.canManageData()) {
+      this.showError("Vous n'avez pas le droit d'ajouter des éléments.");
+      return;
+    }
+
     this.resetForm();
     this.form.createdAt = this.getTodayForInput();
     this.isEditMode = false;
@@ -239,6 +248,11 @@ export class DesignationsComponent implements OnInit {
   }
 
   openEditModal(item: DesignationItem): void {
+    if (!this.canManageData()) {
+      this.showError("Vous n'avez pas le droit de modifier des éléments.");
+      return;
+    }
+
     this.form = {
       id: item.id,
       name: item.name,
@@ -263,6 +277,11 @@ export class DesignationsComponent implements OnInit {
   }
 
   submit(): void {
+    if (!this.canManageData()) {
+      this.showError("Vous n'avez pas le droit d'enregistrer des modifications.");
+      return;
+    }
+
     this.errorMessage = '';
 
     if (!this.form.name.trim()) {
@@ -364,6 +383,11 @@ export class DesignationsComponent implements OnInit {
   }
 
   deleteDesignation(item: DesignationItem): void {
+    if (!this.canManageData()) {
+      this.showError("Vous n'avez pas le droit de supprimer des éléments.");
+      return;
+    }
+
     const confirmed = confirm(`Supprimer la désignation "${item.name}" ?`);
 
     if (!confirmed) {
@@ -409,6 +433,11 @@ export class DesignationsComponent implements OnInit {
   }
 
   openImportModal(): void {
+    if (!this.canManageData()) {
+      this.showError("Vous n'avez pas le droit d'importer en masse.");
+      return;
+    }
+
     this.showImportModal = true;
     this.selectedImportFile = null;
     this.importErrorMessage = '';
@@ -439,6 +468,11 @@ export class DesignationsComponent implements OnInit {
   }
 
   importDesignations(): void {
+    if (!this.canManageData()) {
+      this.showError("Vous n'avez pas le droit d'importer en masse.");
+      return;
+    }
+
     this.importErrorMessage = '';
     this.importSuccessMessage = '';
 

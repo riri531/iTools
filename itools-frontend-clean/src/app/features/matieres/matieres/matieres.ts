@@ -15,6 +15,7 @@ interface MatiereItem {
   photoUrl?: string | null;
   image?: string | null;
 
+  updatedAt?: string | null;
   createdAt?: string | null;
   creationDate?: string | null;
   createdOn?: string | null;
@@ -118,7 +119,12 @@ export class MatieresComponent implements OnInit {
   form = {
     id: 0,
     nomMatiere: '',
-    process: ''
+    process: '',
+    createdAt: '',
+    imageUrl: '',
+    imagePreview: '',
+    imageFile: null as File | null,
+    removeImage: false
   };
 
   isEditMode = false;
@@ -133,10 +139,19 @@ export class MatieresComponent implements OnInit {
     this.loadMatieres();
   }
 
-  canCreateReclamation(): boolean {
-    const role = this.authService.getRole();
-    return role === 'EMPLOYE' || role === 'RESPONSABLE';
+  canManageData(): boolean {
+    const role = String(this.authService.getRole() || localStorage.getItem('role') || '').toUpperCase();
+    return role === 'ADMIN' || role === 'RESPONSABLE';
   }
+  canCreateReclamation(): boolean {
+    const role = String(this.authService.getRole() || localStorage.getItem('role') || '').toUpperCase();
+    return role === 'ADMIN' || role === 'RESPONSABLE';
+  }
+  canDownloadMatiereCard(): boolean {
+    const role = String(this.authService.getRole() || localStorage.getItem('role') || '').toUpperCase();
+    return role === 'ADMIN' || role === 'RESPONSABLE' || role === 'EMPLOYE' || role === 'EMPLOYÉ';
+  }
+
 
   loadMatieres(): void {
     this.http.get<MatiereItem[]>(this.apiUrl, {
@@ -209,6 +224,11 @@ export class MatieresComponent implements OnInit {
   }
 
   openCreateModal(): void {
+    if (!this.canManageData()) {
+      this.showError("Vous n'avez pas le droit d'ajouter des éléments.");
+      return;
+    }
+
     this.resetForm();
     this.isEditMode = false;
     this.showModal = true;
@@ -216,10 +236,20 @@ export class MatieresComponent implements OnInit {
   }
 
   openEditModal(item: MatiereItem): void {
+    if (!this.canManageData()) {
+      this.showError("Vous n'avez pas le droit de modifier des éléments.");
+      return;
+    }
+
     this.form = {
       id: item.id,
       nomMatiere: item.nomMatiere,
-      process: item.process
+      process: item.process,
+      createdAt: this.toDateInputValue(this.getCreationDateValue(item)),
+      imageUrl: this.getMatiereImageUrl(item),
+      imagePreview: '',
+      imageFile: null,
+      removeImage: false
     };
 
     this.isEditMode = true;
@@ -235,6 +265,11 @@ export class MatieresComponent implements OnInit {
   }
 
   submit(): void {
+    if (!this.canManageData()) {
+      this.showError("Vous n'avez pas le droit d'enregistrer des modifications.");
+      return;
+    }
+
     this.errorMessage = '';
 
     if (!this.form.nomMatiere.trim()) {
@@ -247,13 +282,10 @@ export class MatieresComponent implements OnInit {
       return;
     }
 
-    const payload: CreateMatiereRequest | UpdateMatiereRequest = {
-      nomMatiere: this.form.nomMatiere.trim(),
-      process: this.form.process.trim()
-    };
+    const formData = this.buildMatiereFormData();
 
     if (this.isEditMode) {
-      this.http.put<void>(`${this.apiUrl}/${this.form.id}`, payload, {
+      this.http.put<void>(`${this.apiUrl}/${this.form.id}`, formData, {
         headers: this.getAuthHeaders()
       }).subscribe({
         next: () => {
@@ -271,7 +303,7 @@ export class MatieresComponent implements OnInit {
         }
       });
     } else {
-      this.http.post<MatiereItem>(this.apiUrl, payload, {
+      this.http.post<MatiereItem>(this.apiUrl, formData, {
         headers: this.getAuthHeaders()
       }).subscribe({
         next: () => {
@@ -292,6 +324,11 @@ export class MatieresComponent implements OnInit {
   }
 
   deleteMatiere(item: MatiereItem): void {
+    if (!this.canManageData()) {
+      this.showError("Vous n'avez pas le droit de supprimer des éléments.");
+      return;
+    }
+
     const confirmed = confirm(`Supprimer la matière "${item.nomMatiere}" ?`);
 
     if (!confirmed) {
@@ -323,7 +360,12 @@ export class MatieresComponent implements OnInit {
     this.form = {
       id: 0,
       nomMatiere: '',
-      process: ''
+      process: '',
+      createdAt: this.getTodayForInput(),
+      imageUrl: '',
+      imagePreview: '',
+      imageFile: null,
+      removeImage: false
     };
 
     this.isEditMode = false;
@@ -332,6 +374,11 @@ export class MatieresComponent implements OnInit {
   }
 
   openImportModal(): void {
+    if (!this.canManageData()) {
+      this.showError("Vous n'avez pas le droit d'importer en masse.");
+      return;
+    }
+
     this.showImportModal = true;
     this.selectedImportFile = null;
     this.importErrorMessage = '';
@@ -344,6 +391,48 @@ export class MatieresComponent implements OnInit {
     this.selectedImportFile = null;
     this.importErrorMessage = '';
     this.importSuccessMessage = '';
+    this.cdr.detectChanges();
+  }
+
+  onImageSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    if (!file.type.startsWith('image/')) {
+      this.showError('Veuillez sélectionner un fichier image valide.');
+      return;
+    }
+
+    const maxSizeInMb = 5;
+    const maxSizeInBytes = maxSizeInMb * 1024 * 1024;
+
+    if (file.size > maxSizeInBytes) {
+      this.showError(`La taille de l’image ne doit pas dépasser ${maxSizeInMb} Mo.`);
+      return;
+    }
+
+    this.form.imageFile = file;
+    this.form.removeImage = false;
+
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      this.form.imagePreview = String(reader.result || '');
+      this.cdr.detectChanges();
+    };
+
+    reader.readAsDataURL(file);
+  }
+
+  removeSelectedImage(): void {
+    this.form.imageFile = null;
+    this.form.imagePreview = '';
+    this.form.imageUrl = '';
+    this.form.removeImage = true;
     this.cdr.detectChanges();
   }
 
@@ -362,6 +451,11 @@ export class MatieresComponent implements OnInit {
   }
 
   importMatieres(): void {
+    if (!this.canManageData()) {
+      this.showError("Vous n'avez pas le droit d'importer en masse.");
+      return;
+    }
+
     this.importErrorMessage = '';
     this.importSuccessMessage = '';
 
@@ -412,9 +506,26 @@ export class MatieresComponent implements OnInit {
               ''
             ).trim();
 
+            const createdAt = String(
+              row.createdAt ||
+              row.CreatedAt ||
+              row.creationDate ||
+              row.CreationDate ||
+              row.createdOn ||
+              row.CreatedOn ||
+              row.createdDate ||
+              row.CreatedDate ||
+              row.dateCreation ||
+              row.DateCreation ||
+              row['Date de création'] ||
+              row['date de création'] ||
+              ''
+            ).trim();
+
             return {
               nomMatiere,
-              process
+              process,
+              createdAt
             };
           })
           .filter(item =>
@@ -444,14 +555,21 @@ export class MatieresComponent implements OnInit {
     reader.readAsArrayBuffer(this.selectedImportFile);
   }
 
-  private createImportedMatieres(matieres: CreateMatiereRequest[]): void {
+  private createImportedMatieres(matieres: any[]): void {
     let successCount = 0;
     let errorCount = 0;
     let completed = 0;
     const backendErrors: string[] = [];
 
     matieres.forEach((matiere, index) => {
-      this.http.post<MatiereItem>(this.apiUrl, matiere, {
+      const formData = new FormData();
+
+      formData.append('NomMatiere', matiere.nomMatiere);
+      formData.append('Process', matiere.process);
+      formData.append('CreatedAt', matiere.createdAt?.trim() || this.getTodayForInput());
+      formData.append('RemoveImage', 'false');
+
+      this.http.post<MatiereItem>(this.apiUrl, formData, {
         headers: this.getAuthHeaders()
       }).subscribe({
         next: () => {
@@ -512,7 +630,6 @@ export class MatieresComponent implements OnInit {
       {
         nomMatiere: '',
         process: '',
-        imageUrl: '',
         createdAt: ''
       }
     ];
@@ -522,7 +639,6 @@ export class MatieresComponent implements OnInit {
     worksheet['!cols'] = [
       { wch: 30 },
       { wch: 24 },
-      { wch: 48 },
       { wch: 24 }
     ];
 
@@ -547,6 +663,7 @@ export class MatieresComponent implements OnInit {
       nomMatiere: item.nomMatiere,
       process: item.process,
       createdAt: this.formatCreationDate(item),
+      updatedAt: item.updatedAt || '',
       imageUrl: this.getMatiereImageUrl(item)
     }));
 
@@ -742,6 +859,61 @@ export class MatieresComponent implements OnInit {
       month: '2-digit',
       day: '2-digit'
     });
+  }
+
+  downloadMatiereCard(item: MatiereItem): void {
+    if (!this.canDownloadMatiereCard()) {
+      this.showError("Vous n'avez pas le droit de télécharger la fiche PDF.");
+      return;
+    }
+
+    this.http.get(`${this.apiUrl}/${item.id}/identity-card`, {
+      headers: this.getAuthHeaders(),
+      responseType: 'blob'
+    }).subscribe({
+      next: (blob) => {
+        saveAs(blob, `fiche_matiere_${item.id}_${this.safeFileName(item.nomMatiere)}.pdf`);
+      },
+      error: (err: any) => {
+        console.error('Erreur téléchargement fiche matière :', err);
+        this.showError(this.extractBackendError(err, 'Erreur lors du téléchargement de la fiche PDF.'));
+      }
+    });
+  }
+
+  private buildMatiereFormData(): FormData {
+    const formData = new FormData();
+
+    formData.append('NomMatiere', this.form.nomMatiere.trim());
+    formData.append('Process', this.form.process.trim());
+    formData.append('CreatedAt', this.form.createdAt || this.getTodayForInput());
+    formData.append('RemoveImage', String(this.form.removeImage));
+
+    if (this.form.imageFile) {
+      formData.append('Image', this.form.imageFile);
+    }
+
+    return formData;
+  }
+
+  private toDateInputValue(value: string): string {
+    if (!value) {
+      return this.getTodayForInput();
+    }
+
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
+      return value.slice(0, 10);
+    }
+
+    return date.toISOString().slice(0, 10);
+  }
+
+  private safeFileName(value: string): string {
+    return this.normalizeText(value)
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/^_+|_+$/g, '') || 'matiere';
   }
 
   private sortMatieres(items: MatiereItem[]): MatiereItem[] {

@@ -152,15 +152,19 @@ export class FournisseursComponent implements OnInit {
     this.loadFournisseurs();
   }
 
-  canCreateReclamation(): boolean {
-    const role = String(this.authService.getRole() || '').toUpperCase();
-    return role === 'EMPLOYE' || role === 'EMPLOYÉ' || role === 'RESPONSABLE';
-  }
-
-  canDownloadFournisseurCard(): boolean {
-    const role = String(this.authService.getRole() || '').toUpperCase();
+  canManageData(): boolean {
+    const role = String(this.authService.getRole() || localStorage.getItem('role') || '').toUpperCase();
     return role === 'ADMIN' || role === 'RESPONSABLE';
   }
+  canCreateReclamation(): boolean {
+    const role = String(this.authService.getRole() || localStorage.getItem('role') || '').toUpperCase();
+    return role === 'ADMIN' || role === 'RESPONSABLE';
+  }
+  canDownloadFournisseurCard(): boolean {
+    const role = String(this.authService.getRole() || localStorage.getItem('role') || '').toUpperCase();
+    return role === 'ADMIN' || role === 'RESPONSABLE' || role === 'EMPLOYE' || role === 'EMPLOYÉ';
+  }
+
 
   loadFournisseurs(): void {
     this.http.get<FournisseurItem[]>(this.apiUrl, {
@@ -234,6 +238,11 @@ export class FournisseursComponent implements OnInit {
   }
 
   openCreateModal(): void {
+    if (!this.canManageData()) {
+      this.showError("Vous n'avez pas le droit d'ajouter des éléments.");
+      return;
+    }
+
     this.resetForm();
     this.form.createdAt = this.getTodayForInput();
     this.isEditMode = false;
@@ -242,6 +251,11 @@ export class FournisseursComponent implements OnInit {
   }
 
   openEditModal(item: FournisseurItem): void {
+    if (!this.canManageData()) {
+      this.showError("Vous n'avez pas le droit de modifier des éléments.");
+      return;
+    }
+
     this.form = {
       id: item.id,
       codeFournisseur: item.codeFournisseur,
@@ -267,6 +281,11 @@ export class FournisseursComponent implements OnInit {
   }
 
   submit(): void {
+    if (!this.canManageData()) {
+      this.showError("Vous n'avez pas le droit d'enregistrer des modifications.");
+      return;
+    }
+
     this.errorMessage = '';
 
     if (!this.form.codeFournisseur.trim()) {
@@ -373,6 +392,11 @@ export class FournisseursComponent implements OnInit {
   }
 
   deleteFournisseur(item: FournisseurItem): void {
+    if (!this.canManageData()) {
+      this.showError("Vous n'avez pas le droit de supprimer des éléments.");
+      return;
+    }
+
     const confirmed = confirm(`Supprimer le fournisseur "${item.nomFournisseur}" ?`);
 
     if (!confirmed) {
@@ -419,6 +443,11 @@ export class FournisseursComponent implements OnInit {
   }
 
   openImportModal(): void {
+    if (!this.canManageData()) {
+      this.showError("Vous n'avez pas le droit d'importer en masse.");
+      return;
+    }
+
     this.showImportModal = true;
     this.selectedImportFile = null;
     this.importErrorMessage = '';
@@ -449,6 +478,11 @@ export class FournisseursComponent implements OnInit {
   }
 
   importFournisseurs(): void {
+    if (!this.canManageData()) {
+      this.showError("Vous n'avez pas le droit d'importer en masse.");
+      return;
+    }
+
     this.importErrorMessage = '';
     this.importSuccessMessage = '';
 

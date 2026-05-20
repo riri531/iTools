@@ -136,15 +136,19 @@ export class ClientsComponent implements OnInit {
     this.loadClients();
   }
 
-  canCreateReclamation(): boolean {
-    const role = String(this.authService.getRole() || '').toUpperCase();
-    return role === 'EMPLOYE' || role === 'EMPLOYÉ' || role === 'RESPONSABLE';
-  }
-
-  canDownloadClientCard(): boolean {
-    const role = String(this.authService.getRole() || '').toUpperCase();
+  canManageData(): boolean {
+    const role = String(this.authService.getRole() || localStorage.getItem('role') || '').toUpperCase();
     return role === 'ADMIN' || role === 'RESPONSABLE';
   }
+  canCreateReclamation(): boolean {
+    const role = String(this.authService.getRole() || localStorage.getItem('role') || '').toUpperCase();
+    return role === 'ADMIN' || role === 'RESPONSABLE';
+  }
+  canDownloadClientCard(): boolean {
+    const role = String(this.authService.getRole() || localStorage.getItem('role') || '').toUpperCase();
+    return role === 'ADMIN' || role === 'RESPONSABLE' || role === 'EMPLOYE' || role === 'EMPLOYÉ';
+  }
+
 
   loadClients(): void {
     this.http.get<ClientItem[]>(this.apiUrl, {
@@ -219,6 +223,11 @@ export class ClientsComponent implements OnInit {
   }
 
   openCreateModal(): void {
+    if (!this.canManageData()) {
+      this.showError("Vous n'avez pas le droit d'ajouter des éléments.");
+      return;
+    }
+
     this.resetForm();
     this.form.createdAt = this.getTodayForInput();
     this.isEditMode = false;
@@ -227,6 +236,11 @@ export class ClientsComponent implements OnInit {
   }
 
   openEditModal(item: ClientItem): void {
+    if (!this.canManageData()) {
+      this.showError("Vous n'avez pas le droit de modifier des éléments.");
+      return;
+    }
+
     this.form = {
       id: item.id,
       nomClient: item.nomClient,
@@ -252,6 +266,11 @@ export class ClientsComponent implements OnInit {
   }
 
   submit(): void {
+    if (!this.canManageData()) {
+      this.showError("Vous n'avez pas le droit d'enregistrer des modifications.");
+      return;
+    }
+
     this.errorMessage = '';
 
     if (!this.form.nomClient.trim()) {
@@ -358,6 +377,11 @@ export class ClientsComponent implements OnInit {
   }
 
   deleteClient(item: ClientItem): void {
+    if (!this.canManageData()) {
+      this.showError("Vous n'avez pas le droit de supprimer des éléments.");
+      return;
+    }
+
     const confirmed = confirm(`Supprimer le client "${item.nomClient}" ?`);
 
     if (!confirmed) {
@@ -404,6 +428,11 @@ export class ClientsComponent implements OnInit {
   }
 
   openImportModal(): void {
+    if (!this.canManageData()) {
+      this.showError("Vous n'avez pas le droit d'importer en masse.");
+      return;
+    }
+
     this.showImportModal = true;
     this.selectedImportFile = null;
     this.importErrorMessage = '';
@@ -434,6 +463,11 @@ export class ClientsComponent implements OnInit {
   }
 
   importClients(): void {
+    if (!this.canManageData()) {
+      this.showError("Vous n'avez pas le droit d'importer en masse.");
+      return;
+    }
+
     this.importErrorMessage = '';
     this.importSuccessMessage = '';
 

@@ -26,57 +26,101 @@
   </div>
 
   <nav class="sidebar-nav">
+
     <a routerLink="/app/dashboard" routerLinkActive="active">
       Dashboard
     </a>
 
-    <a routerLink="/app/reclamations" routerLinkActive="active">
-      Réclamations
-    </a>
-
-    <a routerLink="/app/assistance" routerLinkActive="active">
-      Assistance intelligente
-    </a>
-
-    <a *ngIf="canSeeUsers" routerLink="/app/users" routerLinkActive="active">
-      Utilisateurs
-    </a>
-
-    <a *ngIf="canSeeDesignations" routerLink="/app/designations" routerLinkActive="active">
+    <a
+      *ngIf="canSeeDesignations"
+      routerLink="/app/designations"
+      routerLinkActive="active"
+    >
       Désignations
     </a>
 
-    <a *ngIf="canSeeLignes" routerLink="/app/lignes" routerLinkActive="active">
+    <a
+      *ngIf="canSeeLignes"
+      routerLink="/app/lignes"
+      routerLinkActive="active"
+    >
       Lignes
     </a>
 
-    <a *ngIf="canSeeClients" routerLink="/app/clients" routerLinkActive="active">
+    <a
+      *ngIf="canSeeClients"
+      routerLink="/app/clients"
+      routerLinkActive="active"
+    >
       Clients
     </a>
 
-    <a *ngIf="canSeeFournisseurs" routerLink="/app/fournisseurs" routerLinkActive="active">
+    <a
+      *ngIf="canSeeFournisseurs"
+      routerLink="/app/fournisseurs"
+      routerLinkActive="active"
+    >
       Fournisseurs
     </a>
 
-    <a *ngIf="canSeeMatieres" routerLink="/app/matieres" routerLinkActive="active">
-      Matières
+    <!-- UNIQUEMENT ADMIN -->
+    <a
+      *ngIf="canSeeUsers"
+      routerLink="/app/users"
+      routerLinkActive="active"
+    >
+      Utilisateurs inscrits
     </a>
 
-    <a *ngIf="canSeeEmplacements" routerLink="/app/emplacements" routerLinkActive="active">
+    <a
+      *ngIf="canSeeEmplacements"
+      routerLink="/app/emplacements"
+      routerLinkActive="active"
+    >
       Emplacements
     </a>
 
-    <a *ngIf="canSeeOutils" routerLink="/app/outils" routerLinkActive="active">
+    <a
+      *ngIf="canSeeMatieres"
+      routerLink="/app/matieres"
+      routerLinkActive="active"
+    >
+      Matières
+    </a>
+
+    <a
+      *ngIf="canSeeOutils"
+      routerLink="/app/outils"
+      routerLinkActive="active"
+    >
       Outils
     </a>
 
-    <a *ngIf="role === 'ADMIN'" routerLink="/app/archives" routerLinkActive="active">
-      Archives
+    <a
+      *ngIf="canSeeAssistance"
+      routerLink="/app/assistance"
+      routerLinkActive="active"
+    >
+      Assistance intelligente
     </a>
+
+    <!-- UNIQUEMENT ADMIN -->
+    <a
+      *ngIf="isAdmin"
+      routerLink="/app/archives"
+      routerLinkActive="active"
+    >
+      Historique
+    </a>
+
   </nav>
 
   <div class="sidebar-bottom">
-    <button type="button" class="logout-btn" (click)="logout()">
+    <button
+      type="button"
+      class="logout-btn"
+      (click)="logout()"
+    >
       Déconnexion
     </button>
   </div>
