@@ -24,27 +24,14 @@ interface FournisseurItem {
   createdOn?: string | null;
   createdDate?: string | null;
   dateCreation?: string | null;
-}
 
-interface CreateFournisseurRequest {
-  codeFournisseur: string;
-  nomFournisseur: string;
-  nomenclature: string;
-  createdAt: string;
-}
-
-interface UpdateFournisseurRequest {
-  codeFournisseur: string;
-  nomFournisseur: string;
-  nomenclature: string;
-  createdAt: string;
+  updatedAt?: string | null;
 }
 
 interface ImportedFournisseurRow {
   codeFournisseur: string;
   nomFournisseur: string;
   nomenclature?: string;
-  imageUrl?: string;
   createdAt?: string;
 }
 
@@ -146,7 +133,11 @@ export class FournisseursComponent implements OnInit {
     codeFournisseur: '',
     nomFournisseur: '',
     nomenclature: '',
-    createdAt: ''
+    createdAt: '',
+    imageUrl: '',
+    imagePreview: '',
+    imageFile: null as File | null,
+    removeImage: false
   };
 
   isEditMode = false;
@@ -162,8 +153,13 @@ export class FournisseursComponent implements OnInit {
   }
 
   canCreateReclamation(): boolean {
-    const role = this.authService.getRole();
-    return role === 'EMPLOYE' || role === 'RESPONSABLE';
+    const role = String(this.authService.getRole() || '').toUpperCase();
+    return role === 'EMPLOYE' || role === 'EMPLOYÉ' || role === 'RESPONSABLE';
+  }
+
+  canDownloadFournisseurCard(): boolean {
+    const role = String(this.authService.getRole() || '').toUpperCase();
+    return role === 'ADMIN' || role === 'RESPONSABLE';
   }
 
   loadFournisseurs(): void {
@@ -251,7 +247,11 @@ export class FournisseursComponent implements OnInit {
       codeFournisseur: item.codeFournisseur,
       nomFournisseur: item.nomFournisseur,
       nomenclature: this.getFournisseurNomenclature(item),
-      createdAt: this.toDateInputValue(this.getCreationDateValue(item))
+      createdAt: this.toDateInputValue(this.getCreationDateValue(item)),
+      imageUrl: this.getFournisseurImageUrl(item),
+      imagePreview: '',
+      imageFile: null,
+      removeImage: false
     };
 
     this.isEditMode = true;
@@ -289,15 +289,10 @@ export class FournisseursComponent implements OnInit {
       return;
     }
 
-    const payload: CreateFournisseurRequest | UpdateFournisseurRequest = {
-      codeFournisseur: this.form.codeFournisseur.trim(),
-      nomFournisseur: this.form.nomFournisseur.trim(),
-      nomenclature: this.form.nomenclature.trim(),
-      createdAt: this.form.createdAt
-    };
+    const formData = this.buildFournisseurFormData();
 
     if (this.isEditMode) {
-      this.http.put<void>(`${this.apiUrl}/${this.form.id}`, payload, {
+      this.http.put<void>(`${this.apiUrl}/${this.form.id}`, formData, {
         headers: this.getAuthHeaders()
       }).subscribe({
         next: () => {
@@ -315,7 +310,7 @@ export class FournisseursComponent implements OnInit {
         }
       });
     } else {
-      this.http.post<FournisseurItem>(this.apiUrl, payload, {
+      this.http.post<FournisseurItem>(this.apiUrl, formData, {
         headers: this.getAuthHeaders()
       }).subscribe({
         next: () => {
@@ -333,6 +328,48 @@ export class FournisseursComponent implements OnInit {
         }
       });
     }
+  }
+
+  onImageSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    if (!file.type.startsWith('image/')) {
+      this.showError('Veuillez sélectionner un fichier image valide.');
+      return;
+    }
+
+    const maxSizeInMb = 5;
+    const maxSizeInBytes = maxSizeInMb * 1024 * 1024;
+
+    if (file.size > maxSizeInBytes) {
+      this.showError(`La taille de l’image ne doit pas dépasser ${maxSizeInMb} Mo.`);
+      return;
+    }
+
+    this.form.imageFile = file;
+    this.form.removeImage = false;
+
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      this.form.imagePreview = String(reader.result || '');
+      this.cdr.detectChanges();
+    };
+
+    reader.readAsDataURL(file);
+  }
+
+  removeSelectedImage(): void {
+    this.form.imageFile = null;
+    this.form.imagePreview = '';
+    this.form.imageUrl = '';
+    this.form.removeImage = true;
+    this.cdr.detectChanges();
   }
 
   deleteFournisseur(item: FournisseurItem): void {
@@ -369,7 +406,11 @@ export class FournisseursComponent implements OnInit {
       codeFournisseur: '',
       nomFournisseur: '',
       nomenclature: '',
-      createdAt: ''
+      createdAt: '',
+      imageUrl: '',
+      imagePreview: '',
+      imageFile: null,
+      removeImage: false
     };
 
     this.isEditMode = false;
@@ -468,18 +509,6 @@ export class FournisseursComponent implements OnInit {
               ''
             ).trim();
 
-            const imageUrl = String(
-              row.imageUrl ||
-              row.ImageUrl ||
-              row.image ||
-              row.Image ||
-              row.photoUrl ||
-              row.PhotoUrl ||
-              row.photo ||
-              row.Photo ||
-              ''
-            ).trim();
-
             const createdAt = String(
               row.createdAt ||
               row.CreatedAt ||
@@ -500,7 +529,6 @@ export class FournisseursComponent implements OnInit {
               codeFournisseur,
               nomFournisseur,
               nomenclature,
-              imageUrl,
               createdAt
             };
           })
@@ -538,14 +566,15 @@ export class FournisseursComponent implements OnInit {
     const backendErrors: string[] = [];
 
     fournisseurs.forEach((fournisseur, index) => {
-      const payload: CreateFournisseurRequest = {
-        codeFournisseur: fournisseur.codeFournisseur,
-        nomFournisseur: fournisseur.nomFournisseur,
-        nomenclature: fournisseur.nomenclature?.trim() || this.inferNomenclatureFromName(fournisseur.nomFournisseur),
-        createdAt: fournisseur.createdAt?.trim() || this.getTodayForInput()
-      };
+      const formData = new FormData();
 
-      this.http.post<FournisseurItem>(this.apiUrl, payload, {
+      formData.append('CodeFournisseur', fournisseur.codeFournisseur);
+      formData.append('NomFournisseur', fournisseur.nomFournisseur);
+      formData.append('Nomenclature', fournisseur.nomenclature?.trim() || this.inferNomenclatureFromName(fournisseur.nomFournisseur));
+      formData.append('CreatedAt', fournisseur.createdAt?.trim() || this.getTodayForInput());
+      formData.append('RemoveImage', 'false');
+
+      this.http.post<FournisseurItem>(this.apiUrl, formData, {
         headers: this.getAuthHeaders()
       }).subscribe({
         next: () => {
@@ -607,7 +636,6 @@ export class FournisseursComponent implements OnInit {
         codeFournisseur: '',
         nomFournisseur: '',
         nomenclature: '',
-        imageUrl: '',
         createdAt: ''
       }
     ];
@@ -618,7 +646,6 @@ export class FournisseursComponent implements OnInit {
       { wch: 28 },
       { wch: 34 },
       { wch: 28 },
-      { wch: 48 },
       { wch: 24 }
     ];
 
@@ -644,6 +671,7 @@ export class FournisseursComponent implements OnInit {
       nomFournisseur: item.nomFournisseur,
       nomenclature: this.getFournisseurNomenclature(item),
       createdAt: this.formatCreationDate(item),
+      updatedAt: item.updatedAt || '',
       imageUrl: this.getFournisseurImageUrl(item)
     }));
 
@@ -654,6 +682,7 @@ export class FournisseursComponent implements OnInit {
       { wch: 28 },
       { wch: 34 },
       { wch: 28 },
+      { wch: 24 },
       { wch: 24 },
       { wch: 48 }
     ];
@@ -671,6 +700,26 @@ export class FournisseursComponent implements OnInit {
     });
 
     saveAs(fileData, 'fournisseurs_export.xlsx');
+  }
+
+  downloadFournisseurCard(item: FournisseurItem): void {
+    if (!this.canDownloadFournisseurCard()) {
+      this.showError("Vous n'avez pas le droit de télécharger la fiche PDF.");
+      return;
+    }
+
+    this.http.get(`${this.apiUrl}/${item.id}/identity-card`, {
+      headers: this.getAuthHeaders(),
+      responseType: 'blob'
+    }).subscribe({
+      next: (blob) => {
+        saveAs(blob, `fiche_fournisseur_${item.id}_${this.safeFileName(item.nomFournisseur)}.pdf`);
+      },
+      error: (err: any) => {
+        console.error('Erreur téléchargement fiche fournisseur :', err);
+        this.showError(this.extractBackendError(err, 'Erreur lors du téléchargement de la fiche PDF.'));
+      }
+    });
   }
 
   openReclamationModal(item: FournisseurItem): void {
@@ -854,6 +903,22 @@ export class FournisseursComponent implements OnInit {
     });
   }
 
+  private buildFournisseurFormData(): FormData {
+    const formData = new FormData();
+
+    formData.append('CodeFournisseur', this.form.codeFournisseur.trim());
+    formData.append('NomFournisseur', this.form.nomFournisseur.trim());
+    formData.append('Nomenclature', this.form.nomenclature.trim());
+    formData.append('CreatedAt', this.form.createdAt);
+    formData.append('RemoveImage', String(this.form.removeImage));
+
+    if (this.form.imageFile) {
+      formData.append('Image', this.form.imageFile);
+    }
+
+    return formData;
+  }
+
   private sortFournisseurs(items: FournisseurItem[]): FournisseurItem[] {
     return [...items].sort((a, b) => {
       let comparison = 0;
@@ -1018,6 +1083,12 @@ export class FournisseursComponent implements OnInit {
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
       .trim();
+  }
+
+  private safeFileName(value: string): string {
+    return this.normalizeText(value)
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/^_+|_+$/g, '') || 'fournisseur';
   }
 
   private extractBackendError(err: any, fallback: string): string {

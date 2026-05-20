@@ -1,5 +1,16 @@
 <div class="fournisseurs-page">
   <section class="fournisseurs-card page-header">
+    <div class="header-context-symbols" aria-hidden="true">
+      <span class="context-symbol symbol-supplier"></span>
+      <span class="context-symbol symbol-box"></span>
+      <span class="context-symbol symbol-code"></span>
+      <span class="context-orbit orbit-one"></span>
+      <span class="context-orbit orbit-two"></span>
+      <span class="context-dot dot-one"></span>
+      <span class="context-dot dot-two"></span>
+      <span class="context-dot dot-three"></span>
+    </div>
+
     <div class="card-inner header-inner">
       <div>
         <span class="section-kicker">Référentiel</span>
@@ -243,6 +254,15 @@
                   </button>
 
                   <button
+                    *ngIf="canDownloadFournisseurCard()"
+                    type="button"
+                    class="table-btn identity-card-btn"
+                    (click)="downloadFournisseurCard(item)"
+                  >
+                    Fiche PDF
+                  </button>
+
+                  <button
                     *ngIf="canCreateReclamation()"
                     type="button"
                     class="table-btn reclamation add-btn"
@@ -294,6 +314,15 @@
               </button>
 
               <button
+                *ngIf="canDownloadFournisseurCard()"
+                type="button"
+                class="table-btn identity-card-btn"
+                (click)="downloadFournisseurCard(item)"
+              >
+                Fiche PDF
+              </button>
+
+              <button
                 *ngIf="canCreateReclamation()"
                 type="button"
                 class="table-btn reclamation add-btn"
@@ -329,7 +358,7 @@
           </h2>
 
           <p class="it-modal-subtitle">
-            Complète les informations puis valide l’enregistrement.
+            Complète les informations, ajoute une photo si disponible, puis valide l’enregistrement.
           </p>
         </div>
 
@@ -389,9 +418,60 @@
           />
         </div>
 
+        <div class="form-group image-upload-group">
+          <label>Photo associée au fournisseur</label>
+
+          <div class="image-upload-box">
+            <div class="image-upload-preview">
+              <img
+                *ngIf="form.imagePreview || form.imageUrl; else noSelectedImage"
+                [src]="form.imagePreview || form.imageUrl"
+                alt="Aperçu photo fournisseur"
+              />
+
+              <ng-template #noSelectedImage>
+                <div class="image-upload-empty">
+                  <span>{{ form.nomFournisseur ? form.nomFournisseur.charAt(0).toUpperCase() : 'F' }}</span>
+                  <small>Aucune photo</small>
+                </div>
+              </ng-template>
+            </div>
+
+            <div class="image-upload-content">
+              <strong>Image du fournisseur</strong>
+              <p>
+                Ajoute une photo ou un logo pour identifier visuellement ce fournisseur dans la liste,
+                la vue images et la fiche PDF.
+              </p>
+
+              <input
+                #fournisseurImageInput
+                type="file"
+                accept="image/*"
+                hidden
+                (change)="onImageSelected($event)"
+              />
+
+              <div class="image-upload-actions">
+                <button type="button" class="import-btn" (click)="fournisseurImageInput.click()">
+                  Choisir une photo
+                </button>
+
+                <button
+                  type="button"
+                  class="delete-btn"
+                  *ngIf="form.imagePreview || form.imageUrl"
+                  (click)="removeSelectedImage()"
+                >
+                  Retirer photo
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="form-note">
-          La photo fournisseur pourra être importée plus tard.
-          Si le backend ne sauvegarde pas encore la nomenclature ou la date, il faut aussi ajouter ces champs côté API.
+          La photo sera sauvegardée avec le fournisseur. Elle apparaîtra aussi dans la fiche PDF de l’élément.
         </div>
 
         <div class="form-actions">
@@ -453,7 +533,6 @@
         <strong>codeFournisseur</strong>,
         <strong>nomFournisseur</strong>,
         <strong>nomenclature</strong>,
-        <strong>imageUrl</strong>,
         <strong>createdAt</strong>.
       </div>
 

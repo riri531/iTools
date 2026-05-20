@@ -63,6 +63,26 @@ namespace iTools.Api.Data
                     .HasMaxLength(500);
             });
 
+            modelBuilder.Entity<Fournisseur>(entity =>
+            {
+                entity.Property(e => e.CodeFournisseur)
+                    .IsRequired()
+                    .HasMaxLength(100);
+
+                entity.Property(e => e.NomFournisseur)
+                    .IsRequired()
+                    .HasMaxLength(200);
+
+                entity.Property(e => e.Nomenclature)
+                    .HasMaxLength(150);
+
+                entity.Property(e => e.ImageUrl)
+                    .HasMaxLength(500);
+
+                entity.Property(e => e.CreatedAt)
+                    .HasDefaultValueSql("GETDATE()");
+            });
+
             modelBuilder.Entity<Outil>(entity =>
             {
                 entity.Property(e => e.Valeur)
