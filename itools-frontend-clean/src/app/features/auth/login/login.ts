@@ -1,12 +1,12 @@
 import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { NgIf } from '@angular/common';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth';
 
 @Component({
   selector: 'app-login',
-  imports: [FormsModule, NgIf],
+  imports: [FormsModule, NgIf, RouterLink],
   templateUrl: './login.html',
   styleUrl: './login.scss'
 })
@@ -33,7 +33,7 @@ export class LoginComponent {
   submit(): void {
     this.errorMessage = '';
 
-    if (!this.email || !this.password) {
+    if (!this.email.trim() || !this.password.trim()) {
       this.errorMessage = 'Veuillez saisir votre email et votre mot de passe.';
       return;
     }
@@ -41,18 +41,12 @@ export class LoginComponent {
     this.loading = true;
 
     this.authService.login({
-      email: this.email,
-      password: this.password
+      email: this.email.trim(),
+      password: this.password,
+      rememberMe: this.rememberMe
     }).subscribe({
       next: () => {
         this.loading = false;
-
-        if (this.rememberMe) {
-          localStorage.setItem('rememberedEmail', this.email);
-        } else {
-          localStorage.removeItem('rememberedEmail');
-        }
-
         this.router.navigate(['/home']);
       },
 
@@ -60,7 +54,10 @@ export class LoginComponent {
         console.error(err);
 
         this.loading = false;
-        this.errorMessage = err?.error || 'Email ou mot de passe invalide.';
+        this.errorMessage =
+          typeof err?.error === 'string'
+            ? err.error
+            : 'Email ou mot de passe invalide.';
       }
     });
   }

@@ -16,6 +16,26 @@ export interface LoginResponse {
   fullName: string;
 }
 
+export interface ForgotPasswordRequest {
+  email: string;
+}
+
+export interface ForgotPasswordResponse {
+  message: string;
+  resetLink?: string;
+}
+
+export interface ResetPasswordRequest {
+  userId: number;
+  token: string;
+  newPassword: string;
+  confirmPassword: string;
+}
+
+export interface MessageResponse {
+  message: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -39,6 +59,20 @@ export class AuthService {
           localStorage.removeItem('rememberedEmail');
         }
       })
+    );
+  }
+
+  forgotPassword(data: ForgotPasswordRequest): Observable<ForgotPasswordResponse> {
+    return this.http.post<ForgotPasswordResponse>(
+      `${this.apiUrl}/forgot-password`,
+      data
+    );
+  }
+
+  resetPassword(data: ResetPasswordRequest): Observable<MessageResponse> {
+    return this.http.post<MessageResponse>(
+      `${this.apiUrl}/reset-password`,
+      data
     );
   }
 

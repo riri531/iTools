@@ -39,11 +39,15 @@
 
           <div class="login-options">
             <label class="remember-wrap">
-              <input type="checkbox" name="rememberMe" [(ngModel)]="rememberMe" />
+              <input
+                type="checkbox"
+                name="rememberMe"
+                [(ngModel)]="rememberMe"
+              />
               <span>Se souvenir de moi</span>
             </label>
 
-            <a href="javascript:void(0)">Mot de passe oublié?</a>
+            <a routerLink="/forgot-password">Mot de passe oublié?</a>
           </div>
 
           <button class="login-btn" type="submit" [disabled]="loading">
