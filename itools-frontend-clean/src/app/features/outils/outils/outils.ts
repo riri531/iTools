@@ -2,6 +2,7 @@ import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { NgFor, NgIf } from '@angular/common';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { ActivatedRoute, Router } from '@angular/router';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 import { AuthService } from '../../../core/services/auth';
@@ -133,12 +134,15 @@ export class OutilsComponent implements OnInit {
   private http = inject(HttpClient);
   private cdr = inject(ChangeDetectorRef);
   private authService = inject(AuthService);
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
 
   private apiUrl = 'http://localhost:5160/api/Outils';
   private lignesUrl = 'http://localhost:5160/api/Lignes';
   private clientsUrl = 'http://localhost:5160/api/Clients';
   private fournisseursUrl = 'http://localhost:5160/api/Fournisseurs';
   private emplacementsUrl = 'http://localhost:5160/api/Emplacements';
+  private designationsUrl = 'http://localhost:5160/api/Designations';
   private reclamationsUrl = 'http://localhost:5160/api/Reclamations';
   private baseUrl = 'http://localhost:5160';
 
@@ -153,6 +157,9 @@ export class OutilsComponent implements OnInit {
   clients: ClientItem[] = [];
   fournisseurs: FournisseurItem[] = [];
   emplacements: EmplacementItem[] = [];
+
+  designationContextId: number | null = null;
+  designationContextName = '';
 
   viewMode: OutilViewMode = 'list';
 
@@ -246,6 +253,7 @@ export class OutilsComponent implements OnInit {
   private successTimeout: ReturnType<typeof setTimeout> | null = null;
 
   ngOnInit(): void {
+    this.initDesignationContext();
     this.restoreViewMode();
     this.restoreSortPreferences();
     this.loadDependencies();
@@ -265,6 +273,62 @@ export class OutilsComponent implements OnInit {
     return role === 'ADMIN' || role === 'RESPONSABLE' || role === 'EMPLOYE' || role === 'EMPLOYÉ';
   }
 
+
+  isDesignationContext(): boolean {
+    return this.designationContextId !== null;
+  }
+
+  getPageTitle(): string {
+    if (!this.designationContextId) {
+      return 'Outils';
+    }
+
+    return this.designationContextName
+      ? `Outils - ${this.designationContextName}`
+      : `Outils de la désignation ${this.designationContextId}`;
+  }
+
+  getPageSubtitle(): string {
+    if (!this.designationContextId) {
+      return 'Gestion des outillages, affectations, statuts, valeurs et emplacements.';
+    }
+
+    return 'Liste des outils liés à cette désignation. Les nouveaux outils créés ici seront rattachés à un emplacement qui porte cette désignation.';
+  }
+
+  goBackToDesignations(): void {
+    this.router.navigate(['/app/designations']);
+  }
+
+  getFormEmplacements(): EmplacementItem[] {
+    return this.getContextEmplacements();
+  }
+
+
+  private initDesignationContext(): void {
+    const designationIdParam = this.route.snapshot.paramMap.get('designationId');
+    const designationId = Number(designationIdParam);
+
+    if (!Number.isNaN(designationId) && designationId > 0) {
+      this.designationContextId = designationId;
+      this.loadDesignationContextName(designationId);
+    }
+  }
+
+  private loadDesignationContextName(designationId: number): void {
+    this.http.get<DesignationItem>(`${this.designationsUrl}/${designationId}`, {
+      headers: this.getAuthHeaders()
+    }).subscribe({
+      next: designation => {
+        this.designationContextName = designation?.name || '';
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.designationContextName = '';
+        this.cdr.detectChanges();
+      }
+    });
+  }
 
   loadDependencies(): void {
     this.loadLignes();
@@ -360,10 +424,8 @@ export class OutilsComponent implements OnInit {
         this.emplacements = data || [];
         this.emplacementsLoaded = true;
 
-        if (!this.form.emplacementId && this.emplacements.length > 0) {
-          this.form.emplacementId = this.emplacements[0].id;
-        }
-
+        this.ensureFormEmplacementInContext();
+        this.inferDesignationContextNameFromEmplacements();
         this.refreshView();
       },
       error: (err: any) => {
@@ -394,7 +456,7 @@ export class OutilsComponent implements OnInit {
   applyFilters(): void {
     const search = this.normalizeText(this.searchText);
 
-    const filtered = this.outils.filter(item => {
+    const filtered = this.getBaseOutilsForCurrentContext().filter(item => {
       const ligneName = this.getLigneName(item);
       const clientName = this.getClientName(item);
       const fournisseurName = this.getFournisseurName(item);
@@ -472,16 +534,26 @@ export class OutilsComponent implements OnInit {
   }
 
   countByStatus(status: string): number {
-    return this.outils.filter(item => this.normalizeStatus(item.status) === status).length;
+    return this.getBaseOutilsForCurrentContext().filter(item => this.normalizeStatus(item.status) === status).length;
   }
 
   countStockRisks(): number {
-    return this.outils.filter(item => this.getStockState(item) !== 'NORMAL').length;
+    return this.getBaseOutilsForCurrentContext().filter(item => this.getStockState(item) !== 'NORMAL').length;
   }
+
+  getTotalOutilsCount(): number {
+    return this.getBaseOutilsForCurrentContext().length;
+  }
+
 
   openCreateModal(): void {
     if (!this.canManageData()) {
       this.showError("Vous n'avez pas le droit d'ajouter des éléments.");
+      return;
+    }
+
+    if (this.designationContextId && this.getContextEmplacements().length === 0) {
+      this.showError("Aucun emplacement n'est lié à cette désignation. Créez d'abord un emplacement avec cette désignation.");
       return;
     }
 
@@ -769,6 +841,11 @@ export class OutilsComponent implements OnInit {
       return;
     }
 
+    if (this.designationContextId && !this.getContextEmplacements().some(emplacement => emplacement.id === Number(this.form.emplacementId))) {
+      this.showError("L’emplacement sélectionné ne correspond pas à la désignation ouverte.");
+      return;
+    }
+
     if (!this.form.ott.trim()) {
       this.showError("L’OTT est obligatoire.");
       return;
@@ -871,7 +948,7 @@ export class OutilsComponent implements OnInit {
       ligneId: this.lignes.length > 0 ? this.lignes[0].id : 0,
       clientId: this.clients.length > 0 ? this.clients[0].id : 0,
       fournisseurId: this.fournisseurs.length > 0 ? this.fournisseurs[0].id : 0,
-      emplacementId: this.emplacements.length > 0 ? this.emplacements[0].id : 0,
+      emplacementId: this.getDefaultEmplacementId(),
       ott: '',
       codeOutillage: '',
       status: 'S',
@@ -888,6 +965,78 @@ export class OutilsComponent implements OnInit {
     this.isEditMode = false;
     this.errorMessage = '';
     this.cdr.detectChanges();
+  }
+
+  private getBaseOutilsForCurrentContext(): OutilItem[] {
+    if (!this.designationContextId) {
+      return this.outils;
+    }
+
+    return this.outils.filter(item => this.getOutilDesignationId(item) === this.designationContextId);
+  }
+
+  private getOutilDesignationId(item: OutilItem): number | null {
+    if (item.emplacement?.designationId) {
+      return Number(item.emplacement.designationId);
+    }
+
+    if (item.emplacement?.designation?.id) {
+      return Number(item.emplacement.designation.id);
+    }
+
+    const emplacement = this.emplacements.find(e => e.id === item.emplacementId);
+
+    if (!emplacement) {
+      return null;
+    }
+
+    return Number(emplacement.designationId || emplacement.designation?.id || 0) || null;
+  }
+
+  private getContextEmplacements(): EmplacementItem[] {
+    if (!this.designationContextId) {
+      return this.emplacements;
+    }
+
+    return this.emplacements.filter(emplacement =>
+      Number(emplacement.designationId || emplacement.designation?.id || 0) === this.designationContextId
+    );
+  }
+
+  private getDefaultEmplacementId(): number {
+    const emplacement = this.getContextEmplacements()[0];
+    return emplacement ? emplacement.id : 0;
+  }
+
+  private ensureFormEmplacementInContext(): void {
+    const availableEmplacements = this.getContextEmplacements();
+
+    if (availableEmplacements.length === 0) {
+      this.form.emplacementId = 0;
+      return;
+    }
+
+    const currentStillAvailable = availableEmplacements.some(
+      emplacement => emplacement.id === Number(this.form.emplacementId)
+    );
+
+    if (!currentStillAvailable) {
+      this.form.emplacementId = availableEmplacements[0].id;
+    }
+  }
+
+  private inferDesignationContextNameFromEmplacements(): void {
+    if (!this.designationContextId || this.designationContextName) {
+      return;
+    }
+
+    const emplacement = this.emplacements.find(item =>
+      Number(item.designationId || item.designation?.id || 0) === this.designationContextId
+    );
+
+    if (emplacement?.designation?.name) {
+      this.designationContextName = emplacement.designation.name;
+    }
   }
 
   getLigneName(item: OutilItem): string {
@@ -1504,7 +1653,7 @@ export class OutilsComponent implements OnInit {
     const matieres = new Set<string>();
     const designations = new Set<string>();
 
-    this.outils.forEach(item => {
+    this.getBaseOutilsForCurrentContext().forEach(item => {
       lignes.add(this.getLigneName(item));
       clients.add(this.getClientName(item));
       fournisseurs.add(this.getFournisseurName(item));

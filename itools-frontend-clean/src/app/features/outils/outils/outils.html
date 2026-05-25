@@ -14,13 +14,17 @@
     <div class="card-inner header-inner">
       <div>
         <span class="section-kicker">Outillages</span>
-        <h1>Outils</h1>
+        <h1>{{ getPageTitle() }}</h1>
         <p>
-          Gestion des outillages, affectations, statuts, valeurs et emplacements.
+          {{ getPageSubtitle() }}
         </p>
       </div>
 
       <div class="header-actions">
+        <button *ngIf="isDesignationContext()" type="button" class="download-btn back-btn" (click)="goBackToDesignations()">
+          Retour aux désignations
+        </button>
+
         <button type="button" class="download-btn" (click)="downloadOutilsData()">
           Télécharger les données
         </button>
@@ -146,7 +150,7 @@
           </select>
         </div>
 
-        <div class="form-group">
+        <div class="form-group" *ngIf="!isDesignationContext()">
           <label>Désignation</label>
           <select
             class="form-control"
@@ -209,7 +213,7 @@
       <div class="summary-grid">
         <div class="summary-card">
           <span>Total</span>
-          <strong>{{ outils.length }}</strong>
+          <strong>{{ getTotalOutilsCount() }}</strong>
         </div>
 
         <div class="summary-card">
@@ -508,6 +512,10 @@
       </div>
 
       <form (ngSubmit)="submit()" class="outils-form modal-form">
+        <div class="form-note" *ngIf="isDesignationContext()">
+          L’outil sera rattaché à la désignation ouverte via l’emplacement sélectionné.
+        </div>
+
         <div class="form-group">
           <label>Ligne</label>
           <select class="form-control" name="ligneId" [(ngModel)]="form.ligneId" required>
@@ -542,7 +550,7 @@
           <label>Emplacement</label>
           <select class="form-control" name="emplacementId" [(ngModel)]="form.emplacementId" required>
             <option [value]="0">Sélectionner un emplacement</option>
-            <option *ngFor="let emplacement of emplacements" [value]="emplacement.id">
+            <option *ngFor="let emplacement of getFormEmplacements()" [value]="emplacement.id">
               {{ getEmplacementLabel(emplacement) }}
             </option>
           </select>

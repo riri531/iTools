@@ -2,6 +2,11 @@ import { Routes } from '@angular/router';
 
 import { LoginComponent } from './features/auth/login/login';
 import { HomeComponent } from './features/home/home/home';
+
+
+
+
+
 import { DashboardComponent } from './features/dashboard/dashboard/dashboard';
 
 import { authGuard } from './core/guards/auth-guard';
@@ -102,6 +107,13 @@ export const routes: Routes = [
       {
         path: 'designations',
         component: DesignationsComponent,
+        canActivate: [roleGuard],
+        data: { roles: ['ADMIN', 'RESPONSABLE', 'EMPLOYE'] }
+      },
+
+      {
+        path: 'designations/:designationId/outils',
+        component: OutilsComponent,
         canActivate: [roleGuard],
         data: { roles: ['ADMIN', 'RESPONSABLE', 'EMPLOYE'] }
       },

@@ -247,6 +247,15 @@
                   </button>
 
                   <button
+                    type="button"
+                    class="table-btn folder-btn"
+                    title="Voir les outils liés à cette désignation"
+                    (click)="goToDesignationOutils(item)"
+                  >
+                    📁 Outils
+                  </button>
+
+                  <button
                     *ngIf="canDownloadDesignationCard()"
                     type="button"
                     class="table-btn identity-card-btn"
@@ -303,6 +312,15 @@
             <div class="image-card-actions">
               <button *ngIf="canManageData()" type="button" class="table-btn edit-btn" (click)="openEditModal(item)">
                 Modifier
+              </button>
+
+              <button
+                type="button"
+                class="table-btn folder-btn"
+                title="Voir les outils liés à cette désignation"
+                (click)="goToDesignationOutils(item)"
+              >
+                📁 Outils
               </button>
 
               <button

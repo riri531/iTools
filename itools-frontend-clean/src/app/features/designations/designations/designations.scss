@@ -516,6 +516,13 @@ select.form-control {
   background: #ffffff !important;
 }
 
+.folder-btn {
+  color: #ffffff !important;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 48%, #1e3a8a 100%) !important;
+  border: none !important;
+  box-shadow: 0 10px 22px rgba(37, 99, 235, 0.22) !important;
+}
+
 /* =========================================================
    TABLE LISTE - CORRIGEE SANS VIDE A DROITE
    ========================================================= */
@@ -530,7 +537,7 @@ select.form-control {
 
 .designations-table {
   width: 100%;
-  min-width: 1080px !important;
+  min-width: 1210px !important;
   border-collapse: collapse;
   color: var(--text-dark);
   table-layout: fixed;
@@ -599,8 +606,8 @@ select.form-control {
 /* Actions : assez large pour Modifier + Fiche PDF + Supprimer */
 .designations-table th:nth-child(6),
 .designations-table td:nth-child(6) {
-  width: 390px !important;
-  max-width: 390px !important;
+  width: 520px !important;
+  max-width: 520px !important;
 }
 
 .designation-name {
@@ -672,8 +679,8 @@ select.form-control {
 
 .actions,
 .designations-table td.actions {
-  width: 390px !important;
-  max-width: 390px !important;
+  width: 520px !important;
+  max-width: 520px !important;
 
   display: flex !important;
   align-items: center !important;
@@ -703,6 +710,11 @@ select.form-control {
 .actions .identity-card-btn,
 .designations-table .identity-card-btn {
   min-width: 100px !important;
+}
+
+.actions .folder-btn,
+.designations-table .folder-btn {
+  min-width: 98px !important;
 }
 
 .actions .delete-btn,

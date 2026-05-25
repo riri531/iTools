@@ -2,6 +2,7 @@ import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { NgFor, NgIf } from '@angular/common';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { Router } from '@angular/router';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 import { AuthService } from '../../../core/services/auth';
@@ -60,6 +61,7 @@ export class DesignationsComponent implements OnInit {
   private http = inject(HttpClient);
   private cdr = inject(ChangeDetectorRef);
   private authService = inject(AuthService);
+  private router = inject(Router);
 
   private apiUrl = 'http://localhost:5160/api/Designations';
   private reclamationsUrl = 'http://localhost:5160/api/Reclamations';
@@ -161,6 +163,11 @@ export class DesignationsComponent implements OnInit {
   canDownloadDesignationCard(): boolean {
     const role = String(this.authService.getRole() || localStorage.getItem('role') || '').toUpperCase();
     return role === 'ADMIN' || role === 'RESPONSABLE' || role === 'EMPLOYE' || role === 'EMPLOYÉ';
+  }
+
+
+  goToDesignationOutils(item: DesignationItem): void {
+    this.router.navigate(['/app/designations', item.id, 'outils']);
   }
 
 

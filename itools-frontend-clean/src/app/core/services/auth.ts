@@ -5,6 +5,8 @@ import { Observable, tap } from 'rxjs';
 export interface LoginRequest {
   email: string;
   password: string;
+  recaptchaToken?: string;
+  rememberMe?: boolean;
 }
 
 export interface LoginResponse {
@@ -24,10 +26,18 @@ export class AuthService {
   login(data: LoginRequest): Observable<LoginResponse> {
     return this.http.post<LoginResponse>(`${this.apiUrl}/login`, data).pipe(
       tap((response) => {
-        localStorage.setItem('token', response.token);
-        localStorage.setItem('role', response.role);
-        localStorage.setItem('email', response.email);
-        localStorage.setItem('fullName', response.fullName);
+        const storage = data.rememberMe ? localStorage : sessionStorage;
+
+        storage.setItem('token', response.token);
+        storage.setItem('role', response.role);
+        storage.setItem('email', response.email);
+        storage.setItem('fullName', response.fullName);
+
+        if (data.rememberMe) {
+          localStorage.setItem('rememberedEmail', response.email);
+        } else {
+          localStorage.removeItem('rememberedEmail');
+        }
       })
     );
   }
@@ -37,27 +47,35 @@ export class AuthService {
     localStorage.removeItem('role');
     localStorage.removeItem('email');
     localStorage.removeItem('fullName');
+    localStorage.removeItem('rememberedEmail');
+
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('role');
+    sessionStorage.removeItem('email');
+    sessionStorage.removeItem('fullName');
   }
 
   getToken(): string | null {
-    return localStorage.getItem('token');
+    return localStorage.getItem('token') || sessionStorage.getItem('token');
   }
 
   getRole(): string | null {
-    return localStorage.getItem('role');
+    return localStorage.getItem('role') || sessionStorage.getItem('role');
   }
 
   getFullName(): string | null {
-    return localStorage.getItem('fullName');
+    return localStorage.getItem('fullName') || sessionStorage.getItem('fullName');
   }
 
   getEmail(): string | null {
-    return localStorage.getItem('email');
+    return localStorage.getItem('email') || sessionStorage.getItem('email');
   }
 
   updateCurrentUser(fullName: string, email: string): void {
-    localStorage.setItem('fullName', fullName);
-    localStorage.setItem('email', email);
+    const storage = localStorage.getItem('token') ? localStorage : sessionStorage;
+
+    storage.setItem('fullName', fullName);
+    storage.setItem('email', email);
   }
 
   isLoggedIn(): boolean {
