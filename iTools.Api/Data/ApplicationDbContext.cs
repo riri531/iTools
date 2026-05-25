@@ -62,6 +62,12 @@ namespace iTools.Api.Data
                 entity.Property(e => e.ProfilePhotoUrl)
                     .HasMaxLength(500);
 
+                entity.Property(e => e.PasswordResetTokenHash)
+                    .HasMaxLength(500);
+
+                entity.Property(e => e.PasswordResetTokenExpiresAt)
+                    .IsRequired(false);
+                    
                 entity.Property(e => e.CreatedAt)
                     .HasDefaultValueSql("GETDATE()");
             });

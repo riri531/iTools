@@ -1,5 +1,6 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 using iTools.Api.Data;
 using iTools.Api.DTOs;
@@ -160,6 +161,161 @@ public class AuthController : ControllerBase
         {
             message = "Déconnexion archivée avec succès."
         });
+    }
+
+    [HttpPost("forgot-password")]
+    public async Task<IActionResult> ForgotPassword(ForgotPasswordRequestDto request)
+    {
+        if (string.IsNullOrWhiteSpace(request.Email))
+        {
+            return BadRequest("L’email est obligatoire.");
+        }
+
+        var email = request.Email.Trim();
+
+        var user = await _context.Users
+            .Include(u => u.Role)
+            .FirstOrDefaultAsync(u => u.Email == email);
+
+        if (user == null)
+        {
+            return Ok(new
+            {
+                message = "Si cet email existe dans le système, un lien de réinitialisation sera généré."
+            });
+        }
+
+        var resetToken = GenerateSecureToken();
+
+        user.PasswordResetTokenHash = BCrypt.Net.BCrypt.HashPassword(resetToken);
+        user.PasswordResetTokenExpiresAt = DateTime.UtcNow.AddMinutes(30);
+        user.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+
+        var frontendBaseUrl = _configuration["Frontend:BaseUrl"] ?? "http://localhost:4200";
+
+        var resetLink =
+            $"{frontendBaseUrl}/reset-password?userId={user.Id}&token={Uri.EscapeDataString(resetToken)}";
+
+        await AddAuthArchiveAsync(
+            userId: user.Id,
+            userName: user.FullName,
+            role: user.Role?.Name ?? "",
+            action: "PASSWORD_RESET_REQUEST",
+            description: $"Demande de réinitialisation du mot de passe : {user.Email}",
+            oldValues: null,
+            newValues: new
+            {
+                user.Id,
+                user.Email,
+                Expiration = user.PasswordResetTokenExpiresAt,
+                Date = DateTime.Now
+            }
+        );
+
+        return Ok(new
+        {
+            message = "Un lien de réinitialisation a été généré.",
+            resetLink = resetLink
+        });
+    }
+
+    [HttpPost("reset-password")]
+    public async Task<IActionResult> ResetPassword(ResetPasswordRequestDto request)
+    {
+        if (request.UserId <= 0)
+        {
+            return BadRequest("Utilisateur invalide.");
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Token))
+        {
+            return BadRequest("Le token de réinitialisation est obligatoire.");
+        }
+
+        if (string.IsNullOrWhiteSpace(request.NewPassword))
+        {
+            return BadRequest("Le nouveau mot de passe est obligatoire.");
+        }
+
+        if (request.NewPassword.Length < 6)
+        {
+            return BadRequest("Le mot de passe doit contenir au moins 6 caractères.");
+        }
+
+        if (request.NewPassword != request.ConfirmPassword)
+        {
+            return BadRequest("Les mots de passe ne correspondent pas.");
+        }
+
+        var user = await _context.Users
+            .Include(u => u.Role)
+            .FirstOrDefaultAsync(u => u.Id == request.UserId);
+
+        if (user == null)
+        {
+            return BadRequest("Lien de réinitialisation invalide.");
+        }
+
+        if (string.IsNullOrWhiteSpace(user.PasswordResetTokenHash) ||
+            user.PasswordResetTokenExpiresAt == null)
+        {
+            return BadRequest("Aucune demande de réinitialisation active.");
+        }
+
+        if (user.PasswordResetTokenExpiresAt < DateTime.UtcNow)
+        {
+            return BadRequest("Le lien de réinitialisation a expiré.");
+        }
+
+        var isTokenValid = BCrypt.Net.BCrypt.Verify(
+            request.Token,
+            user.PasswordResetTokenHash
+        );
+
+        if (!isTokenValid)
+        {
+            return BadRequest("Token de réinitialisation invalide.");
+        }
+
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+        user.PasswordResetTokenHash = null;
+        user.PasswordResetTokenExpiresAt = null;
+        user.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+
+        await AddAuthArchiveAsync(
+            userId: user.Id,
+            userName: user.FullName,
+            role: user.Role?.Name ?? "",
+            action: "PASSWORD_RESET_SUCCESS",
+            description: $"Mot de passe réinitialisé : {user.Email}",
+            oldValues: null,
+            newValues: new
+            {
+                user.Id,
+                user.Email,
+                Result = "PASSWORD_RESET_SUCCESS",
+                Date = DateTime.Now
+            }
+        );
+
+        return Ok(new
+        {
+            message = "Mot de passe réinitialisé avec succès."
+        });
+    }
+
+    private static string GenerateSecureToken()
+    {
+        var bytes = RandomNumberGenerator.GetBytes(32);
+
+        return Convert.ToBase64String(bytes)
+            .Replace("+", "-")
+            .Replace("/", "_")
+            .Replace("=", "");
     }
 
     private async Task AddAuthArchiveAsync(
