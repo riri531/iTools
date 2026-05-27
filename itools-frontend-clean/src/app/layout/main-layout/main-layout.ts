@@ -80,31 +80,47 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
       label: 'Dashboard',
       route: '/app/dashboard',
       icon: '/icons/dashboard.png',
-      keywords: ['dashboard', 'tableau de bord', 'statistiques', 'accueil', 'home']
+      keywords: ['dashboard', 'tableau de bord', 'statistiques', 'accueil', 'home'],
+      roles: ['ADMIN', 'RESPONSABLE', 'EMPLOYE', 'EMPLOYÉ']
     },
     {
-      label: 'Désignations',
-      route: '/app/designations',
-      icon: '/icons/designation.png',
-      keywords: ['designation', 'désignation', 'designations', 'désignations', 'référentiel', 'referentiel']
+      label: 'Outillages',
+      route: '/app/outillages',
+      icon: '/icons/outils.png',
+      keywords: [
+        'outillage',
+        'outillages',
+        'outil',
+        'outils',
+        'designation',
+        'désignation',
+        'designations',
+        'désignations',
+        'référentiel',
+        'referentiel'
+      ],
+      roles: ['ADMIN', 'RESPONSABLE', 'EMPLOYE', 'EMPLOYÉ']
     },
     {
       label: 'Lignes',
       route: '/app/lignes',
       icon: '/icons/lignes.png',
-      keywords: ['ligne', 'lignes', 'production']
+      keywords: ['ligne', 'lignes', 'production'],
+      roles: ['ADMIN', 'RESPONSABLE']
     },
     {
       label: 'Clients',
       route: '/app/clients',
       icon: '/icons/clients.png',
-      keywords: ['client', 'clients']
+      keywords: ['client', 'clients'],
+      roles: ['ADMIN', 'RESPONSABLE']
     },
     {
       label: 'Fournisseurs',
       route: '/app/fournisseurs',
       icon: '/icons/fournisseurs.png',
-      keywords: ['fournisseur', 'fournisseurs', 'supplier', 'suppliers']
+      keywords: ['fournisseur', 'fournisseurs', 'supplier', 'suppliers'],
+      roles: ['ADMIN', 'RESPONSABLE']
     },
     {
       label: 'Utilisateurs inscrits',
@@ -117,25 +133,22 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
       label: 'Emplacements',
       route: '/app/emplacements',
       icon: '/icons/emplacement.png',
-      keywords: ['emplacement', 'emplacements', 'libre', 'libres', 'occupé', 'occupe', 'hs', 'hors service', 'stockage']
+      keywords: ['emplacement', 'emplacements', 'libre', 'libres', 'occupé', 'occupe', 'hs', 'hors service', 'stockage'],
+      roles: ['ADMIN', 'RESPONSABLE', 'EMPLOYE', 'EMPLOYÉ']
     },
     {
       label: 'Matières',
       route: '/app/matieres',
       icon: '/icons/matiere.png',
-      keywords: ['matiere', 'matières', 'matieres', 'matière', 'zinc', 'plomb', 'pb']
-    },
-    {
-      label: 'Outils',
-      route: '/app/outils',
-      icon: '/icons/outils.png',
-      keywords: ['outil', 'outils', 'outillage', 'outillages', 'tool', 'tools']
+      keywords: ['matiere', 'matières', 'matieres', 'matière', 'zinc', 'plomb', 'pb'],
+      roles: ['ADMIN', 'RESPONSABLE']
     },
     {
       label: 'Assistance intelligente',
       route: '/app/assistance',
       icon: '/icons/assistance-intelligente.png',
-      keywords: ['assistance', 'intelligente', 'aide', 'guide', 'chatbot', 'support', 'réclamation']
+      keywords: ['assistance', 'intelligente', 'aide', 'guide', 'chatbot', 'support', 'réclamation'],
+      roles: ['ADMIN', 'RESPONSABLE', 'EMPLOYE', 'EMPLOYÉ']
     },
     {
       label: 'Historique',
@@ -148,7 +161,14 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
 
   get navItems(): NavItem[] {
     const role = this.userRole.toUpperCase();
-    return this.allNavItems.filter(item => !item.roles || item.roles.includes(role));
+
+    return this.allNavItems.filter(item => {
+      if (!item.roles) {
+        return true;
+      }
+
+      return item.roles.includes(role);
+    });
   }
 
   private profileUpdatedHandler = () => {

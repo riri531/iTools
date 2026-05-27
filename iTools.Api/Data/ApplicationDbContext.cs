@@ -36,6 +36,8 @@ namespace iTools.Api.Data
 
         public DbSet<ReclamationHistory> ReclamationHistories { get; set; }
 
+        public DbSet<AccessRequest> AccessRequests { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -67,7 +69,7 @@ namespace iTools.Api.Data
 
                 entity.Property(e => e.PasswordResetTokenExpiresAt)
                     .IsRequired(false);
-                    
+
                 entity.Property(e => e.CreatedAt)
                     .HasDefaultValueSql("GETDATE()");
             });
@@ -320,6 +322,56 @@ namespace iTools.Api.Data
                 entity.HasOne(e => e.ActionByUser)
                     .WithMany()
                     .HasForeignKey(e => e.ActionByUserId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            modelBuilder.Entity<AccessRequest>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+
+                entity.Property(e => e.FullName)
+                    .IsRequired()
+                    .HasMaxLength(150);
+
+                entity.Property(e => e.Matricule)
+                    .IsRequired()
+                    .HasMaxLength(50);
+
+                entity.Property(e => e.Email)
+                    .IsRequired()
+                    .HasMaxLength(150);
+
+                entity.Property(e => e.PhoneNumber)
+                    .IsRequired()
+                    .HasMaxLength(30);
+
+                entity.Property(e => e.Department)
+                    .IsRequired()
+                    .HasMaxLength(150);
+
+                entity.Property(e => e.Message)
+                    .HasMaxLength(1000);
+
+                entity.Property(e => e.Status)
+                    .IsRequired()
+                    .HasMaxLength(50)
+                    .HasDefaultValue("EN_ATTENTE");
+
+                entity.Property(e => e.DecisionComment)
+                    .HasMaxLength(1000);
+
+                entity.Property(e => e.CreatedAt)
+                    .HasDefaultValueSql("GETDATE()");
+
+                entity.Property(e => e.TreatedAt)
+                    .IsRequired(false);
+
+                entity.Property(e => e.TreatedByUserId)
+                    .IsRequired(false);
+
+                entity.HasOne(e => e.TreatedByUser)
+                    .WithMany()
+                    .HasForeignKey(e => e.TreatedByUserId)
                     .OnDelete(DeleteBehavior.Restrict);
             });
         }

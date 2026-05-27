@@ -167,7 +167,7 @@ export class DesignationsComponent implements OnInit {
 
 
   goToDesignationOutils(item: DesignationItem): void {
-    this.router.navigate(['/app/designations', item.id, 'outils']);
+    this.router.navigate(['/app/outillages', item.id, 'outils']);
   }
 
 
@@ -183,7 +183,7 @@ export class DesignationsComponent implements OnInit {
       },
       error: (err: any) => {
         console.error('Erreur chargement désignations :', err);
-        this.showError(this.extractBackendError(err, 'Erreur lors du chargement des désignations.'));
+        this.showError(this.extractBackendError(err, 'Erreur lors du chargement des outillages.'));
       }
     });
   }
@@ -749,7 +749,7 @@ export class DesignationsComponent implements OnInit {
       problemType: this.reclamationForm.problemType.trim(),
       description: this.reclamationForm.description.trim(),
       reclamationDate: this.reclamationForm.reclamationDate,
-      sourcePage: 'Désignations',
+      sourcePage: 'Outillages',
       entityName: 'Designation',
       entityId: item.id,
       entityLabel: this.getDesignationReclamationLabel(item),

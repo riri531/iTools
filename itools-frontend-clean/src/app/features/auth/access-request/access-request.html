@@ -1,0 +1,94 @@
+<div class="access-page">
+  <div class="page-overlay"></div>
+  <div class="red-outline red-outline-1"></div>
+  <div class="red-outline red-outline-2"></div>
+
+  <section class="access-card">
+    <h1>Demande d’accès</h1>
+
+    <p class="access-description">
+      Remplissez ce formulaire pour demander la création d’un compte iTools.
+      Votre demande sera transmise à l’administrateur.
+    </p>
+
+    <div class="alert success" *ngIf="successMessage">
+      {{ successMessage }}
+    </div>
+
+    <div class="alert error" *ngIf="errorMessage">
+      {{ errorMessage }}
+    </div>
+
+    <form class="access-form" (ngSubmit)="submit()">
+      <div class="form-grid">
+        <div class="input-shell">
+          <input
+            type="text"
+            name="fullName"
+            [(ngModel)]="form.fullName"
+            placeholder="Nom complet"
+            required
+          />
+        </div>
+
+        <div class="input-shell">
+          <input
+            type="text"
+            name="matricule"
+            [(ngModel)]="form.matricule"
+            placeholder="Matricule TIS"
+            required
+          />
+        </div>
+
+        <div class="input-shell">
+          <input
+            type="email"
+            name="email"
+            [(ngModel)]="form.email"
+            placeholder="Adresse email"
+            autocomplete="email"
+            required
+          />
+        </div>
+
+        <div class="input-shell">
+          <input
+            type="text"
+            name="phoneNumber"
+            [(ngModel)]="form.phoneNumber"
+            placeholder="Numéro de téléphone"
+            required
+          />
+        </div>
+
+        <div class="input-shell full-row">
+          <input
+            type="text"
+            name="department"
+            [(ngModel)]="form.department"
+            placeholder="Service / Département"
+            required
+          />
+        </div>
+
+        <div class="textarea-shell full-row">
+          <textarea
+            name="message"
+            [(ngModel)]="form.message"
+            placeholder="Message optionnel"
+            rows="4"
+          ></textarea>
+        </div>
+      </div>
+
+      <button class="access-btn" type="submit" [disabled]="loading">
+        {{ loading ? 'Envoi en cours...' : 'Envoyer la demande' }}
+      </button>
+    </form>
+
+    <div class="access-footer">
+      <a routerLink="/login">Retour à la connexion</a>
+    </div>
+  </section>
+</div>

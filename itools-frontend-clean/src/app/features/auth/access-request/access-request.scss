@@ -1,0 +1,218 @@
+@import url('https://fonts.googleapis.com/css2?family=Russo+One&display=swap');
+
+:host {
+  display: block;
+  min-height: 100vh;
+  font-family: 'Russo One', Arial, sans-serif;
+}
+
+.access-page {
+  min-height: 100vh;
+  position: relative;
+  overflow: hidden;
+  background: #0f0f10 url('/images/login-bg.png') center center / cover no-repeat;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 26px;
+}
+
+.page-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.34);
+}
+
+.red-outline {
+  position: absolute;
+  border: 1px solid rgba(255, 0, 0, 0.12);
+  box-shadow: 0 0 16px rgba(255, 0, 0, 0.06);
+  pointer-events: none;
+}
+
+.red-outline-1 {
+  inset: 24px;
+}
+
+.red-outline-2 {
+  inset: 40px;
+  border-color: rgba(255, 0, 0, 0.06);
+}
+
+.access-card {
+  position: relative;
+  z-index: 2;
+  width: min(92vw, 760px);
+  padding: 40px 42px;
+  border-radius: 30px;
+  background: rgba(55, 55, 55, 0.38);
+  border: 2px solid rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow:
+    inset 0 2px 14px rgba(255, 255, 255, 0.12),
+    0 12px 32px rgba(0, 0, 0, 0.35);
+}
+
+.access-card h1 {
+  margin: 0 0 16px;
+  color: #ffffff;
+  font-size: clamp(2rem, 3vw, 3rem);
+  text-align: center;
+  letter-spacing: 1px;
+}
+
+.access-description {
+  max-width: 620px;
+  margin: 0 auto 24px;
+  color: #f3f4f6;
+  text-align: center;
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+
+.access-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.full-row {
+  grid-column: 1 / -1;
+}
+
+.input-shell,
+.textarea-shell {
+  padding: 2px;
+  border-radius: 999px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.58),
+    rgba(255, 255, 255, 0.14)
+  );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    0 8px 18px rgba(0, 0, 0, 0.18);
+}
+
+.textarea-shell {
+  border-radius: 24px;
+}
+
+.input-shell input,
+.textarea-shell textarea {
+  width: 100%;
+  border: none;
+  outline: none;
+  background: linear-gradient(
+    180deg,
+    rgba(226, 233, 245, 0.98),
+    rgba(213, 220, 234, 0.98)
+  );
+  color: #1f2937;
+  font-size: 0.95rem;
+  font-family: 'Russo One', Arial, sans-serif;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.input-shell input {
+  height: 54px;
+  padding: 0 20px;
+  border-radius: 999px;
+}
+
+.textarea-shell textarea {
+  min-height: 108px;
+  padding: 18px 20px;
+  border-radius: 22px;
+  resize: vertical;
+}
+
+.input-shell input::placeholder,
+.textarea-shell textarea::placeholder {
+  color: #60656f;
+}
+
+.access-btn {
+  width: min(78%, 390px);
+  height: 58px;
+  margin: 8px auto 0;
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  background: linear-gradient(180deg, #d5161f 0%, #a70f16 100%);
+  color: #fff;
+  font-size: clamp(1rem, 1.5vw, 1.4rem);
+  font-family: 'Russo One', Arial, sans-serif;
+  box-shadow:
+    0 0 24px rgba(255, 0, 0, 0.18),
+    inset 0 2px 0 rgba(255, 255, 255, 0.16),
+    0 10px 24px rgba(0, 0, 0, 0.28);
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.access-btn:hover {
+  transform: translateY(-1px);
+  background: linear-gradient(180deg, #e11b25 0%, #b31219 100%);
+}
+
+.access-btn:disabled {
+  opacity: 0.75;
+  cursor: not-allowed;
+}
+
+.access-footer {
+  margin-top: 22px;
+  text-align: center;
+}
+
+.access-footer a {
+  color: #ffffff;
+  text-decoration: underline;
+  font-size: 0.9rem;
+}
+
+.alert {
+  padding: 11px 14px;
+  border-radius: 13px;
+  color: #fff;
+  text-align: center;
+  font-size: 0.86rem;
+  line-height: 1.45;
+  margin-bottom: 18px;
+}
+
+.alert.success {
+  background: rgba(22, 163, 74, 0.2);
+  border: 1px solid rgba(74, 222, 128, 0.45);
+}
+
+.alert.error {
+  background: rgba(190, 24, 24, 0.2);
+  border: 1px solid rgba(248, 113, 113, 0.45);
+}
+
+@media (max-width: 760px) {
+  .access-card {
+    padding: 32px 24px;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .full-row {
+    grid-column: auto;
+  }
+
+  .access-btn {
+    width: 100%;
+  }
+}

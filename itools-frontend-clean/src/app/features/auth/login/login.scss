@@ -67,7 +67,8 @@
   position: relative;
   width: 100%;
   max-width: 100%;
-  height: 76%;
+  min-height: 76%;
+  height: auto;
   padding: 6.6% 6% 5.2%;
   border-radius: 2.35rem;
   background: rgba(55, 55, 55, 0.34);
@@ -78,7 +79,7 @@
     inset 0 2px 14px rgba(255, 255, 255, 0.12),
     inset 0 -8px 20px rgba(255, 255, 255, 0.03),
     0 12px 32px rgba(0, 0, 0, 0.35);
-  overflow: hidden;
+  overflow: visible;
   box-sizing: border-box;
   justify-self: start;
   align-self: start;
@@ -190,10 +191,19 @@
   white-space: nowrap;
 }
 
+.recaptcha-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 2%;
+  transform: scale(0.88);
+  transform-origin: center;
+}
+
 .login-btn {
   width: 62%;
   height: clamp(52px, 5.8vw, 76px);
-  margin: 6.5% auto 3.8%;
+  margin: 4.5% auto 3.8%;
   border: none;
   border-radius: 999px;
   cursor: pointer;
@@ -270,7 +280,12 @@
 
   .login-panel {
     width: 100%;
-    height: 78%;
+    min-height: 78%;
+    height: auto;
+  }
+
+  .recaptcha-wrap {
+    transform: scale(0.78);
   }
 
   .logo-img {

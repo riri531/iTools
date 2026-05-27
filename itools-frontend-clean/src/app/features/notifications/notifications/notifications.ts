@@ -13,6 +13,27 @@ interface UserNotificationDto {
   createdAt: string;
 }
 
+interface AccessRequestDto {
+  id: number;
+  fullName: string;
+  matricule: string;
+  email: string;
+  phoneNumber: string;
+  department: string;
+  message?: string;
+  status: string;
+  decisionComment?: string;
+  createdAt: string;
+  treatedAt?: string;
+  treatedByUserId?: number;
+  treatedByUserName?: string;
+}
+
+interface RoleDto {
+  id: number;
+  name: string;
+}
+
 type ReadFilter = 'ALL' | 'READ' | 'UNREAD';
 
 @Component({
@@ -28,9 +49,19 @@ export class NotificationsComponent implements OnInit {
   private cdr = inject(ChangeDetectorRef);
 
   private apiUrl = 'http://localhost:5160/api/Profile/notifications';
+  private accessRequestsApiUrl = 'http://localhost:5160/api/AccessRequests';
+  private rolesApiUrl = 'http://localhost:5160/api/Roles';
 
   notifications: UserNotificationDto[] = [];
   filteredNotifications: UserNotificationDto[] = [];
+
+  accessRequests: AccessRequestDto[] = [];
+  roles: RoleDto[] = [];
+
+  selectedAccessRequestId = 0;
+  selectedRoleId = 0;
+  decisionComment = '';
+  processingAccessRequestId = 0;
 
   selectedReadFilter: ReadFilter = 'ALL';
   selectedType = '';
@@ -48,11 +79,17 @@ export class NotificationsComponent implements OnInit {
     'RECLAMATION',
     'SYSTEM',
     'ARCHIVE',
+    'ACCESS_REQUEST',
     'OTHER'
   ];
 
   ngOnInit(): void {
     this.loadNotifications();
+
+    if (this.isAdmin()) {
+      this.loadAccessRequests();
+      this.loadRoles();
+    }
   }
 
   get unreadCount(): number {
@@ -61,6 +98,14 @@ export class NotificationsComponent implements OnInit {
 
   get readCount(): number {
     return this.notifications.filter(item => item.isRead).length;
+  }
+
+  isAdmin(): boolean {
+    return String(this.authService.getRole() || '').toUpperCase() === 'ADMIN';
+  }
+
+  get pendingAccessRequestsCount(): number {
+    return this.accessRequests.filter(item => item.status === 'EN_ATTENTE').length;
   }
 
   loadNotifications(): void {
@@ -93,6 +138,192 @@ export class NotificationsComponent implements OnInit {
         this.cdr.detectChanges();
       }
     });
+  }
+
+  loadAccessRequests(): void {
+    if (!this.isAdmin()) {
+      return;
+    }
+
+    this.http.get<AccessRequestDto[]>(this.accessRequestsApiUrl, {
+      headers: this.getAuthHeaders()
+    }).subscribe({
+      next: (data) => {
+        this.accessRequests = data || [];
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error(err);
+        this.errorMessage = this.getErrorMessage(
+          err,
+          'Erreur lors du chargement des demandes d’accès.'
+        );
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  loadRoles(): void {
+    if (!this.isAdmin()) {
+      return;
+    }
+
+    this.http.get<RoleDto[]>(this.rolesApiUrl, {
+      headers: this.getAuthHeaders()
+    }).subscribe({
+      next: (data) => {
+        this.roles = data || [];
+
+        const employeRole = this.roles.find(role =>
+          String(role.name).toUpperCase() === 'EMPLOYE'
+        );
+
+        if (employeRole) {
+          this.selectedRoleId = employeRole.id;
+        }
+
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error(err);
+        this.errorMessage = this.getErrorMessage(
+          err,
+          'Erreur lors du chargement des rôles.'
+        );
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  selectAccessRequest(request: AccessRequestDto): void {
+    this.selectedAccessRequestId = request.id;
+    this.decisionComment = '';
+
+    const employeRole = this.roles.find(role =>
+      String(role.name).toUpperCase() === 'EMPLOYE'
+    );
+
+    this.selectedRoleId = employeRole ? employeRole.id : 0;
+  }
+
+  cancelAccessRequestSelection(): void {
+    this.selectedAccessRequestId = 0;
+    this.selectedRoleId = 0;
+    this.decisionComment = '';
+  }
+
+  approveAccessRequest(request: AccessRequestDto): void {
+    if (!this.selectedRoleId) {
+      this.errorMessage = 'Veuillez choisir un rôle avant d’accepter la demande.';
+      this.cdr.detectChanges();
+      return;
+    }
+
+    const confirmed = confirm(
+      `Accepter la demande de ${request.fullName} et créer son compte ?`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    this.processingAccessRequestId = request.id;
+    this.errorMessage = '';
+
+    const payload = {
+      roleId: this.selectedRoleId,
+      decisionComment: this.decisionComment
+    };
+
+    this.http.put<{ message: string }>(
+      `${this.accessRequestsApiUrl}/${request.id}/approve`,
+      payload,
+      { headers: this.getAuthHeaders() }
+    ).subscribe({
+      next: (response) => {
+        this.processingAccessRequestId = 0;
+        this.showSuccess(response.message || 'Demande acceptée avec succès.');
+        this.cancelAccessRequestSelection();
+        this.loadAccessRequests();
+        this.loadNotifications();
+      },
+      error: (err) => {
+        console.error(err);
+        this.processingAccessRequestId = 0;
+        this.errorMessage = this.getErrorMessage(
+          err,
+          'Erreur lors de l’acceptation de la demande.'
+        );
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  rejectAccessRequest(request: AccessRequestDto): void {
+    const confirmed = confirm(
+      `Refuser la demande de ${request.fullName} ?`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    this.processingAccessRequestId = request.id;
+    this.errorMessage = '';
+
+    const payload = {
+      roleId: 0,
+      decisionComment: this.decisionComment || 'Demande refusée.'
+    };
+
+    this.http.put<{ message: string }>(
+      `${this.accessRequestsApiUrl}/${request.id}/reject`,
+      payload,
+      { headers: this.getAuthHeaders() }
+    ).subscribe({
+      next: (response) => {
+        this.processingAccessRequestId = 0;
+        this.showSuccess(response.message || 'Demande refusée avec succès.');
+        this.cancelAccessRequestSelection();
+        this.loadAccessRequests();
+        this.loadNotifications();
+      },
+      error: (err) => {
+        console.error(err);
+        this.processingAccessRequestId = 0;
+        this.errorMessage = this.getErrorMessage(
+          err,
+          'Erreur lors du refus de la demande.'
+        );
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  getAccessStatusLabel(status: string): string {
+    switch ((status || '').toUpperCase()) {
+      case 'EN_ATTENTE':
+        return 'En attente';
+      case 'ACCEPTEE':
+        return 'Acceptée';
+      case 'REFUSEE':
+        return 'Refusée';
+      default:
+        return status || 'Inconnu';
+    }
+  }
+
+  getAccessStatusClass(status: string): string {
+    switch ((status || '').toUpperCase()) {
+      case 'EN_ATTENTE':
+        return 'pending';
+      case 'ACCEPTEE':
+        return 'accepted';
+      case 'REFUSEE':
+        return 'rejected';
+      default:
+        return 'other';
+    }
   }
 
   setReadFilter(filter: ReadFilter): void {
@@ -387,6 +618,8 @@ export class NotificationsComponent implements OnInit {
         return 'Système';
       case 'ARCHIVE':
         return 'Historique';
+      case 'ACCESS_REQUEST':
+        return 'Demande d’accès';
       default:
         return 'Autre';
     }
@@ -404,6 +637,8 @@ export class NotificationsComponent implements OnInit {
         return 'system';
       case 'ARCHIVE':
         return 'archive';
+      case 'ACCESS_REQUEST':
+        return 'access-request';
       default:
         return 'other';
     }
@@ -421,6 +656,8 @@ export class NotificationsComponent implements OnInit {
         return 'SYS';
       case 'ARCHIVE':
         return 'H';
+      case 'ACCESS_REQUEST':
+        return 'DA';
       default:
         return 'A';
     }

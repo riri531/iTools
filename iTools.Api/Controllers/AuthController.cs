@@ -1,10 +1,13 @@
 using System.IdentityModel.Tokens.Jwt;
+using System.Net.Http.Json;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json.Serialization;
 using iTools.Api.Data;
 using iTools.Api.DTOs;
 using iTools.Api.Models;
+using iTools.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -18,11 +21,19 @@ public class AuthController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
     private readonly IConfiguration _configuration;
+    private readonly IHttpClientFactory _httpClientFactory;
+    private readonly EmailService _emailService;
 
-    public AuthController(ApplicationDbContext context, IConfiguration configuration)
+    public AuthController(
+        ApplicationDbContext context,
+        IConfiguration configuration,
+        IHttpClientFactory httpClientFactory,
+        EmailService emailService)
     {
         _context = context;
         _configuration = configuration;
+        _httpClientFactory = httpClientFactory;
+        _emailService = emailService;
     }
 
     [HttpPost("login")]
@@ -36,6 +47,13 @@ public class AuthController : ControllerBase
         if (string.IsNullOrWhiteSpace(request.Password))
         {
             return BadRequest("Le mot de passe est obligatoire.");
+        }
+
+        var isRecaptchaValid = await VerifyRecaptchaAsync(request.RecaptchaToken);
+
+        if (!isRecaptchaValid)
+        {
+            return BadRequest("Veuillez valider le reCAPTCHA.");
         }
 
         var email = request.Email.Trim();
@@ -177,11 +195,28 @@ public class AuthController : ControllerBase
             .Include(u => u.Role)
             .FirstOrDefaultAsync(u => u.Email == email);
 
+        var neutralMessage = "Si cet email existe dans le système, un lien de réinitialisation a été envoyé.";
+
         if (user == null)
         {
+            await AddAuthArchiveAsync(
+                userId: null,
+                userName: email,
+                role: "",
+                action: "PASSWORD_RESET_REQUEST_UNKNOWN_EMAIL",
+                description: $"Demande de réinitialisation pour un email inexistant ou non reconnu : {email}",
+                oldValues: null,
+                newValues: new
+                {
+                    Email = email,
+                    Result = "UNKNOWN_EMAIL",
+                    Date = DateTime.Now
+                }
+            );
+
             return Ok(new
             {
-                message = "Si cet email existe dans le système, un lien de réinitialisation sera généré."
+                message = neutralMessage
             });
         }
 
@@ -196,7 +231,12 @@ public class AuthController : ControllerBase
         var frontendBaseUrl = _configuration["Frontend:BaseUrl"] ?? "http://localhost:4200";
 
         var resetLink =
-            $"{frontendBaseUrl}/reset-password?userId={user.Id}&token={Uri.EscapeDataString(resetToken)}";
+            $"{frontendBaseUrl}/reset-password?userId={user.Id}&token={resetToken}";
+                await _emailService.SendPasswordResetEmailAsync(
+                    user.Email,
+                    user.FullName,
+                    resetLink
+                );
 
         await AddAuthArchiveAsync(
             userId: user.Id,
@@ -210,14 +250,14 @@ public class AuthController : ControllerBase
                 user.Id,
                 user.Email,
                 Expiration = user.PasswordResetTokenExpiresAt,
+                Result = "EMAIL_SENT",
                 Date = DateTime.Now
             }
         );
 
         return Ok(new
         {
-            message = "Un lien de réinitialisation a été généré.",
-            resetLink = resetLink
+            message = neutralMessage
         });
     }
 
@@ -269,8 +309,10 @@ public class AuthController : ControllerBase
             return BadRequest("Le lien de réinitialisation a expiré.");
         }
 
+        var cleanToken = request.Token.Trim();
+
         var isTokenValid = BCrypt.Net.BCrypt.Verify(
-            request.Token,
+            cleanToken,
             user.PasswordResetTokenHash
         );
 
@@ -308,15 +350,57 @@ public class AuthController : ControllerBase
         });
     }
 
-    private static string GenerateSecureToken()
+    private async Task<bool> VerifyRecaptchaAsync(string recaptchaToken)
     {
-        var bytes = RandomNumberGenerator.GetBytes(32);
+        var enabled = _configuration.GetValue<bool>("GoogleRecaptcha:Enabled");
 
-        return Convert.ToBase64String(bytes)
-            .Replace("+", "-")
-            .Replace("/", "_")
-            .Replace("=", "");
+        if (!enabled)
+        {
+            return true;
+        }
+
+        if (string.IsNullOrWhiteSpace(recaptchaToken))
+        {
+            return false;
+        }
+
+        var secretKey = _configuration["GoogleRecaptcha:SecretKey"];
+        var verifyUrl = _configuration["GoogleRecaptcha:VerifyUrl"];
+
+        if (string.IsNullOrWhiteSpace(secretKey) || string.IsNullOrWhiteSpace(verifyUrl))
+        {
+            return false;
+        }
+
+        var client = _httpClientFactory.CreateClient();
+
+        var formData = new Dictionary<string, string>
+        {
+            { "secret", secretKey },
+            { "response", recaptchaToken },
+            { "remoteip", HttpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty }
+        };
+
+        var response = await client.PostAsync(
+            verifyUrl,
+            new FormUrlEncodedContent(formData)
+        );
+
+        if (!response.IsSuccessStatusCode)
+        {
+            return false;
+        }
+
+        var result = await response.Content.ReadFromJsonAsync<RecaptchaVerificationResponse>();
+
+        return result?.Success == true;
     }
+
+    private static string GenerateSecureToken()
+{
+    var bytes = RandomNumberGenerator.GetBytes(32);
+    return Convert.ToHexString(bytes);
+}
 
     private async Task AddAuthArchiveAsync(
         int? userId,
@@ -343,5 +427,20 @@ public class AuthController : ControllerBase
 
         _context.ArchiveLogs.Add(archive);
         await _context.SaveChangesAsync();
+    }
+
+    private class RecaptchaVerificationResponse
+    {
+        [JsonPropertyName("success")]
+        public bool Success { get; set; }
+
+        [JsonPropertyName("challenge_ts")]
+        public string? ChallengeTs { get; set; }
+
+        [JsonPropertyName("hostname")]
+        public string? Hostname { get; set; }
+
+        [JsonPropertyName("error-codes")]
+        public string[]? ErrorCodes { get; set; }
     }
 }

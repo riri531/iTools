@@ -3,6 +3,7 @@ import { Routes } from '@angular/router';
 import { LoginComponent } from './features/auth/login/login';
 import { ForgotPasswordComponent } from './features/auth/forgot-password/forgot-password';
 import { ResetPasswordComponent } from './features/auth/reset-password/reset-password';
+import { AccessRequestComponent } from './features/auth/access-request/access-request';
 
 import { HomeComponent } from './features/home/home/home';
 import { DashboardComponent } from './features/dashboard/dashboard/dashboard';
@@ -50,6 +51,11 @@ export const routes: Routes = [
   {
     path: 'reset-password',
     component: ResetPasswordComponent
+  },
+
+  {
+    path: 'access-request',
+    component: AccessRequestComponent
   },
 
   {
@@ -113,24 +119,35 @@ export const routes: Routes = [
       },
 
       {
-        path: 'designations',
+        path: 'outillages',
         component: DesignationsComponent,
         canActivate: [roleGuard],
         data: { roles: ['ADMIN', 'RESPONSABLE', 'EMPLOYE'] }
       },
 
       {
-        path: 'designations/:designationId/outils',
+        path: 'outillages/:designationId/outils',
         component: OutilsComponent,
         canActivate: [roleGuard],
         data: { roles: ['ADMIN', 'RESPONSABLE', 'EMPLOYE'] }
       },
 
       {
+        path: 'designations',
+        redirectTo: 'outillages',
+        pathMatch: 'full'
+      },
+
+      {
+        path: 'designations/:designationId/outils',
+        redirectTo: 'outillages/:designationId/outils'
+      },
+
+      {
         path: 'lignes',
         component: LignesComponent,
         canActivate: [roleGuard],
-        data: { roles: ['ADMIN', 'RESPONSABLE', 'EMPLOYE'] }
+        data: { roles: ['ADMIN', 'RESPONSABLE'] }
       },
 
       {
@@ -151,7 +168,7 @@ export const routes: Routes = [
         path: 'matieres',
         component: MatieresComponent,
         canActivate: [roleGuard],
-        data: { roles: ['ADMIN', 'RESPONSABLE', 'EMPLOYE'] }
+        data: { roles: ['ADMIN', 'RESPONSABLE'] }
       },
 
       {
@@ -163,9 +180,8 @@ export const routes: Routes = [
 
       {
         path: 'outils',
-        component: OutilsComponent,
-        canActivate: [roleGuard],
-        data: { roles: ['ADMIN', 'RESPONSABLE', 'EMPLOYE'] }
+        redirectTo: 'outillages',
+        pathMatch: 'full'
       },
 
       {

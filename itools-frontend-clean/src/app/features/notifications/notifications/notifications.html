@@ -36,6 +36,145 @@
     {{ errorMessage }}
   </div>
 
+  <section class="notifications-card access-requests-card" *ngIf="isAdmin()">
+    <div class="card-inner">
+      <div class="list-header">
+        <div>
+          <span class="section-kicker">Administration</span>
+          <h2>Demandes d’accès</h2>
+          <p>
+            {{ pendingAccessRequestsCount }} demande(s) en attente de traitement.
+          </p>
+        </div>
+
+        <div class="list-actions">
+          <button
+            type="button"
+            class="refresh-btn"
+            (click)="loadAccessRequests()"
+          >
+            Actualiser
+          </button>
+        </div>
+      </div>
+
+      <div class="access-empty" *ngIf="accessRequests.length === 0">
+        Aucune demande d’accès trouvée.
+      </div>
+
+      <div class="access-list" *ngIf="accessRequests.length > 0">
+        <article
+          class="access-item"
+          *ngFor="let request of accessRequests"
+          [class.selected]="selectedAccessRequestId === request.id"
+        >
+          <div class="access-main">
+            <div class="access-top">
+              <span
+                class="access-status"
+                [ngClass]="getAccessStatusClass(request.status)"
+              >
+                {{ getAccessStatusLabel(request.status) }}
+              </span>
+
+              <span class="date-text">
+                {{ request.createdAt | date:'dd/MM/yyyy HH:mm' }}
+              </span>
+            </div>
+
+            <h3>{{ request.fullName }}</h3>
+
+            <div class="access-details">
+              <span><strong>Matricule :</strong> {{ request.matricule }}</span>
+              <span><strong>Email :</strong> {{ request.email }}</span>
+              <span><strong>Téléphone :</strong> {{ request.phoneNumber }}</span>
+              <span><strong>Service :</strong> {{ request.department }}</span>
+            </div>
+
+            <p class="access-message" *ngIf="request.message">
+              {{ request.message }}
+            </p>
+
+            <p class="access-decision" *ngIf="request.decisionComment">
+              <strong>Décision :</strong> {{ request.decisionComment }}
+            </p>
+
+            <p class="access-decision" *ngIf="request.treatedByUserName">
+              <strong>Traité par :</strong> {{ request.treatedByUserName }}
+            </p>
+          </div>
+
+          <div class="access-actions">
+            <button
+              type="button"
+              class="secondary-btn small-btn"
+              *ngIf="request.status === 'EN_ATTENTE'"
+              (click)="selectAccessRequest(request)"
+            >
+              Traiter
+            </button>
+          </div>
+
+          <div
+            class="access-treatment"
+            *ngIf="selectedAccessRequestId === request.id && request.status === 'EN_ATTENTE'"
+          >
+            <div class="form-group">
+              <label>Rôle à attribuer</label>
+              <select [(ngModel)]="selectedRoleId">
+                <option [ngValue]="0">Choisir un rôle</option>
+                <option *ngFor="let role of roles" [ngValue]="role.id">
+                  {{ role.name }}
+                </option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Commentaire de décision</label>
+              <input
+                type="text"
+                [(ngModel)]="decisionComment"
+                placeholder="Commentaire optionnel"
+              />
+            </div>
+
+            <div class="treatment-actions">
+              <button
+                type="button"
+                class="accept-btn"
+                [disabled]="processingAccessRequestId === request.id"
+                (click)="approveAccessRequest(request)"
+              >
+                {{
+                  processingAccessRequestId === request.id
+                    ? 'Traitement...'
+                    : 'Accepter'
+                }}
+              </button>
+
+              <button
+                type="button"
+                class="reject-btn"
+                [disabled]="processingAccessRequestId === request.id"
+                (click)="rejectAccessRequest(request)"
+              >
+                Refuser
+              </button>
+
+              <button
+                type="button"
+                class="secondary-btn"
+                (click)="cancelAccessRequestSelection()"
+              >
+                Annuler
+              </button>
+            </div>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
   <section class="notifications-card filters-card">
     <div class="card-inner">
       <div class="tabs">

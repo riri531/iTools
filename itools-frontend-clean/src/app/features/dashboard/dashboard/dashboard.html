@@ -1,10 +1,10 @@
 <div class="dashboard-page">
   <!-- =========================
-       4 BANNIÈRES DU HAUT
+       BANNIÈRES DU HAUT
        ========================= -->
 
   <section class="top-stats-grid">
-    <article class="stat-card stat-card--green">
+    <article class="stat-card stat-card--blue">
       <div class="stat-icon">
         <img src="/icons/emplacement.png" alt="Emplacements libres" />
       </div>
@@ -18,7 +18,7 @@
       </div>
     </article>
 
-    <article class="stat-card stat-card--blue">
+    <article class="stat-card stat-card--grey">
       <div class="stat-icon">
         <img src="/icons/outils.png" alt="Outillages" />
       </div>
@@ -67,10 +67,14 @@
   <section class="charts-grid">
     <!-- Graph en bâtons CSS -->
     <article class="chart-card">
-      <h2>
-        Taux des emplacements réservés pour<br />
-        chaque outil
-      </h2>
+      <div class="chart-header">
+        <span class="chart-kicker">Suivi outillages</span>
+
+        <h2>
+          Taux des emplacements réservés pour<br />
+          chaque outil
+        </h2>
+      </div>
 
       <div class="bar-chart">
         <div class="bar-y-axis">
@@ -136,10 +140,14 @@
 
     <!-- Graph circulaire CSS -->
     <article class="chart-card">
-      <h2>
-        Taux des emplacements : Libre /<br />
-        Occupé / HS
-      </h2>
+      <div class="chart-header">
+        <span class="chart-kicker">État des emplacements</span>
+
+        <h2>
+          Taux des emplacements : Libre /<br />
+          Occupé / HS
+        </h2>
+      </div>
 
       <div class="pie-legend">
         <span>

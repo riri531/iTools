@@ -17,12 +17,10 @@ export class ForgotPasswordComponent {
   loading = false;
   successMessage = '';
   errorMessage = '';
-  resetLink = '';
 
   submit(): void {
     this.successMessage = '';
     this.errorMessage = '';
-    this.resetLink = '';
 
     if (!this.email.trim()) {
       this.errorMessage = 'Veuillez saisir votre adresse email.';
@@ -37,10 +35,12 @@ export class ForgotPasswordComponent {
       next: (response) => {
         this.loading = false;
         this.successMessage = response.message;
-        this.resetLink = response.resetLink || '';
+        this.email = '';
       },
+
       error: (err) => {
         console.error(err);
+
         this.loading = false;
         this.errorMessage =
           typeof err?.error === 'string'

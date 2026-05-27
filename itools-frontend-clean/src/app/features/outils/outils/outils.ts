@@ -280,7 +280,7 @@ export class OutilsComponent implements OnInit {
 
   getPageTitle(): string {
     if (!this.designationContextId) {
-      return 'Outils';
+      return 'Outillages';
     }
 
     return this.designationContextName
@@ -297,7 +297,7 @@ export class OutilsComponent implements OnInit {
   }
 
   goBackToDesignations(): void {
-    this.router.navigate(['/app/designations']);
+    this.router.navigate(['/app/outillages']);
   }
 
   getFormEmplacements(): EmplacementItem[] {

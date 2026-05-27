@@ -14,9 +14,9 @@
     <div class="card-inner header-inner">
       <div>
         <span class="section-kicker">Référentiel</span>
-        <h1>Désignations</h1>
+        <h1>Outillages</h1>
         <p>
-          Gestion des désignations utilisées dans les emplacements et les outillages.
+          Gestion des outillages organisés par désignation.
         </p>
       </div>
 
@@ -53,7 +53,7 @@
       <div class="filters-top">
         <div>
           <span class="section-kicker">Filtres</span>
-          <h2>Vue globale des désignations</h2>
+          <h2>Vue globale des outillages</h2>
           <p>
             Recherche, filtre par type, tri et choix du mode d’affichage.
           </p>
@@ -163,7 +163,7 @@
       <div class="list-header">
         <div>
           <span class="section-kicker">Liste</span>
-          <h2>Liste des désignations</h2>
+          <h2>Liste des désignations disponibles</h2>
           <p>{{ filteredDesignations.length }} désignation(s) trouvée(s)</p>
         </div>
 
@@ -252,7 +252,7 @@
                     title="Voir les outils liés à cette désignation"
                     (click)="goToDesignationOutils(item)"
                   >
-                    📁 Outils
+                    Consulter les outils
                   </button>
 
                   <button
@@ -320,7 +320,7 @@
                 title="Voir les outils liés à cette désignation"
                 (click)="goToDesignationOutils(item)"
               >
-                📁 Outils
+                Consulter les outils
               </button>
 
               <button

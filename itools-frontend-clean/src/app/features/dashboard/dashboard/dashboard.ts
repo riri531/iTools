@@ -9,6 +9,6 @@ import { Component } from '@angular/core';
   styleUrl: './dashboard.scss'
 })
 export class DashboardComponent {
-  // Cette page utilise maintenant des graphiques HTML/CSS.
+  // Cette page utilise des graphiques HTML/CSS.
   // Pas besoin de ng2-charts, Chart.js, baseChart, data, options ou type.
 }

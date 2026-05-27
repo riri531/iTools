@@ -55,16 +55,24 @@ export class SidebarComponent implements OnInit, OnDestroy {
     return this.authService.getRole() || '';
   }
 
+  get normalizedRole(): string {
+    return String(this.role || '').toUpperCase();
+  }
+
   get isAdmin(): boolean {
-    return this.authService.isAdmin();
+    return this.normalizedRole === 'ADMIN';
   }
 
   get isResponsable(): boolean {
-    return this.authService.isResponsable();
+    return this.normalizedRole === 'RESPONSABLE';
   }
 
   get isEmploye(): boolean {
-    return this.authService.isEmploye();
+    return this.normalizedRole === 'EMPLOYE' || this.normalizedRole === 'EMPLOYÉ';
+  }
+
+  get canSeeDashboard(): boolean {
+    return this.isAdmin || this.isResponsable || this.isEmploye;
   }
 
   get canSeeUsers(): boolean {
@@ -75,12 +83,12 @@ export class SidebarComponent implements OnInit, OnDestroy {
     return this.isAdmin || this.isResponsable || this.isEmploye;
   }
 
-  get canSeeDesignations(): boolean {
+  get canSeeOutillages(): boolean {
     return this.isAdmin || this.isResponsable || this.isEmploye;
   }
 
   get canSeeLignes(): boolean {
-    return this.isAdmin || this.isResponsable || this.isEmploye;
+    return this.isAdmin || this.isResponsable;
   }
 
   get canSeeClients(): boolean {
@@ -92,15 +100,15 @@ export class SidebarComponent implements OnInit, OnDestroy {
   }
 
   get canSeeMatieres(): boolean {
-    return this.isAdmin || this.isResponsable || this.isEmploye;
+    return this.isAdmin || this.isResponsable;
   }
 
   get canSeeEmplacements(): boolean {
     return this.isAdmin || this.isResponsable || this.isEmploye;
   }
 
-  get canSeeOutils(): boolean {
-    return this.isAdmin || this.isResponsable || this.isEmploye;
+  get canSeeHistorique(): boolean {
+    return this.isAdmin;
   }
 
   getInitial(): string {

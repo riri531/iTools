@@ -26,17 +26,20 @@
   </div>
 
   <nav class="sidebar-nav">
-
-    <a routerLink="/app/dashboard" routerLinkActive="active">
+    <a
+      *ngIf="canSeeDashboard"
+      routerLink="/app/dashboard"
+      routerLinkActive="active"
+    >
       Dashboard
     </a>
 
     <a
-      *ngIf="canSeeDesignations"
-      routerLink="/app/designations"
+      *ngIf="canSeeOutillages"
+      routerLink="/app/outillages"
       routerLinkActive="active"
     >
-      Désignations
+      Outillages
     </a>
 
     <a
@@ -63,7 +66,6 @@
       Fournisseurs
     </a>
 
-    <!-- UNIQUEMENT ADMIN -->
     <a
       *ngIf="canSeeUsers"
       routerLink="/app/users"
@@ -89,14 +91,6 @@
     </a>
 
     <a
-      *ngIf="canSeeOutils"
-      routerLink="/app/outils"
-      routerLinkActive="active"
-    >
-      Outils
-    </a>
-
-    <a
       *ngIf="canSeeAssistance"
       routerLink="/app/assistance"
       routerLinkActive="active"
@@ -104,15 +98,13 @@
       Assistance intelligente
     </a>
 
-    <!-- UNIQUEMENT ADMIN -->
     <a
-      *ngIf="isAdmin"
+      *ngIf="canSeeHistorique"
       routerLink="/app/archives"
       routerLinkActive="active"
     >
       Historique
     </a>
-
   </nav>
 
   <div class="sidebar-bottom">

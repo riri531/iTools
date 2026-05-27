@@ -29,7 +29,7 @@ export class ResetPasswordComponent {
     const tokenParam = this.route.snapshot.queryParamMap.get('token');
 
     this.userId = userIdParam ? Number(userIdParam) : 0;
-    this.token = tokenParam || '';
+    this.token = (tokenParam || '').trim();
 
     if (!this.userId || !this.token) {
       this.errorMessage = 'Lien de réinitialisation invalide.';
@@ -64,18 +64,21 @@ export class ResetPasswordComponent {
 
     this.authService.resetPassword({
       userId: this.userId,
-      token: this.token,
+      token: this.token.trim(),
       newPassword: this.newPassword,
       confirmPassword: this.confirmPassword
     }).subscribe({
       next: (response) => {
         this.loading = false;
         this.successMessage = response.message;
+        this.errorMessage = '';
         this.newPassword = '';
         this.confirmPassword = '';
       },
+
       error: (err) => {
         console.error(err);
+
         this.loading = false;
         this.errorMessage =
           typeof err?.error === 'string'

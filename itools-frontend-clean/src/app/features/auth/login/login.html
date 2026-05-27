@@ -50,13 +50,17 @@
             <a routerLink="/forgot-password">Mot de passe oublié?</a>
           </div>
 
+          <div class="recaptcha-wrap">
+            <div #recaptchaContainer></div>
+          </div>
+
           <button class="login-btn" type="submit" [disabled]="loading">
             {{ loading ? 'Connexion...' : 'Se connecter' }}
           </button>
 
           <div class="login-footer">
             Vous n’avez pas de compte?
-            <a href="javascript:void(0)">demander l’accès</a>
+            <a routerLink="/access-request">demander l’accès</a>
           </div>
         </form>
       </section>
