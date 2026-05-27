@@ -21,6 +21,10 @@
   --all-yellow-dark: #c99600;
   --all-yellow-soft: #fff6d8;
 
+  --ux-green: #2f8f5b;
+  --ux-green-dark: #1f6f45;
+  --ux-green-soft: #e8f5ee;
+
   --page-bg: #f7f8f9;
   --card-bg: #ffffff;
 
@@ -122,14 +126,14 @@
 }
 
 /* =========================================================
-   COULEURS CHARTE ALL CIRCUITS
+   COULEURS CHARTE ALL CIRCUITS + VERT UX DOUX
    ========================================================= */
 
-.stat-card--blue {
+.stat-card--green {
   background: linear-gradient(
     135deg,
-    var(--all-blue) 0%,
-    var(--all-blue-dark) 100%
+    var(--ux-green) 0%,
+    var(--ux-green-dark) 100%
   ) !important;
 }
 
@@ -178,11 +182,11 @@
   opacity: 1 !important;
 }
 
-.dashboard-page .top-stats-grid .stat-card--blue {
+.dashboard-page .top-stats-grid .stat-card--green {
   background: linear-gradient(
     135deg,
-    var(--all-blue) 0%,
-    var(--all-blue-dark) 100%
+    var(--ux-green) 0%,
+    var(--ux-green-dark) 100%
   ) !important;
 }
 
@@ -237,8 +241,7 @@
   border-radius: 22px;
   border: 1px solid var(--all-border-grey);
 
-  background:
-    linear-gradient(135deg, #ffffff 0%, #f7f8f9 100%);
+  background: linear-gradient(135deg, #ffffff 0%, #f7f8f9 100%);
 
   box-shadow: 0 8px 22px rgba(64, 64, 64, 0.06);
 }
@@ -483,7 +486,7 @@
 }
 
 .legend-libre {
-  background: var(--all-blue);
+  background: var(--ux-green);
 }
 
 .legend-occupe {
@@ -511,7 +514,7 @@
   border-radius: 50%;
 
   background: conic-gradient(
-    var(--all-blue) 0deg 309deg,
+    var(--ux-green) 0deg 309deg,
     var(--all-yellow) 309deg 309deg,
     var(--all-red) 309deg 360deg
   );
