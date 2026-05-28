@@ -78,7 +78,6 @@ export class NotificationsComponent implements OnInit {
     'PROFILE',
     'SECURITY',
     'RECLAMATION',
-    'ACCESS_REQUEST',
     'ARCHIVE',
     'SYSTEM',
     'OTHER'
@@ -93,12 +92,20 @@ export class NotificationsComponent implements OnInit {
     }
   }
 
+  get personalNotifications(): UserNotificationDto[] {
+    return this.notifications.filter(item => !this.isAccessRequestNotification(item));
+  }
+
+  get personalNotificationsCount(): number {
+    return this.personalNotifications.length;
+  }
+
   get unreadCount(): number {
-    return this.notifications.filter(item => !item.isRead).length;
+    return this.personalNotifications.filter(item => !item.isRead).length;
   }
 
   get readCount(): number {
-    return this.notifications.filter(item => item.isRead).length;
+    return this.personalNotifications.filter(item => item.isRead).length;
   }
 
   get pendingAccessRequestsCount(): number {
@@ -276,7 +283,7 @@ export class NotificationsComponent implements OnInit {
   applyFilters(): void {
     const search = this.normalizeText(this.searchText);
 
-    this.filteredNotifications = this.notifications.filter(item => {
+    this.filteredNotifications = this.personalNotifications.filter(item => {
       const itemType = item.type || 'OTHER';
 
       const matchesSearch =
@@ -456,25 +463,29 @@ export class NotificationsComponent implements OnInit {
   }
 
   deleteAllNotifications(): void {
-    if (this.notifications.length === 0) {
+    if (this.personalNotifications.length === 0) {
       return;
     }
 
-    const confirmed = window.confirm('Supprimer toutes les notifications ?');
+    const confirmed = window.confirm('Supprimer toutes les notifications personnelles ?');
 
     if (!confirmed) {
       return;
     }
 
-    this.http.delete(`${this.notificationsUrl}`, {
+    const personalIds = this.personalNotifications.map(item => item.id);
+
+    this.http.request('delete', `${this.notificationsUrl}/bulk`, {
+      body: personalIds,
       headers: this.getAuthHeaders()
     }).subscribe({
       next: () => {
-        this.notifications = [];
+        this.notifications = this.notifications.filter(item => !personalIds.includes(item.id));
         this.filteredNotifications = [];
         this.selectedIds = [];
 
-        this.successMessage = 'Toutes les notifications ont été supprimées.';
+        this.successMessage = 'Toutes les notifications personnelles ont été supprimées.';
+        this.applyFilters();
         this.clearMessagesLater();
         this.cdr.detectChanges();
       },
@@ -483,7 +494,7 @@ export class NotificationsComponent implements OnInit {
 
         this.errorMessage = this.getErrorMessage(
           err,
-          'Erreur lors de la suppression des notifications.'
+          'Erreur lors de la suppression des notifications personnelles.'
         );
 
         this.cdr.detectChanges();
@@ -631,6 +642,22 @@ export class NotificationsComponent implements OnInit {
     });
   }
 
+  isAccessRequestNotification(item: UserNotificationDto): boolean {
+    return this.isAccessRequestType(item?.type);
+  }
+
+  isAccessRequestType(type: string | null | undefined): boolean {
+    const normalized = this.normalizeText(type);
+
+    return (
+      normalized === 'access_request' ||
+      normalized === 'accessrequest' ||
+      normalized === 'demande_acces' ||
+      normalized === 'demande acces' ||
+      normalized === 'demandeaccess'
+    );
+  }
+
   getTypeLabel(type: string): string {
     const normalized = this.normalizeText(type);
 
@@ -641,14 +668,15 @@ export class NotificationsComponent implements OnInit {
         return 'Sécurité';
       case 'reclamation':
         return 'Réclamation';
-      case 'access_request':
-      case 'accessrequest':
-      case 'demande_acces':
-        return 'Demande accès';
       case 'archive':
         return 'Archive';
       case 'system':
         return 'Système';
+      case 'access_request':
+      case 'accessrequest':
+      case 'demande_acces':
+      case 'demande acces':
+        return 'Demande accès';
       default:
         return 'Autre';
     }
@@ -669,14 +697,15 @@ export class NotificationsComponent implements OnInit {
         return 'security';
       case 'reclamation':
         return 'reclamation';
-      case 'access_request':
-      case 'accessrequest':
-      case 'demande_acces':
-        return 'access-request';
       case 'archive':
         return 'archive';
       case 'system':
         return 'system';
+      case 'access_request':
+      case 'accessrequest':
+      case 'demande_acces':
+      case 'demande acces':
+        return 'access-request';
       default:
         return 'other';
     }

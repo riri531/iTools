@@ -22,8 +22,8 @@
 
       <div class="header-stats">
         <div class="header-stat">
-          <strong>{{ notifications.length }}</strong>
-          <span>Total</span>
+          <strong>{{ personalNotificationsCount }}</strong>
+          <span>Perso</span>
         </div>
 
         <div class="header-stat unread">
@@ -59,7 +59,7 @@
 
         <span>
           Notifications personnelles
-          <small>{{ notifications.length }} notification(s)</small>
+          <small>{{ personalNotificationsCount }} notification(s)</small>
         </span>
       </button>
 
@@ -79,10 +79,6 @@
       </button>
     </div>
   </section>
-
-  <!-- =====================================================
-       ESPACE ADMIN : DEMANDES D'ACCÈS
-       ===================================================== -->
 
   <section
     class="notifications-card access-requests-card"
@@ -261,10 +257,6 @@
     </div>
   </section>
 
-  <!-- =====================================================
-       ESPACE NOTIFICATIONS PERSONNELLES
-       ===================================================== -->
-
   <section
     class="notifications-card notifications-zone-card"
     *ngIf="activePanel === 'PERSONAL'"
@@ -385,7 +377,7 @@
             type="button"
             class="delete-btn"
             (click)="deleteAllNotifications()"
-            [disabled]="notifications.length === 0"
+            [disabled]="personalNotificationsCount === 0"
           >
             Tout supprimer
           </button>
@@ -484,7 +476,7 @@
 
       <ng-template #emptyState>
         <p class="empty-text" *ngIf="!isLoading">
-          Aucune notification trouvée.
+          Aucune notification personnelle trouvée.
         </p>
       </ng-template>
     </div>
