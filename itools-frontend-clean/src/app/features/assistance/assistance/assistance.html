@@ -1,5 +1,7 @@
 <div class="assistance-page">
-  <section class="hero-assistance">
+  <section class="assistance-card hero-assistance">
+    <div class="hero-grid-overlay" aria-hidden="true"></div>
+
     <div class="ai-orbit ai-orbit-one"></div>
     <div class="ai-orbit ai-orbit-two"></div>
 
@@ -17,28 +19,47 @@
     <div class="ai-symbol ai-spark ai-spark-two">✧</div>
     <div class="ai-symbol ai-spark ai-spark-three">✦</div>
 
-    <div class="hero-content">
-      <div class="assistant-avatar">
-        {{ userInitials }}
+    <div class="card-inner hero-inner">
+      <div class="hero-content">
+        <div class="assistant-avatar">
+          {{ userInitials }}
+        </div>
+
+        <div class="hero-copy">
+          <span class="section-kicker light">Assistance intelligente</span>
+
+          <h1>Bonjour {{ userDisplayName }}, comment puis-je t’aider ?</h1>
+
+          <p>
+            Choisis une rubrique, puis sélectionne une question parmi les boutons proposés.
+            L’assistant te guidera vers la solution adaptée.
+          </p>
+        </div>
       </div>
 
-      <div>
-        <span class="section-kicker">Assistance intelligente</span>
-        <h1>Bonjour {{ userDisplayName }}, comment puis-je t’aider ?</h1>
-        <p>
-          Choisis une rubrique, sélectionne une question, puis laisse l’assistant te guider vers la solution.
-        </p>
+      <div class="hero-actions">
+        <button
+          type="button"
+          class="header-btn secondary"
+          title="Nouvelle conversation"
+          aria-label="Nouvelle conversation"
+          (click)="createNewConversation()"
+        >
+          <span class="btn-icon">+</span>
+          <span>Nouvelle conversation</span>
+        </button>
+
+        <button
+          type="button"
+          class="header-btn primary"
+          title="Réinitialiser la conversation"
+          aria-label="Réinitialiser la conversation"
+          (click)="resetCurrentConversation()"
+        >
+          <span class="btn-icon">↻</span>
+          <span>Réinitialiser</span>
+        </button>
       </div>
-    </div>
-
-    <div class="hero-actions">
-      <button type="button" class="add-btn" (click)="createNewConversation()">
-        Nouvelle conversation
-      </button>
-
-      <button type="button" class="reset-btn" (click)="resetCurrentConversation()">
-        Réinitialiser
-      </button>
     </div>
   </section>
 
@@ -50,7 +71,13 @@
           <h2>Anciennes conversations</h2>
         </div>
 
-        <button type="button" class="mini-danger delete-btn" (click)="clearHistory()">
+        <button
+          type="button"
+          class="mini-danger"
+          title="Vider tout l’historique"
+          aria-label="Vider tout l’historique"
+          (click)="clearHistory()"
+        >
           Tout vider
         </button>
       </div>
@@ -77,6 +104,8 @@
             class="history-delete"
             role="button"
             tabindex="0"
+            title="Supprimer cette conversation"
+            aria-label="Supprimer cette conversation"
             (click)="deleteConversation(conversation.id, $event)"
           >
             ×
@@ -95,17 +124,26 @@
       <div class="chat-top">
         <div>
           <span class="section-kicker">Conversation</span>
+
           <h2>
             {{ selectedTopic ? selectedTopic.title : 'Sélectionne une rubrique' }}
           </h2>
+
           <p>
-            {{ selectedTopic ? selectedTopic.description : 'L’assistant te proposera les questions selon la rubrique choisie.' }}
+            {{
+              selectedTopic
+                ? selectedTopic.description
+                : 'Choisis d’abord une rubrique en bas de la conversation.'
+            }}
           </p>
         </div>
 
         <div class="active-state">
           <span>Rubrique active</span>
-          <strong>{{ selectedTopic ? selectedTopic.shortTitle : 'Aucune' }}</strong>
+
+          <strong>
+            {{ selectedTopic ? selectedTopic.shortTitle : 'Aucune' }}
+          </strong>
         </div>
       </div>
 
@@ -125,31 +163,16 @@
           <div class="message-card">
             <p>{{ message.text }}</p>
 
-            <div class="topic-choice-grid" *ngIf="message.type === 'topic-selection'">
+            <div class="topic-choice-grid" *ngIf="message.type === 'topic-selection' && !selectedTopic">
               <button
                 type="button"
                 class="topic-choice"
                 *ngFor="let topic of filteredTopics"
-                [class.active]="selectedTopic?.id === topic.id"
                 (click)="selectTopic(topic)"
               >
                 <span>{{ topic.badge }}</span>
-
                 <strong>{{ topic.shortTitle }}</strong>
-
                 <small>{{ topic.description }}</small>
-              </button>
-            </div>
-
-            <div class="question-choice-list" *ngIf="message.type === 'question-selection' && selectedTopic">
-              <button
-                type="button"
-                class="question-choice"
-                *ngFor="let question of activeQuestions"
-                [class.active]="selectedQuestion?.id === question.id"
-                (click)="selectQuestion(question)"
-              >
-                {{ question.label }}
               </button>
             </div>
 
@@ -165,7 +188,7 @@
 
             <button
               type="button"
-              class="message-route-btn view-btn"
+              class="message-route-btn"
               *ngIf="message.question?.relatedRoute"
               (click)="goToRoute(message.question?.relatedRoute)"
             >
@@ -176,12 +199,14 @@
       </div>
 
       <div class="composer-zone">
-        <div class="search-box">
-          <input
-            type="text"
-            placeholder="Rechercher une rubrique ou une question..."
-            [(ngModel)]="searchText"
-          />
+        <div class="composer-title" *ngIf="selectedTopic">
+          <span>Questions disponibles</span>
+          <strong>{{ selectedTopic.shortTitle }}</strong>
+        </div>
+
+        <div class="composer-title" *ngIf="!selectedTopic">
+          <span>Rubriques disponibles</span>
+          <strong>Choisis une rubrique</strong>
         </div>
 
         <div class="composer-actions" *ngIf="selectedTopic">
@@ -189,6 +214,7 @@
             type="button"
             class="quick-question"
             *ngFor="let question of activeQuestions"
+            [class.active]="selectedQuestion?.id === question.id"
             (click)="selectQuestion(question)"
           >
             {{ question.label }}
@@ -198,10 +224,11 @@
         <div class="composer-actions" *ngIf="!selectedTopic">
           <button
             type="button"
-            class="quick-question"
-            *ngFor="let topic of filteredTopics.slice(0, 6)"
+            class="quick-question topic-button"
+            *ngFor="let topic of filteredTopics"
             (click)="selectTopic(topic)"
           >
+            <span>{{ topic.badge }}</span>
             {{ topic.shortTitle }}
           </button>
         </div>

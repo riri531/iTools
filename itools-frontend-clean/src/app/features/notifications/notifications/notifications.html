@@ -1,11 +1,22 @@
 <div class="notifications-page">
   <section class="notifications-card page-header">
+    <div class="header-context-symbols" aria-hidden="true">
+      <span class="context-orbit orbit-one"></span>
+      <span class="context-orbit orbit-two"></span>
+      <span class="context-dot dot-one"></span>
+      <span class="context-dot dot-two"></span>
+      <span class="context-dot dot-three"></span>
+    </div>
+
     <div class="card-inner header-inner">
       <div>
-        <span class="section-kicker">Centre de notifications</span>
+        <span class="section-kicker light">Centre de notifications</span>
+
         <h1>Notifications</h1>
+
         <p>
-          Consulte les alertes de profil, sécurité, réclamations et actions importantes.
+          Consulte les demandes d’accès, alertes de profil, sécurité, réclamations
+          et actions importantes.
         </p>
       </div>
 
@@ -36,21 +47,70 @@
     {{ errorMessage }}
   </div>
 
-  <section class="notifications-card access-requests-card" *ngIf="isAdmin()">
+  <section class="notifications-card panel-switch-card">
+    <div class="card-inner panel-switch-inner">
+      <button
+        type="button"
+        class="panel-switch-btn"
+        [class.active]="activePanel === 'PERSONAL'"
+        (click)="setActivePanel('PERSONAL')"
+      >
+        <span class="switch-icon">🔔</span>
+
+        <span>
+          Notifications personnelles
+          <small>{{ notifications.length }} notification(s)</small>
+        </span>
+      </button>
+
+      <button
+        type="button"
+        class="panel-switch-btn"
+        *ngIf="isAdmin()"
+        [class.active]="activePanel === 'ACCESS'"
+        (click)="setActivePanel('ACCESS')"
+      >
+        <span class="switch-icon">🛂</span>
+
+        <span>
+          Demandes d’accès
+          <small>{{ pendingAccessRequestsCount }} en attente</small>
+        </span>
+      </button>
+    </div>
+  </section>
+
+  <!-- =====================================================
+       ESPACE ADMIN : DEMANDES D'ACCÈS
+       ===================================================== -->
+
+  <section
+    class="notifications-card access-requests-card"
+    *ngIf="isAdmin() && activePanel === 'ACCESS'"
+  >
     <div class="card-inner">
-      <div class="list-header">
+      <div class="section-head separated-head">
         <div>
           <span class="section-kicker">Administration</span>
+
           <h2>Demandes d’accès</h2>
+
           <p>
-            {{ pendingAccessRequestsCount }} demande(s) en attente de traitement.
+            Espace réservé au traitement des nouvelles demandes de compte.
           </p>
         </div>
 
-        <div class="list-actions">
+        <div class="section-side">
+          <div class="mini-stat access-waiting">
+            <span>En attente</span>
+            <strong>{{ pendingAccessRequestsCount }}</strong>
+          </div>
+
           <button
             type="button"
-            class="refresh-btn"
+            class="refresh-btn action-pill blue"
+            title="Actualiser les demandes d’accès"
+            aria-label="Actualiser les demandes d’accès"
             (click)="loadAccessRequests()"
           >
             Actualiser
@@ -58,11 +118,15 @@
         </div>
       </div>
 
-      <div class="access-empty" *ngIf="accessRequests.length === 0">
+      <div class="access-empty" *ngIf="!isLoadingAccessRequests && accessRequests.length === 0">
         Aucune demande d’accès trouvée.
       </div>
 
-      <div class="access-list" *ngIf="accessRequests.length > 0">
+      <div class="loading" *ngIf="isLoadingAccessRequests">
+        Chargement des demandes d’accès...
+      </div>
+
+      <div class="access-list" *ngIf="!isLoadingAccessRequests && accessRequests.length > 0">
         <article
           class="access-item"
           *ngFor="let request of accessRequests"
@@ -85,29 +149,48 @@
             <h3>{{ request.fullName }}</h3>
 
             <div class="access-details">
-              <span><strong>Matricule :</strong> {{ request.matricule }}</span>
-              <span><strong>Email :</strong> {{ request.email }}</span>
-              <span><strong>Téléphone :</strong> {{ request.phoneNumber }}</span>
-              <span><strong>Service :</strong> {{ request.department }}</span>
+              <div>
+                <span>Matricule</span>
+                <strong>{{ request.matricule }}</strong>
+              </div>
+
+              <div>
+                <span>Email</span>
+                <strong>{{ request.email }}</strong>
+              </div>
+
+              <div>
+                <span>Téléphone</span>
+                <strong>{{ request.phoneNumber }}</strong>
+              </div>
+
+              <div>
+                <span>Service</span>
+                <strong>{{ request.department }}</strong>
+              </div>
             </div>
 
             <p class="access-message" *ngIf="request.message">
               {{ request.message }}
             </p>
 
-            <p class="access-decision" *ngIf="request.decisionComment">
-              <strong>Décision :</strong> {{ request.decisionComment }}
-            </p>
+            <div class="access-decision-grid" *ngIf="request.decisionComment || request.treatedByUserName">
+              <p class="access-decision" *ngIf="request.decisionComment">
+                <span>Décision</span>
+                <strong>{{ request.decisionComment }}</strong>
+              </p>
 
-            <p class="access-decision" *ngIf="request.treatedByUserName">
-              <strong>Traité par :</strong> {{ request.treatedByUserName }}
-            </p>
+              <p class="access-decision" *ngIf="request.treatedByUserName">
+                <span>Traité par</span>
+                <strong>{{ request.treatedByUserName }}</strong>
+              </p>
+            </div>
           </div>
 
           <div class="access-actions">
             <button
               type="button"
-              class="secondary-btn small-btn"
+              class="small-btn treat-access-btn"
               *ngIf="request.status === 'EN_ATTENTE'"
               (click)="selectAccessRequest(request)"
             >
@@ -121,8 +204,10 @@
           >
             <div class="form-group">
               <label>Rôle à attribuer</label>
+
               <select [(ngModel)]="selectedRoleId">
                 <option [ngValue]="0">Choisir un rôle</option>
+
                 <option *ngFor="let role of roles" [ngValue]="role.id">
                   {{ role.name }}
                 </option>
@@ -131,6 +216,7 @@
 
             <div class="form-group">
               <label>Commentaire de décision</label>
+
               <input
                 type="text"
                 [(ngModel)]="decisionComment"
@@ -163,7 +249,7 @@
 
               <button
                 type="button"
-                class="secondary-btn"
+                class="cancel-btn"
                 (click)="cancelAccessRequestSelection()"
               >
                 Annuler
@@ -175,37 +261,57 @@
     </div>
   </section>
 
-  <section class="notifications-card filters-card">
+  <!-- =====================================================
+       ESPACE NOTIFICATIONS PERSONNELLES
+       ===================================================== -->
+
+  <section
+    class="notifications-card notifications-zone-card"
+    *ngIf="activePanel === 'PERSONAL'"
+  >
     <div class="card-inner">
-      <div class="tabs">
-        <button
-          type="button"
-          [class.active]="selectedReadFilter === 'ALL'"
-          (click)="setReadFilter('ALL')"
-        >
-          Toutes
-        </button>
+      <div class="section-head notification-head">
+        <div>
+          <span class="section-kicker">Notifications personnelles</span>
 
-        <button
-          type="button"
-          [class.active]="selectedReadFilter === 'UNREAD'"
-          (click)="setReadFilter('UNREAD')"
-        >
-          Non lues
-        </button>
+          <h2>Centre personnel</h2>
 
-        <button
-          type="button"
-          [class.active]="selectedReadFilter === 'READ'"
-          (click)="setReadFilter('READ')"
-        >
-          Vues
-        </button>
+          <p>
+            Suis les alertes liées à ton profil, sécurité, réclamations et activité.
+          </p>
+        </div>
+
+        <div class="tabs">
+          <button
+            type="button"
+            [class.active]="selectedReadFilter === 'ALL'"
+            (click)="setReadFilter('ALL')"
+          >
+            Toutes
+          </button>
+
+          <button
+            type="button"
+            [class.active]="selectedReadFilter === 'UNREAD'"
+            (click)="setReadFilter('UNREAD')"
+          >
+            Non lues
+          </button>
+
+          <button
+            type="button"
+            [class.active]="selectedReadFilter === 'READ'"
+            (click)="setReadFilter('READ')"
+          >
+            Vues
+          </button>
+        </div>
       </div>
 
       <div class="filters-grid">
         <div class="form-group search-field">
           <label>Recherche</label>
+
           <input
             type="text"
             placeholder="Titre, message, type..."
@@ -216,8 +322,10 @@
 
         <div class="form-group">
           <label>Type</label>
+
           <select [(ngModel)]="selectedType" (change)="applyFilters()">
             <option value="">Tous les types</option>
+
             <option *ngFor="let type of typeOptions" [value]="type">
               {{ getTypeLabel(type) }}
             </option>
@@ -237,12 +345,17 @@
     </div>
   </section>
 
-  <section class="notifications-card list-card">
+  <section
+    class="notifications-card list-card"
+    *ngIf="activePanel === 'PERSONAL'"
+  >
     <div class="card-inner">
       <div class="list-header">
         <div>
           <span class="section-kicker">Liste</span>
+
           <h2>Liste des notifications</h2>
+
           <p>
             {{ filteredNotifications.length }} notification(s) trouvée(s),
             {{ unreadCount }} non lue(s)
@@ -286,6 +399,7 @@
             [checked]="areAllFilteredSelected()"
             (change)="toggleSelectAllFiltered($event)"
           />
+
           <span>Tout sélectionner les notifications filtrées</span>
         </label>
       </div>
@@ -345,12 +459,12 @@
               *ngIf="!item.isRead"
               (click)="markAsRead(item)"
             >
-              Marquer comme lu
+              Marquer lu
             </button>
 
             <button
               type="button"
-              class="secondary-btn small-btn already-read-btn"
+              class="small-btn already-read-btn"
               *ngIf="item.isRead"
               disabled
             >

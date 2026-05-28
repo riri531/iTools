@@ -1,5 +1,5 @@
+import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
-import { CommonModule, DatePipe, NgClass, NgFor, NgIf } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { AuthService } from '../../../core/services/auth';
@@ -20,13 +20,12 @@ interface AccessRequestDto {
   email: string;
   phoneNumber: string;
   department: string;
-  message?: string;
+  message: string;
   status: string;
-  decisionComment?: string;
+  decisionComment?: string | null;
+  treatedByUserName?: string | null;
   createdAt: string;
-  treatedAt?: string;
-  treatedByUserId?: number;
-  treatedByUserName?: string;
+  treatedAt?: string | null;
 }
 
 interface RoleDto {
@@ -34,12 +33,13 @@ interface RoleDto {
   name: string;
 }
 
-type ReadFilter = 'ALL' | 'READ' | 'UNREAD';
+type ReadFilter = 'ALL' | 'UNREAD' | 'READ';
+type ActivePanel = 'PERSONAL' | 'ACCESS';
 
 @Component({
   selector: 'app-notifications',
   standalone: true,
-  imports: [CommonModule, FormsModule, NgIf, NgFor, NgClass, DatePipe],
+  imports: [CommonModule, FormsModule],
   templateUrl: './notifications.html',
   styleUrl: './notifications.scss'
 })
@@ -48,9 +48,7 @@ export class NotificationsComponent implements OnInit {
   private authService = inject(AuthService);
   private cdr = inject(ChangeDetectorRef);
 
-  private apiUrl = 'http://localhost:5160/api/Profile/notifications';
-  private accessRequestsApiUrl = 'http://localhost:5160/api/AccessRequests';
-  private rolesApiUrl = 'http://localhost:5160/api/Roles';
+  private readonly baseUrl = 'http://localhost:5160/api';
 
   notifications: UserNotificationDto[] = [];
   filteredNotifications: UserNotificationDto[] = [];
@@ -58,28 +56,31 @@ export class NotificationsComponent implements OnInit {
   accessRequests: AccessRequestDto[] = [];
   roles: RoleDto[] = [];
 
-  selectedAccessRequestId = 0;
-  selectedRoleId = 0;
-  decisionComment = '';
-  processingAccessRequestId = 0;
-
-  selectedReadFilter: ReadFilter = 'ALL';
-  selectedType = '';
-  searchText = '';
-
   selectedIds: number[] = [];
 
+  searchText = '';
+  selectedType = '';
+  selectedReadFilter: ReadFilter = 'ALL';
+  activePanel: ActivePanel = 'PERSONAL';
+
   isLoading = false;
+  isLoadingAccessRequests = false;
+
   successMessage = '';
   errorMessage = '';
 
-  typeOptions = [
+  selectedAccessRequestId: number | null = null;
+  selectedRoleId = 0;
+  decisionComment = '';
+  processingAccessRequestId: number | null = null;
+
+  typeOptions: string[] = [
     'PROFILE',
     'SECURITY',
     'RECLAMATION',
-    'SYSTEM',
-    'ARCHIVE',
     'ACCESS_REQUEST',
+    'ARCHIVE',
+    'SYSTEM',
     'OTHER'
   ];
 
@@ -100,26 +101,82 @@ export class NotificationsComponent implements OnInit {
     return this.notifications.filter(item => item.isRead).length;
   }
 
-  isAdmin(): boolean {
-    return String(this.authService.getRole() || '').toUpperCase() === 'ADMIN';
-  }
-
   get pendingAccessRequestsCount(): number {
     return this.accessRequests.filter(item => item.status === 'EN_ATTENTE').length;
+  }
+
+  private get notificationsUrl(): string {
+    return `${this.baseUrl}/Profile/notifications`;
+  }
+
+  private get accessRequestsUrl(): string {
+    return `${this.baseUrl}/AccessRequests`;
+  }
+
+  private get rolesUrl(): string {
+    return `${this.baseUrl}/Roles`;
+  }
+
+  getAuthHeaders(): HttpHeaders {
+    const token =
+      localStorage.getItem('token') ||
+      localStorage.getItem('authToken') ||
+      localStorage.getItem('jwt') ||
+      '';
+
+    if (!token) {
+      return new HttpHeaders();
+    }
+
+    return new HttpHeaders({
+      Authorization: `Bearer ${token}`
+    });
+  }
+
+  isAdmin(): boolean {
+    const role =
+      localStorage.getItem('role') ||
+      localStorage.getItem('userRole') ||
+      localStorage.getItem('Role') ||
+      localStorage.getItem('UserRole') ||
+      '';
+
+    return this.normalizeText(role) === 'admin';
+  }
+
+  setActivePanel(panel: ActivePanel): void {
+    this.activePanel = panel;
+    this.successMessage = '';
+    this.errorMessage = '';
+
+    if (panel === 'PERSONAL') {
+      this.loadNotifications();
+      return;
+    }
+
+    if (panel === 'ACCESS' && this.isAdmin()) {
+      this.loadAccessRequests();
+      this.loadRoles();
+    }
   }
 
   loadNotifications(): void {
     this.isLoading = true;
     this.errorMessage = '';
 
-    this.http.get<UserNotificationDto[]>(this.apiUrl, {
+    this.http.get<UserNotificationDto[]>(this.notificationsUrl, {
       headers: this.getAuthHeaders()
     }).subscribe({
       next: (data) => {
+        console.log('Notifications reçues :', data);
+
         this.notifications = (data || []).map(item => ({
-          ...item,
+          id: item.id,
+          title: item.title || 'Notification',
+          message: item.message || '',
           type: item.type || 'OTHER',
-          isRead: item.isRead === true
+          isRead: item.isRead === true,
+          createdAt: item.createdAt
         }));
 
         this.selectedIds = [];
@@ -129,11 +186,21 @@ export class NotificationsComponent implements OnInit {
         this.cdr.detectChanges();
       },
       error: (err) => {
-        console.error(err);
+        console.error('Erreur notifications :', err);
+
+        this.notifications = [];
+        this.filteredNotifications = [];
+        this.selectedIds = [];
+
         this.errorMessage = this.getErrorMessage(
           err,
           'Erreur lors du chargement des notifications.'
         );
+
+        this.isLoading = false;
+        this.cdr.detectChanges();
+      },
+      complete: () => {
         this.isLoading = false;
         this.cdr.detectChanges();
       }
@@ -145,19 +212,35 @@ export class NotificationsComponent implements OnInit {
       return;
     }
 
-    this.http.get<AccessRequestDto[]>(this.accessRequestsApiUrl, {
+    this.isLoadingAccessRequests = true;
+    this.errorMessage = '';
+
+    this.http.get<AccessRequestDto[]>(this.accessRequestsUrl, {
       headers: this.getAuthHeaders()
     }).subscribe({
       next: (data) => {
-        this.accessRequests = data || [];
+        this.accessRequests = (data || []).map(item => ({
+          ...item,
+          status: item.status || 'EN_ATTENTE'
+        }));
+
+        this.isLoadingAccessRequests = false;
         this.cdr.detectChanges();
       },
       error: (err) => {
-        console.error(err);
+        console.error('Erreur demandes accès :', err);
+
+        this.accessRequests = [];
         this.errorMessage = this.getErrorMessage(
           err,
           'Erreur lors du chargement des demandes d’accès.'
         );
+
+        this.isLoadingAccessRequests = false;
+        this.cdr.detectChanges();
+      },
+      complete: () => {
+        this.isLoadingAccessRequests = false;
         this.cdr.detectChanges();
       }
     });
@@ -168,180 +251,40 @@ export class NotificationsComponent implements OnInit {
       return;
     }
 
-    this.http.get<RoleDto[]>(this.rolesApiUrl, {
+    this.http.get<RoleDto[]>(this.rolesUrl, {
       headers: this.getAuthHeaders()
     }).subscribe({
       next: (data) => {
         this.roles = data || [];
-
-        const employeRole = this.roles.find(role =>
-          String(role.name).toUpperCase() === 'EMPLOYE'
-        );
-
-        if (employeRole) {
-          this.selectedRoleId = employeRole.id;
-        }
-
         this.cdr.detectChanges();
       },
       error: (err) => {
-        console.error(err);
+        console.error('Erreur rôles :', err);
+
+        this.roles = [];
+
         this.errorMessage = this.getErrorMessage(
           err,
           'Erreur lors du chargement des rôles.'
         );
+
         this.cdr.detectChanges();
       }
     });
-  }
-
-  selectAccessRequest(request: AccessRequestDto): void {
-    this.selectedAccessRequestId = request.id;
-    this.decisionComment = '';
-
-    const employeRole = this.roles.find(role =>
-      String(role.name).toUpperCase() === 'EMPLOYE'
-    );
-
-    this.selectedRoleId = employeRole ? employeRole.id : 0;
-  }
-
-  cancelAccessRequestSelection(): void {
-    this.selectedAccessRequestId = 0;
-    this.selectedRoleId = 0;
-    this.decisionComment = '';
-  }
-
-  approveAccessRequest(request: AccessRequestDto): void {
-    if (!this.selectedRoleId) {
-      this.errorMessage = 'Veuillez choisir un rôle avant d’accepter la demande.';
-      this.cdr.detectChanges();
-      return;
-    }
-
-    const confirmed = confirm(
-      `Accepter la demande de ${request.fullName} et créer son compte ?`
-    );
-
-    if (!confirmed) {
-      return;
-    }
-
-    this.processingAccessRequestId = request.id;
-    this.errorMessage = '';
-
-    const payload = {
-      roleId: this.selectedRoleId,
-      decisionComment: this.decisionComment
-    };
-
-    this.http.put<{ message: string }>(
-      `${this.accessRequestsApiUrl}/${request.id}/approve`,
-      payload,
-      { headers: this.getAuthHeaders() }
-    ).subscribe({
-      next: (response) => {
-        this.processingAccessRequestId = 0;
-        this.showSuccess(response.message || 'Demande acceptée avec succès.');
-        this.cancelAccessRequestSelection();
-        this.loadAccessRequests();
-        this.loadNotifications();
-      },
-      error: (err) => {
-        console.error(err);
-        this.processingAccessRequestId = 0;
-        this.errorMessage = this.getErrorMessage(
-          err,
-          'Erreur lors de l’acceptation de la demande.'
-        );
-        this.cdr.detectChanges();
-      }
-    });
-  }
-
-  rejectAccessRequest(request: AccessRequestDto): void {
-    const confirmed = confirm(
-      `Refuser la demande de ${request.fullName} ?`
-    );
-
-    if (!confirmed) {
-      return;
-    }
-
-    this.processingAccessRequestId = request.id;
-    this.errorMessage = '';
-
-    const payload = {
-      roleId: 0,
-      decisionComment: this.decisionComment || 'Demande refusée.'
-    };
-
-    this.http.put<{ message: string }>(
-      `${this.accessRequestsApiUrl}/${request.id}/reject`,
-      payload,
-      { headers: this.getAuthHeaders() }
-    ).subscribe({
-      next: (response) => {
-        this.processingAccessRequestId = 0;
-        this.showSuccess(response.message || 'Demande refusée avec succès.');
-        this.cancelAccessRequestSelection();
-        this.loadAccessRequests();
-        this.loadNotifications();
-      },
-      error: (err) => {
-        console.error(err);
-        this.processingAccessRequestId = 0;
-        this.errorMessage = this.getErrorMessage(
-          err,
-          'Erreur lors du refus de la demande.'
-        );
-        this.cdr.detectChanges();
-      }
-    });
-  }
-
-  getAccessStatusLabel(status: string): string {
-    switch ((status || '').toUpperCase()) {
-      case 'EN_ATTENTE':
-        return 'En attente';
-      case 'ACCEPTEE':
-        return 'Acceptée';
-      case 'REFUSEE':
-        return 'Refusée';
-      default:
-        return status || 'Inconnu';
-    }
-  }
-
-  getAccessStatusClass(status: string): string {
-    switch ((status || '').toUpperCase()) {
-      case 'EN_ATTENTE':
-        return 'pending';
-      case 'ACCEPTEE':
-        return 'accepted';
-      case 'REFUSEE':
-        return 'rejected';
-      default:
-        return 'other';
-    }
-  }
-
-  setReadFilter(filter: ReadFilter): void {
-    this.selectedReadFilter = filter;
-    this.selectedIds = [];
-    this.applyFilters();
   }
 
   applyFilters(): void {
     const search = this.normalizeText(this.searchText);
 
     this.filteredNotifications = this.notifications.filter(item => {
+      const itemType = item.type || 'OTHER';
+
       const matchesSearch =
         !search ||
         this.normalizeText(item.title).includes(search) ||
         this.normalizeText(item.message).includes(search) ||
-        this.normalizeText(item.type).includes(search) ||
-        this.normalizeText(this.getTypeLabel(item.type)).includes(search);
+        this.normalizeText(itemType).includes(search) ||
+        this.normalizeText(this.getTypeLabel(itemType)).includes(search);
 
       const matchesRead =
         this.selectedReadFilter === 'ALL' ||
@@ -349,7 +292,7 @@ export class NotificationsComponent implements OnInit {
         (this.selectedReadFilter === 'UNREAD' && !item.isRead);
 
       const matchesType =
-        !this.selectedType || item.type === this.selectedType;
+        !this.selectedType || itemType === this.selectedType;
 
       return matchesSearch && matchesRead && matchesType;
     });
@@ -361,39 +304,44 @@ export class NotificationsComponent implements OnInit {
     this.cdr.detectChanges();
   }
 
+  setReadFilter(filter: ReadFilter): void {
+    this.selectedReadFilter = filter;
+    this.applyFilters();
+  }
+
   resetFilters(): void {
     this.searchText = '';
     this.selectedType = '';
     this.selectedReadFilter = 'ALL';
-    this.selectedIds = [];
     this.applyFilters();
   }
 
   markAsRead(item: UserNotificationDto): void {
-    if (item.isRead) {
+    if (!item || item.isRead) {
       return;
     }
 
-    this.http.put(`${this.apiUrl}/${item.id}/read`, {}, {
+    this.http.put(`${this.notificationsUrl}/${item.id}/read`, {}, {
       headers: this.getAuthHeaders()
     }).subscribe({
       next: () => {
         item.isRead = true;
 
-        const original = this.notifications.find(n => n.id === item.id);
+        const original = this.notifications.find(notification => notification.id === item.id);
         if (original) {
           original.isRead = true;
         }
 
-        this.showSuccess('Notification marquée comme lue.');
         this.applyFilters();
       },
       error: (err) => {
-        console.error(err);
+        console.error('Erreur marquer comme lu :', err);
+
         this.errorMessage = this.getErrorMessage(
           err,
-          'Erreur lors du marquage comme lu.'
+          'Erreur lors du marquage de la notification comme lue.'
         );
+
         this.cdr.detectChanges();
       }
     });
@@ -404,82 +352,66 @@ export class NotificationsComponent implements OnInit {
       return;
     }
 
-    const idsToMark = [...this.selectedIds];
+    const ids = [...this.selectedIds];
 
-    const requests = idsToMark.map(id =>
-      this.http.put(`${this.apiUrl}/${id}/read`, {}, {
-        headers: this.getAuthHeaders()
-      })
-    );
+    this.http.put(`${this.notificationsUrl}/mark-read`, ids, {
+      headers: this.getAuthHeaders()
+    }).subscribe({
+      next: () => {
+        this.notifications = this.notifications.map(item => ({
+          ...item,
+          isRead: ids.includes(item.id) ? true : item.isRead
+        }));
 
-    let completed = 0;
-    let hasError = false;
+        this.selectedIds = [];
+        this.successMessage = 'Sélection marquée comme lue avec succès.';
+        this.applyFilters();
+        this.clearMessagesLater();
+      },
+      error: (err) => {
+        console.error('Erreur marquer sélection :', err);
 
-    requests.forEach(request => {
-      request.subscribe({
-        next: () => {
-          completed++;
+        this.errorMessage = this.getErrorMessage(
+          err,
+          'Erreur lors du marquage de la sélection.'
+        );
 
-          if (completed === requests.length) {
-            this.notifications = this.notifications.map(item =>
-              idsToMark.includes(item.id)
-                ? { ...item, isRead: true }
-                : item
-            );
-
-            this.selectedIds = [];
-            this.showSuccess('Notifications sélectionnées marquées comme lues.');
-            this.applyFilters();
-          }
-        },
-        error: (err) => {
-          console.error(err);
-          hasError = true;
-          completed++;
-
-          if (completed === requests.length) {
-            if (hasError) {
-              this.errorMessage = 'Certaines notifications n’ont pas pu être marquées comme lues.';
-            }
-
-            this.notifications = this.notifications.map(item =>
-              idsToMark.includes(item.id)
-                ? { ...item, isRead: true }
-                : item
-            );
-
-            this.selectedIds = [];
-            this.applyFilters();
-            this.cdr.detectChanges();
-          }
-        }
-      });
+        this.cdr.detectChanges();
+      }
     });
   }
 
   deleteNotification(item: UserNotificationDto): void {
-    const confirmed = confirm(`Supprimer la notification "${item.title}" ?`);
+    if (!item) {
+      return;
+    }
+
+    const confirmed = window.confirm('Supprimer cette notification ?');
 
     if (!confirmed) {
       return;
     }
 
-    this.http.delete(`${this.apiUrl}/${item.id}`, {
+    this.http.delete(`${this.notificationsUrl}/${item.id}`, {
       headers: this.getAuthHeaders()
     }).subscribe({
       next: () => {
-        this.notifications = this.notifications.filter(n => n.id !== item.id);
+        this.notifications = this.notifications.filter(notification => notification.id !== item.id);
+        this.filteredNotifications = this.filteredNotifications.filter(notification => notification.id !== item.id);
         this.selectedIds = this.selectedIds.filter(id => id !== item.id);
 
-        this.showSuccess('Notification supprimée.');
+        this.successMessage = 'Notification supprimée avec succès.';
         this.applyFilters();
+        this.clearMessagesLater();
       },
       error: (err) => {
-        console.error(err);
+        console.error('Erreur suppression notification :', err);
+
         this.errorMessage = this.getErrorMessage(
           err,
           'Erreur lors de la suppression de la notification.'
         );
+
         this.cdr.detectChanges();
       }
     });
@@ -490,42 +422,34 @@ export class NotificationsComponent implements OnInit {
       return;
     }
 
-    const confirmed = confirm(
-      `Supprimer ${this.selectedIds.length} notification(s) sélectionnée(s) ?`
-    );
+    const confirmed = window.confirm('Supprimer les notifications sélectionnées ?');
 
     if (!confirmed) {
       return;
     }
 
-    const payload = {
-      notificationIds: this.selectedIds
-    };
+    const ids = [...this.selectedIds];
 
-    this.http.post<{ deleted: number }>(`${this.apiUrl}/delete-selected`, payload, {
+    this.http.request('delete', `${this.notificationsUrl}/bulk`, {
+      body: ids,
       headers: this.getAuthHeaders()
     }).subscribe({
-      next: (result) => {
-        const deletedIds = [...this.selectedIds];
-
-        this.notifications = this.notifications.filter(
-          item => !deletedIds.includes(item.id)
-        );
-
+      next: () => {
+        this.notifications = this.notifications.filter(item => !ids.includes(item.id));
         this.selectedIds = [];
 
-        this.showSuccess(
-          `${result?.deleted ?? deletedIds.length} notification(s) supprimée(s).`
-        );
-
+        this.successMessage = 'Notifications sélectionnées supprimées avec succès.';
         this.applyFilters();
+        this.clearMessagesLater();
       },
       error: (err) => {
-        console.error(err);
+        console.error('Erreur suppression sélection :', err);
+
         this.errorMessage = this.getErrorMessage(
           err,
           'Erreur lors de la suppression de la sélection.'
         );
+
         this.cdr.detectChanges();
       }
     });
@@ -536,185 +460,294 @@ export class NotificationsComponent implements OnInit {
       return;
     }
 
-    const confirmed = confirm('Supprimer toutes les notifications ?');
+    const confirmed = window.confirm('Supprimer toutes les notifications ?');
 
     if (!confirmed) {
       return;
     }
 
-    this.http.delete<{ deleted: number }>(this.apiUrl, {
+    this.http.delete(`${this.notificationsUrl}`, {
       headers: this.getAuthHeaders()
     }).subscribe({
-      next: (result) => {
-        const deleted = result?.deleted ?? this.notifications.length;
-
+      next: () => {
         this.notifications = [];
         this.filteredNotifications = [];
         this.selectedIds = [];
 
-        this.showSuccess(`${deleted} notification(s) supprimée(s).`);
+        this.successMessage = 'Toutes les notifications ont été supprimées.';
+        this.clearMessagesLater();
         this.cdr.detectChanges();
       },
       error: (err) => {
-        console.error(err);
+        console.error('Erreur suppression totale :', err);
+
         this.errorMessage = this.getErrorMessage(
           err,
-          'Erreur lors de la suppression de toutes les notifications.'
+          'Erreur lors de la suppression des notifications.'
         );
+
         this.cdr.detectChanges();
       }
     });
   }
 
   toggleSelection(item: UserNotificationDto, event: Event): void {
-    const checked = (event.target as HTMLInputElement).checked;
+    const input = event.target as HTMLInputElement;
 
-    if (checked) {
+    if (input.checked) {
       if (!this.selectedIds.includes(item.id)) {
         this.selectedIds = [...this.selectedIds, item.id];
       }
     } else {
       this.selectedIds = this.selectedIds.filter(id => id !== item.id);
     }
-
-    this.cdr.detectChanges();
-  }
-
-  toggleSelectAllFiltered(event: Event): void {
-    const checked = (event.target as HTMLInputElement).checked;
-
-    if (checked) {
-      const filteredIds = this.filteredNotifications.map(item => item.id);
-      this.selectedIds = Array.from(new Set([...this.selectedIds, ...filteredIds]));
-    } else {
-      const filteredIds = new Set(this.filteredNotifications.map(item => item.id));
-      this.selectedIds = this.selectedIds.filter(id => !filteredIds.has(id));
-    }
-
-    this.cdr.detectChanges();
-  }
-
-  areAllFilteredSelected(): boolean {
-    if (this.filteredNotifications.length === 0) {
-      return false;
-    }
-
-    return this.filteredNotifications.every(item => this.selectedIds.includes(item.id));
   }
 
   isSelected(item: UserNotificationDto): boolean {
     return this.selectedIds.includes(item.id);
   }
 
+  areAllFilteredSelected(): boolean {
+    return (
+      this.filteredNotifications.length > 0 &&
+      this.filteredNotifications.every(item => this.selectedIds.includes(item.id))
+    );
+  }
+
+  toggleSelectAllFiltered(event: Event): void {
+    const input = event.target as HTMLInputElement;
+
+    if (input.checked) {
+      const filteredIds = this.filteredNotifications.map(item => item.id);
+      this.selectedIds = Array.from(new Set([...this.selectedIds, ...filteredIds]));
+    } else {
+      const filteredIds = this.filteredNotifications.map(item => item.id);
+      this.selectedIds = this.selectedIds.filter(id => !filteredIds.includes(id));
+    }
+  }
+
+  selectAccessRequest(request: AccessRequestDto): void {
+    this.selectedAccessRequestId = request.id;
+    this.selectedRoleId = this.roles.length > 0 ? this.roles[0].id : 0;
+    this.decisionComment = '';
+  }
+
+  cancelAccessRequestSelection(): void {
+    this.selectedAccessRequestId = null;
+    this.selectedRoleId = 0;
+    this.decisionComment = '';
+  }
+
+  approveAccessRequest(request: AccessRequestDto): void {
+    if (!request) {
+      return;
+    }
+
+    if (!this.selectedRoleId || this.selectedRoleId === 0) {
+      this.errorMessage = 'Veuillez choisir un rôle avant d’accepter la demande.';
+      this.cdr.detectChanges();
+      return;
+    }
+
+    this.processingAccessRequestId = request.id;
+    this.errorMessage = '';
+    this.successMessage = '';
+
+    const body = {
+      roleId: this.selectedRoleId,
+      decisionComment: this.decisionComment || 'Demande acceptée.'
+    };
+
+    this.http.put(`${this.accessRequestsUrl}/${request.id}/approve`, body, {
+      headers: this.getAuthHeaders()
+    }).subscribe({
+      next: () => {
+        this.successMessage = 'Demande acceptée. Un email de confirmation a été envoyé.';
+        this.processingAccessRequestId = null;
+        this.cancelAccessRequestSelection();
+
+        this.loadAccessRequests();
+        this.loadNotifications();
+
+        this.clearMessagesLater();
+      },
+      error: (err) => {
+        console.error('Erreur acceptation demande :', err);
+
+        this.processingAccessRequestId = null;
+        this.errorMessage = this.getErrorMessage(
+          err,
+          'Erreur lors de l’acceptation de la demande.'
+        );
+
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  rejectAccessRequest(request: AccessRequestDto): void {
+    if (!request) {
+      return;
+    }
+
+    const confirmed = window.confirm('Refuser cette demande d’accès ?');
+
+    if (!confirmed) {
+      return;
+    }
+
+    this.processingAccessRequestId = request.id;
+    this.errorMessage = '';
+    this.successMessage = '';
+
+    const body = {
+      decisionComment: this.decisionComment || 'Demande refusée.'
+    };
+
+    this.http.put(`${this.accessRequestsUrl}/${request.id}/reject`, body, {
+      headers: this.getAuthHeaders()
+    }).subscribe({
+      next: () => {
+        this.successMessage = 'Demande refusée.';
+        this.processingAccessRequestId = null;
+        this.cancelAccessRequestSelection();
+
+        this.loadAccessRequests();
+        this.loadNotifications();
+
+        this.clearMessagesLater();
+      },
+      error: (err) => {
+        console.error('Erreur refus demande :', err);
+
+        this.processingAccessRequestId = null;
+        this.errorMessage = this.getErrorMessage(
+          err,
+          'Erreur lors du refus de la demande.'
+        );
+
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
   getTypeLabel(type: string): string {
-    switch ((type || '').toUpperCase()) {
-      case 'PROFILE':
+    const normalized = this.normalizeText(type);
+
+    switch (normalized) {
+      case 'profile':
         return 'Profil';
-      case 'SECURITY':
+      case 'security':
         return 'Sécurité';
-      case 'RECLAMATION':
+      case 'reclamation':
         return 'Réclamation';
-      case 'SYSTEM':
+      case 'access_request':
+      case 'accessrequest':
+      case 'demande_acces':
+        return 'Demande accès';
+      case 'archive':
+        return 'Archive';
+      case 'system':
         return 'Système';
-      case 'ARCHIVE':
-        return 'Historique';
-      case 'ACCESS_REQUEST':
-        return 'Demande d’accès';
       default:
         return 'Autre';
     }
   }
 
+  getTypeInitial(type: string): string {
+    const label = this.getTypeLabel(type);
+    return label.charAt(0).toUpperCase();
+  }
+
   getTypeClass(type: string): string {
-    switch ((type || '').toUpperCase()) {
-      case 'PROFILE':
+    const normalized = this.normalizeText(type);
+
+    switch (normalized) {
+      case 'profile':
         return 'profile';
-      case 'SECURITY':
+      case 'security':
         return 'security';
-      case 'RECLAMATION':
+      case 'reclamation':
         return 'reclamation';
-      case 'SYSTEM':
-        return 'system';
-      case 'ARCHIVE':
-        return 'archive';
-      case 'ACCESS_REQUEST':
+      case 'access_request':
+      case 'accessrequest':
+      case 'demande_acces':
         return 'access-request';
+      case 'archive':
+        return 'archive';
+      case 'system':
+        return 'system';
       default:
         return 'other';
     }
   }
 
-  getTypeInitial(type: string): string {
-    switch ((type || '').toUpperCase()) {
-      case 'PROFILE':
-        return 'P';
-      case 'SECURITY':
-        return 'S';
-      case 'RECLAMATION':
-        return 'R';
-      case 'SYSTEM':
-        return 'SYS';
-      case 'ARCHIVE':
-        return 'H';
-      case 'ACCESS_REQUEST':
-        return 'DA';
+  getAccessStatusLabel(status: string): string {
+    const normalized = this.normalizeText(status);
+
+    switch (normalized) {
+      case 'en_attente':
+      case 'pending':
+        return 'En attente';
+      case 'acceptee':
+      case 'accepted':
+        return 'Acceptée';
+      case 'refusee':
+      case 'rejected':
+        return 'Refusée';
       default:
-        return 'A';
+        return status || 'Non renseigné';
     }
   }
 
-  private getAuthHeaders(): HttpHeaders {
-    const token = this.authService.getToken() || localStorage.getItem('token');
+  getAccessStatusClass(status: string): string {
+    const normalized = this.normalizeText(status);
 
-    if (!token) {
-      return new HttpHeaders();
+    switch (normalized) {
+      case 'en_attente':
+      case 'pending':
+        return 'pending';
+      case 'acceptee':
+      case 'accepted':
+        return 'accepted';
+      case 'refusee':
+      case 'rejected':
+        return 'rejected';
+      default:
+        return 'other';
     }
-
-    return new HttpHeaders({
-      Authorization: `Bearer ${token}`
-    });
   }
 
-  private normalizeText(value: string | null | undefined): string {
-    return String(value || '')
+  normalizeText(value: string | null | undefined): string {
+    return (value || '')
+      .toString()
       .toLowerCase()
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
       .trim();
   }
 
-  private showSuccess(message: string): void {
-    this.successMessage = message;
-    this.errorMessage = '';
-    this.cdr.detectChanges();
-
-    setTimeout(() => {
-      this.successMessage = '';
-      this.cdr.detectChanges();
-    }, 3000);
-  }
-
-  private getErrorMessage(error: any, fallback: string): string {
-    if (typeof error?.error === 'string' && error.error.trim()) {
-      return error.error;
-    }
-
+  getErrorMessage(error: any, fallback: string): string {
     if (error?.error?.message) {
       return error.error.message;
     }
 
-    if (error?.error?.title) {
-      return error.error.title;
+    if (typeof error?.error === 'string') {
+      return error.error;
     }
 
-    if (error?.status === 403) {
-      return "Action interdite : vous n'avez pas les droits nécessaires.";
-    }
-
-    if (error?.status === 401) {
-      return 'Session expirée ou utilisateur non authentifié.';
+    if (error?.message) {
+      return error.message;
     }
 
     return fallback;
+  }
+
+  private clearMessagesLater(): void {
+    window.setTimeout(() => {
+      this.successMessage = '';
+      this.errorMessage = '';
+      this.cdr.detectChanges();
+    }, 3500);
   }
 }

@@ -1,9 +1,6 @@
 <div class="outils-page">
   <section class="outils-card page-header">
     <div class="header-context-symbols" aria-hidden="true">
-      <span class="context-symbol symbol-tool"></span>
-      <span class="context-symbol symbol-stock"></span>
-      <span class="context-symbol symbol-wrench"></span>
       <span class="context-orbit orbit-one"></span>
       <span class="context-orbit orbit-two"></span>
       <span class="context-dot dot-one"></span>
@@ -12,33 +9,74 @@
     </div>
 
     <div class="card-inner header-inner">
-      <div>
-        <span class="section-kicker">Outillages</span>
+      <div class="header-copy">
+        <span class="section-kicker light">Outillages</span>
+
         <h1>{{ getPageTitle() }}</h1>
+
         <p>
           {{ getPageSubtitle() }}
         </p>
       </div>
 
       <div class="header-actions">
-        <button *ngIf="isDesignationContext()" type="button" class="download-btn back-btn" (click)="goBackToDesignations()">
-          Retour aux outillages
+        <button
+          *ngIf="isDesignationContext()"
+          type="button"
+          class="header-btn back-header-btn"
+          title="Retour aux outillages"
+          aria-label="Retour aux outillages"
+          (click)="goBackToDesignations()"
+        >
+          <img src="/icons/actions/folder.png" alt="" />
+          <span>Retour</span>
         </button>
 
-        <button type="button" class="download-btn" (click)="downloadOutilsData()">
-          Télécharger les données
+        <button
+          type="button"
+          class="header-btn secondary"
+          title="Télécharger les données"
+          aria-label="Télécharger les données"
+          (click)="downloadOutilsData()"
+        >
+          <img src="/icons/actions/export.png" alt="" />
+          <span>Télécharger</span>
         </button>
 
-        <button *ngIf="canManageData()" type="button" class="download-btn" (click)="downloadTemplate()">
-          Télécharger modèle à remplir
+        <button
+          *ngIf="canManageData()"
+          type="button"
+          class="header-btn secondary"
+          title="Télécharger le modèle à remplir"
+          aria-label="Télécharger le modèle à remplir"
+          (click)="downloadTemplate()"
+        >
+          <img src="/icons/actions/template.png" alt="" />
+          <span>Modèle Excel</span>
         </button>
 
-        <button *ngIf="canManageData()" type="button" class="import-btn" (click)="openImportModal()">
-          Import en masse
+        <button
+          *ngIf="canManageData()"
+          type="button"
+          class="header-btn secondary"
+          title="Import en masse"
+          aria-label="Import en masse"
+          (click)="openImportModal()"
+        >
+          <img src="/icons/actions/import.png" alt="" />
+          <span>Import</span>
         </button>
 
-        <button *ngIf="canManageData()" type="button" class="add-btn" (click)="openCreateModal()">
-          Nouveau
+        <button
+          *ngIf="canManageData()"
+          type="button"
+          class="header-btn primary"
+          title="Ajouter un nouvel outil"
+          aria-label="Ajouter un nouvel outil"
+          (click)="openCreateModal()"
+        >
+          <img src="/icons/actions/add.png" alt="" />
+          <span>Nouveau</span>
         </button>
       </div>
     </div>
@@ -55,40 +93,72 @@
   <section class="outils-card filters-card">
     <div class="card-inner">
       <div class="filters-top">
-        <div>
+        <div class="filters-title-block">
           <span class="section-kicker">Filtres</span>
+
           <h2>Vue globale des outils</h2>
+
           <p>
-            Recherche, filtres par caractéristiques, tri et choix du mode d’affichage.
+            Rechercher, filtrer et trier les outils disponibles.
           </p>
         </div>
 
-        <div class="view-switch">
-          <button
-            type="button"
-            [class.active]="viewMode === 'list'"
-            (click)="setViewMode('list')"
-          >
-            Liste
-          </button>
+        <div class="filters-top-right">
+          <div class="summary-grid summary-grid-top">
+            <div class="summary-card">
+              <span>Total</span>
+              <strong>{{ getTotalOutilsCount() }}</strong>
+            </div>
 
-          <button
-            type="button"
-            [class.active]="viewMode === 'images'"
-            (click)="setViewMode('images')"
-          >
-            Images
-          </button>
+            <div class="summary-card">
+              <span>Affichés</span>
+              <strong>{{ filteredOutils.length }}</strong>
+            </div>
+
+            <div class="summary-card service">
+              <span>Service</span>
+              <strong>{{ countByStatus('S') }}</strong>
+            </div>
+
+            <div class="summary-card hs">
+              <span>HS</span>
+              <strong>{{ countByStatus('HS') }}</strong>
+            </div>
+
+            <div class="summary-card warning">
+              <span>Stock risque</span>
+              <strong>{{ countStockRisks() }}</strong>
+            </div>
+          </div>
+
+          <div class="view-switch">
+            <button
+              type="button"
+              [class.active]="viewMode === 'list'"
+              (click)="setViewMode('list')"
+            >
+              Liste
+            </button>
+
+            <button
+              type="button"
+              [class.active]="viewMode === 'images'"
+              (click)="setViewMode('images')"
+            >
+              Images
+            </button>
+          </div>
         </div>
       </div>
 
-      <div class="filters-grid">
+      <div class="filters-line outils-filters-line">
         <div class="form-group search-field">
           <label>Recherche</label>
+
           <input
             class="form-control"
             type="text"
-            placeholder="Rechercher par code, OTT, ligne, client, matière, désignation..."
+            placeholder="Code, OTT, ligne..."
             [(ngModel)]="searchText"
             (input)="applyFilters()"
           />
@@ -96,13 +166,18 @@
 
         <div class="form-group">
           <label>Ligne</label>
+
           <select
             class="form-control"
             [(ngModel)]="selectedLigne"
             (change)="applyFilters()"
           >
-            <option value="">Toutes les lignes</option>
-            <option *ngFor="let ligne of ligneFilterOptions" [value]="ligne">
+            <option value="">Toutes</option>
+
+            <option
+              *ngFor="let ligne of ligneFilterOptions"
+              [value]="ligne"
+            >
               {{ ligne }}
             </option>
           </select>
@@ -110,13 +185,18 @@
 
         <div class="form-group">
           <label>Client</label>
+
           <select
             class="form-control"
             [(ngModel)]="selectedClient"
             (change)="applyFilters()"
           >
-            <option value="">Tous les clients</option>
-            <option *ngFor="let client of clientFilterOptions" [value]="client">
+            <option value="">Tous</option>
+
+            <option
+              *ngFor="let client of clientFilterOptions"
+              [value]="client"
+            >
               {{ client }}
             </option>
           </select>
@@ -124,13 +204,18 @@
 
         <div class="form-group">
           <label>Fournisseur</label>
+
           <select
             class="form-control"
             [(ngModel)]="selectedFournisseur"
             (change)="applyFilters()"
           >
-            <option value="">Tous les fournisseurs</option>
-            <option *ngFor="let fournisseur of fournisseurFilterOptions" [value]="fournisseur">
+            <option value="">Tous</option>
+
+            <option
+              *ngFor="let fournisseur of fournisseurFilterOptions"
+              [value]="fournisseur"
+            >
               {{ fournisseur }}
             </option>
           </select>
@@ -138,13 +223,18 @@
 
         <div class="form-group">
           <label>Matière</label>
+
           <select
             class="form-control"
             [(ngModel)]="selectedMatiere"
             (change)="applyFilters()"
           >
-            <option value="">Toutes les matières</option>
-            <option *ngFor="let matiere of matiereFilterOptions" [value]="matiere">
+            <option value="">Toutes</option>
+
+            <option
+              *ngFor="let matiere of matiereFilterOptions"
+              [value]="matiere"
+            >
               {{ matiere }}
             </option>
           </select>
@@ -152,13 +242,18 @@
 
         <div class="form-group" *ngIf="!isDesignationContext()">
           <label>Désignation</label>
+
           <select
             class="form-control"
             [(ngModel)]="selectedDesignation"
             (change)="applyFilters()"
           >
-            <option value="">Toutes les désignations</option>
-            <option *ngFor="let designation of designationFilterOptions" [value]="designation">
+            <option value="">Toutes</option>
+
+            <option
+              *ngFor="let designation of designationFilterOptions"
+              [value]="designation"
+            >
               {{ designation }}
             </option>
           </select>
@@ -166,13 +261,18 @@
 
         <div class="form-group">
           <label>Statut</label>
+
           <select
             class="form-control"
             [(ngModel)]="selectedStatus"
             (change)="applyFilters()"
           >
-            <option value="">Tous les statuts</option>
-            <option *ngFor="let status of statusFilterOptions" [value]="status">
+            <option value="">Tous</option>
+
+            <option
+              *ngFor="let status of statusFilterOptions"
+              [value]="status"
+            >
               {{ getStatusLabel(status) }}
             </option>
           </select>
@@ -180,6 +280,7 @@
 
         <div class="form-group">
           <label>Trier par</label>
+
           <select
             class="form-control"
             [(ngModel)]="sortField"
@@ -193,6 +294,7 @@
 
         <div class="form-group">
           <label>Ordre</label>
+
           <select
             class="form-control"
             [(ngModel)]="sortDirection"
@@ -203,38 +305,15 @@
           </select>
         </div>
 
-        <div class="filters-actions">
-          <button type="button" class="reset-btn" (click)="resetFilters()">
-            Réinitialiser
-          </button>
-        </div>
-      </div>
-
-      <div class="summary-grid">
-        <div class="summary-card">
-          <span>Total</span>
-          <strong>{{ getTotalOutilsCount() }}</strong>
-        </div>
-
-        <div class="summary-card">
-          <span>Affichés</span>
-          <strong>{{ filteredOutils.length }}</strong>
-        </div>
-
-        <div class="summary-card service">
-          <span>Service</span>
-          <strong>{{ countByStatus('S') }}</strong>
-        </div>
-
-        <div class="summary-card hs">
-          <span>HS</span>
-          <strong>{{ countByStatus('HS') }}</strong>
-        </div>
-
-        <div class="summary-card warning">
-          <span>Stock risque</span>
-          <strong>{{ countStockRisks() }}</strong>
-        </div>
+        <button
+          type="button"
+          class="reset-btn"
+          title="Réinitialiser les filtres"
+          aria-label="Réinitialiser les filtres"
+          (click)="resetFilters()"
+        >
+          Réinitialiser
+        </button>
       </div>
     </div>
   </section>
@@ -244,12 +323,15 @@
       <div class="list-header">
         <div>
           <span class="section-kicker">Liste</span>
+
           <h2>Liste des outils</h2>
+
           <p>{{ filteredOutils.length }} outil(s) trouvé(s)</p>
         </div>
 
         <div class="sort-state">
           <span>Tri actuel</span>
+
           <strong>
             {{ getSortLabel(sortField) }}
             —
@@ -272,7 +354,11 @@
                 <th>Emplacement</th>
 
                 <th>
-                  <button type="button" class="th-sort-btn" (click)="toggleSort('ott')">
+                  <button
+                    type="button"
+                    class="th-sort-btn"
+                    (click)="toggleSort('ott')"
+                  >
                     OTT
                     <span *ngIf="sortField === 'ott'">
                       {{ sortDirection === 'asc' ? '↑' : '↓' }}
@@ -281,7 +367,11 @@
                 </th>
 
                 <th>
-                  <button type="button" class="th-sort-btn" (click)="toggleSort('codeOutillage')">
+                  <button
+                    type="button"
+                    class="th-sort-btn"
+                    (click)="toggleSort('codeOutillage')"
+                  >
                     Code outillage
                     <span *ngIf="sortField === 'codeOutillage'">
                       {{ sortDirection === 'asc' ? '↑' : '↓' }}
@@ -293,7 +383,11 @@
                 <th>Valeur</th>
 
                 <th>
-                  <button type="button" class="th-sort-btn" (click)="toggleSort('dateCreation')">
+                  <button
+                    type="button"
+                    class="th-sort-btn"
+                    (click)="toggleSort('dateCreation')"
+                  >
                     Date création
                     <span *ngIf="sortField === 'dateCreation'">
                       {{ sortDirection === 'asc' ? '↑' : '↓' }}
@@ -367,32 +461,50 @@
                 </td>
 
                 <td class="actions">
-                  <button *ngIf="canManageData()" type="button" class="table-btn edit-btn" (click)="openEditModal(item)">
-                    Modifier
+                  <button
+                    *ngIf="canManageData()"
+                    type="button"
+                    class="table-btn edit-btn"
+                    title="Modifier"
+                    aria-label="Modifier"
+                    (click)="openEditModal(item)"
+                  >
+                    <img src="/icons/actions/edit.png" alt="" />
                   </button>
 
                   <button
                     *ngIf="canDownloadOutilCard()"
                     type="button"
-                    class="table-btn identity-card-btn"
+                    class="table-btn pdf-btn"
+                    title="Télécharger la fiche PDF"
+                    aria-label="Télécharger la fiche PDF"
                     (click)="downloadOutilCard(item)"
                   >
-                    Fiche PDF
+                    <img src="/icons/actions/pdf.png" alt="" />
                   </button>
 
                   <button
                     *ngIf="canCreateReclamation()"
                     type="button"
-                    class="table-btn reclamation add-btn"
-                    [class.urgent]="getStockState(item) === 'EPUISE'"
-                    [class.warning]="getStockState(item) === 'RISQUE'"
+                    class="table-btn reclamation-btn"
+                    [class.stock-urgent]="getStockState(item) === 'EPUISE'"
+                    [class.stock-warning]="getStockState(item) === 'RISQUE'"
+                    title="Passer une réclamation"
+                    aria-label="Passer une réclamation"
                     (click)="openReclamationModal(item)"
                   >
-                    {{ getStockState(item) === 'NORMAL' ? 'Passer réclamation' : 'Réclamation stock' }}
+                    <img src="/icons/actions/reclamation.png" alt="" />
                   </button>
 
-                  <button *ngIf="canManageData()" type="button" class="table-btn delete-btn" (click)="deleteOutil(item)">
-                    Supprimer
+                  <button
+                    *ngIf="canManageData()"
+                    type="button"
+                    class="table-btn delete-btn"
+                    title="Supprimer"
+                    aria-label="Supprimer"
+                    (click)="deleteOutil(item)"
+                  >
+                    <img src="/icons/actions/delete.png" alt="" />
                   </button>
                 </td>
               </tr>
@@ -449,32 +561,50 @@
             </div>
 
             <div class="image-card-actions">
-              <button *ngIf="canManageData()" type="button" class="table-btn edit-btn" (click)="openEditModal(item)">
-                Modifier
+              <button
+                *ngIf="canManageData()"
+                type="button"
+                class="table-btn edit-btn"
+                title="Modifier"
+                aria-label="Modifier"
+                (click)="openEditModal(item)"
+              >
+                <img src="/icons/actions/edit.png" alt="" />
               </button>
 
               <button
                 *ngIf="canDownloadOutilCard()"
                 type="button"
-                class="table-btn identity-card-btn"
+                class="table-btn pdf-btn"
+                title="Télécharger la fiche PDF"
+                aria-label="Télécharger la fiche PDF"
                 (click)="downloadOutilCard(item)"
               >
-                Fiche PDF
+                <img src="/icons/actions/pdf.png" alt="" />
               </button>
 
               <button
                 *ngIf="canCreateReclamation()"
                 type="button"
-                class="table-btn reclamation add-btn"
-                [class.urgent]="getStockState(item) === 'EPUISE'"
-                [class.warning]="getStockState(item) === 'RISQUE'"
+                class="table-btn reclamation-btn"
+                [class.stock-urgent]="getStockState(item) === 'EPUISE'"
+                [class.stock-warning]="getStockState(item) === 'RISQUE'"
+                title="Passer une réclamation"
+                aria-label="Passer une réclamation"
                 (click)="openReclamationModal(item)"
               >
-                Réclamation
+                <img src="/icons/actions/reclamation.png" alt="" />
               </button>
 
-              <button *ngIf="canManageData()" type="button" class="table-btn delete-btn" (click)="deleteOutil(item)">
-                Supprimer
+              <button
+                *ngIf="canManageData()"
+                type="button"
+                class="table-btn delete-btn"
+                title="Supprimer"
+                aria-label="Supprimer"
+                (click)="deleteOutil(item)"
+              >
+                <img src="/icons/actions/delete.png" alt="" />
               </button>
             </div>
           </article>
@@ -504,7 +634,9 @@
           </p>
         </div>
 
-        <button type="button" class="it-modal-close" (click)="closeModal()">×</button>
+        <button type="button" class="it-modal-close" (click)="closeModal()">
+          ×
+        </button>
       </div>
 
       <div class="alert error" *ngIf="errorMessage">
@@ -518,8 +650,15 @@
 
         <div class="form-group">
           <label>Ligne</label>
-          <select class="form-control" name="ligneId" [(ngModel)]="form.ligneId" required>
+
+          <select
+            class="form-control"
+            name="ligneId"
+            [(ngModel)]="form.ligneId"
+            required
+          >
             <option [value]="0">Sélectionner une ligne</option>
+
             <option *ngFor="let ligne of lignes" [value]="ligne.id">
               {{ ligne.nom }}
             </option>
@@ -528,8 +667,15 @@
 
         <div class="form-group">
           <label>Client</label>
-          <select class="form-control" name="clientId" [(ngModel)]="form.clientId" required>
+
+          <select
+            class="form-control"
+            name="clientId"
+            [(ngModel)]="form.clientId"
+            required
+          >
             <option [value]="0">Sélectionner un client</option>
+
             <option *ngFor="let client of clients" [value]="client.id">
               {{ client.nomClient }} - {{ client.nomReference }}
             </option>
@@ -538,8 +684,15 @@
 
         <div class="form-group">
           <label>Fournisseur</label>
-          <select class="form-control" name="fournisseurId" [(ngModel)]="form.fournisseurId" required>
+
+          <select
+            class="form-control"
+            name="fournisseurId"
+            [(ngModel)]="form.fournisseurId"
+            required
+          >
             <option [value]="0">Sélectionner un fournisseur</option>
+
             <option *ngFor="let fournisseur of fournisseurs" [value]="fournisseur.id">
               {{ fournisseur.codeFournisseur }} - {{ fournisseur.nomFournisseur }}
             </option>
@@ -548,8 +701,15 @@
 
         <div class="form-group">
           <label>Emplacement</label>
-          <select class="form-control" name="emplacementId" [(ngModel)]="form.emplacementId" required>
+
+          <select
+            class="form-control"
+            name="emplacementId"
+            [(ngModel)]="form.emplacementId"
+            required
+          >
             <option [value]="0">Sélectionner un emplacement</option>
+
             <option *ngFor="let emplacement of getFormEmplacements()" [value]="emplacement.id">
               {{ getEmplacementLabel(emplacement) }}
             </option>
@@ -558,17 +718,37 @@
 
         <div class="form-group">
           <label>OTT</label>
-          <input class="form-control" type="text" name="ott" [(ngModel)]="form.ott" required />
+
+          <input
+            class="form-control"
+            type="text"
+            name="ott"
+            [(ngModel)]="form.ott"
+            required
+          />
         </div>
 
         <div class="form-group">
           <label>Code outillage</label>
-          <input class="form-control" type="text" name="codeOutillage" [(ngModel)]="form.codeOutillage" required />
+
+          <input
+            class="form-control"
+            type="text"
+            name="codeOutillage"
+            [(ngModel)]="form.codeOutillage"
+            required
+          />
         </div>
 
         <div class="form-group">
           <label>Statut</label>
-          <select class="form-control" name="status" [(ngModel)]="form.status" required>
+
+          <select
+            class="form-control"
+            name="status"
+            [(ngModel)]="form.status"
+            required
+          >
             <option *ngFor="let status of statusOptions" [value]="status">
               {{ getStatusLabel(status) }}
             </option>
@@ -577,11 +757,19 @@
 
         <div class="form-group">
           <label>Valeur</label>
-          <input class="form-control" type="number" name="valeur" [(ngModel)]="form.valeur" min="0" />
+
+          <input
+            class="form-control"
+            type="number"
+            name="valeur"
+            [(ngModel)]="form.valeur"
+            min="0"
+          />
         </div>
 
         <div class="form-group">
           <label>Justification HS</label>
+
           <input
             class="form-control"
             type="text"
@@ -593,6 +781,7 @@
 
         <div class="form-group">
           <label>Date affectation</label>
+
           <input
             class="form-control"
             type="date"
@@ -603,6 +792,7 @@
 
         <div class="form-group">
           <label>Date de création</label>
+
           <input
             class="form-control"
             type="date"
@@ -625,7 +815,9 @@
 
               <ng-template #noSelectedImage>
                 <div class="image-upload-empty">
-                  <span>{{ form.codeOutillage ? form.codeOutillage.charAt(0).toUpperCase() : 'O' }}</span>
+                  <span>
+                    {{ form.codeOutillage ? form.codeOutillage.charAt(0).toUpperCase() : 'O' }}
+                  </span>
                   <small>Aucune photo</small>
                 </div>
               </ng-template>
@@ -633,6 +825,7 @@
 
             <div class="image-upload-content">
               <strong>Image de l’outil</strong>
+
               <p>
                 Ajoute une photo pour identifier visuellement cet outil dans la liste,
                 la vue images et la fiche PDF.
@@ -647,13 +840,17 @@
               />
 
               <div class="image-upload-actions">
-                <button type="button" class="import-btn" (click)="outilImageInput.click()">
+                <button
+                  type="button"
+                  class="header-btn secondary upload-btn"
+                  (click)="outilImageInput.click()"
+                >
                   Choisir une photo
                 </button>
 
                 <button
                   type="button"
-                  class="delete-btn"
+                  class="header-btn danger-soft"
                   *ngIf="form.imagePreview || form.imageUrl"
                   (click)="removeSelectedImage()"
                 >
@@ -669,11 +866,20 @@
         </div>
 
         <div class="form-actions">
-          <button type="submit" class="form-submit-btn" [class.save-btn]="isEditMode" [class.add-btn]="!isEditMode">
+          <button
+            type="submit"
+            class="form-submit-btn"
+            [class.save-btn]="isEditMode"
+            [class.add-btn]="!isEditMode"
+          >
             {{ isEditMode ? 'Enregistrer' : 'Ajouter' }}
           </button>
 
-          <button type="button" class="cancel-btn" (click)="closeModal()">
+          <button
+            type="button"
+            class="cancel-btn"
+            (click)="closeModal()"
+          >
             Annuler
           </button>
         </div>
@@ -696,7 +902,9 @@
           </p>
         </div>
 
-        <button type="button" class="it-modal-close" (click)="closeImportModal()">×</button>
+        <button type="button" class="it-modal-close" (click)="closeImportModal()">
+          ×
+        </button>
       </div>
 
       <div class="alert success" *ngIf="importSuccessMessage">
@@ -709,6 +917,7 @@
 
       <div class="import-box">
         <label class="import-label">Fichier Excel / CSV</label>
+
         <input
           class="file-input"
           type="file"
@@ -743,11 +952,19 @@
       </div>
 
       <div class="form-actions">
-        <button type="button" class="import-btn" (click)="importOutils()">
+        <button
+          type="button"
+          class="form-submit-btn save-btn"
+          (click)="importOutils()"
+        >
           Importer
         </button>
 
-        <button type="button" class="cancel-btn" (click)="closeImportModal()">
+        <button
+          type="button"
+          class="cancel-btn"
+          (click)="closeImportModal()"
+        >
           Annuler
         </button>
       </div>
@@ -769,7 +986,9 @@
           </p>
         </div>
 
-        <button type="button" class="it-modal-close" (click)="closeReclamationModal()">×</button>
+        <button type="button" class="it-modal-close" (click)="closeReclamationModal()">
+          ×
+        </button>
       </div>
 
       <div class="alert success" *ngIf="reclamationSuccessMessage">
@@ -788,13 +1007,29 @@
       <form class="outils-form modal-form" (ngSubmit)="submitReclamation()">
         <div class="form-group">
           <label>Titre</label>
-          <input class="form-control" type="text" name="reclamationTitle" [(ngModel)]="reclamationForm.title" required />
+
+          <input
+            class="form-control"
+            type="text"
+            name="reclamationTitle"
+            [(ngModel)]="reclamationForm.title"
+            required
+          />
         </div>
 
         <div class="form-group">
           <label>Type de problème</label>
-          <select class="form-control" name="problemType" [(ngModel)]="reclamationForm.problemType" required>
-            <option *ngFor="let problemType of reclamationProblemTypes" [value]="problemType">
+
+          <select
+            class="form-control"
+            name="problemType"
+            [(ngModel)]="reclamationForm.problemType"
+            required
+          >
+            <option
+              *ngFor="let problemType of reclamationProblemTypes"
+              [value]="problemType"
+            >
               {{ problemType }}
             </option>
           </select>
@@ -802,13 +1037,29 @@
 
         <div class="form-group">
           <label>Date de réclamation</label>
-          <input class="form-control" type="date" name="reclamationDate" [(ngModel)]="reclamationForm.reclamationDate" required />
+
+          <input
+            class="form-control"
+            type="date"
+            name="reclamationDate"
+            [(ngModel)]="reclamationForm.reclamationDate"
+            required
+          />
         </div>
 
         <div class="form-group">
           <label>Priorité</label>
-          <select class="form-control" name="priority" [(ngModel)]="reclamationForm.priority" required>
-            <option *ngFor="let priority of priorityOptions" [value]="priority">
+
+          <select
+            class="form-control"
+            name="priority"
+            [(ngModel)]="reclamationForm.priority"
+            required
+          >
+            <option
+              *ngFor="let priority of priorityOptions"
+              [value]="priority"
+            >
               {{ priority }}
             </option>
           </select>
@@ -816,6 +1067,7 @@
 
         <div class="form-group">
           <label>Description du problème</label>
+
           <textarea
             class="form-control textarea-control"
             name="description"
@@ -827,11 +1079,15 @@
         </div>
 
         <div class="form-actions">
-          <button type="submit" class="save-btn">
+          <button type="submit" class="form-submit-btn save-btn">
             Envoyer réclamation
           </button>
 
-          <button type="button" class="cancel-btn" (click)="closeReclamationModal()">
+          <button
+            type="button"
+            class="cancel-btn"
+            (click)="closeReclamationModal()"
+          >
             Annuler
           </button>
         </div>

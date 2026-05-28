@@ -1,43 +1,53 @@
 :host {
   display: block;
   min-height: 100vh;
-  font-family: Arial, sans-serif;
-  color: #07133d;
+  font-family: Arial, Helvetica, Calibri, sans-serif;
+  color: #404040;
+
+  /* =========================================================
+     CHARTE TIS / ALL CIRCUITS
+     ========================================================= */
+
+  --tis-red: #e00034;
+  --tis-red-dark: #b00028;
+  --tis-red-deep: #820020;
+  --tis-red-soft: #fde8ee;
+
+  --all-grey: #6c6f70;
+  --all-grey-soft: #eef0f1;
+
+  --all-dark-grey: #404040;
+  --all-blue: #096683;
+  --all-blue-dark: #064c61;
+  --all-blue-soft: #e5f3f7;
+
+  --all-yellow: #ffc000;
 
   --page-bg: #ffffff;
   --surface: #ffffff;
 
-  --red-main: #d60000;
-  --red-soft: #ef0000;
-  --red-dark: #980000;
-  --red-deep: #720000;
+  --text-dark: #404040;
+  --text-soft: #6c6f70;
+  --text-light: #ffffff;
 
   --sidebar-width: 236px;
   --layout-gap: 18px;
   --topbar-height: 76px;
   --topbar-top: 14px;
 
-  --sidebar-grad-1: #ff2b2b;
-  --sidebar-grad-2: #df0000;
-  --sidebar-grad-3: #b30000;
-  --sidebar-grad-4: #840000;
+  --topbar-bg-1: #ffffff;
+  --topbar-bg-2: #fafafa;
+  --topbar-bg-3: #f4f5f6;
+  --topbar-border: #d9dcde;
 
-  --topbar-bg-1: #fff8f9;
-  --topbar-bg-2: #fff1f3;
-  --topbar-bg-3: #fdebed;
-  --topbar-border: #f1cfd6;
+  --search-bg: #f4f5f6;
+  --search-border: #d9dcde;
 
-  --search-bg: #f8e9ec;
+  --card-bg-1: #ffffff;
+  --card-bg-2: #f7f8f9;
+  --card-border: #d9dcde;
 
-  --card-bordeaux-bg-1: #fff9fa;
-  --card-bordeaux-bg-2: #fff2f4;
-  --card-bordeaux-bg-3: #fdeaee;
-  --card-bordeaux-border: #efc0c9;
-
-  --text-dark: #10162f;
-  --text-soft: #9b94a3;
-
-  --shadow-soft: 0 8px 22px rgba(120, 0, 0, 0.05);
+  --shadow-soft: 0 8px 22px rgba(64, 64, 64, 0.08);
 }
 
 *,
@@ -55,7 +65,7 @@
 }
 
 /* =========================================================
-   SIDEBAR FIXE
+   SIDEBAR FIXE - ROUGE TIS CIRCUITS
    ========================================================= */
 
 .sidebar {
@@ -81,14 +91,16 @@
     radial-gradient(circle at 100% 18%, rgba(255, 255, 255, 0.08), transparent 24%),
     linear-gradient(
       160deg,
-      var(--sidebar-grad-1) 0%,
-      var(--sidebar-grad-2) 35%,
-      var(--sidebar-grad-3) 72%,
-      var(--sidebar-grad-4) 100%
+      #ef335b 0%,
+      var(--tis-red) 34%,
+      var(--tis-red-dark) 72%,
+      var(--tis-red-deep) 100%
     );
 
   border-radius: 0 28px 28px 0;
-  box-shadow: none;
+  border-right: 1px solid rgba(255, 255, 255, 0.12);
+
+  box-shadow: 8px 0 24px rgba(130, 0, 32, 0.18);
 
   overflow: visible;
 }
@@ -129,7 +141,7 @@
 
 .logo-subtitle {
   margin-top: 4px;
-  color: rgba(255, 255, 255, 0.95);
+  color: rgba(255, 255, 255, 0.92);
   font-size: 12px;
   line-height: 1;
   font-weight: 800;
@@ -137,7 +149,6 @@
 
 /* =========================================================
    MENU CENTRAL SCROLLABLE
-   Scrollbar à gauche pour ne pas casser le raccord à droite.
    ========================================================= */
 
 .nav-menu {
@@ -161,7 +172,7 @@
   direction: rtl;
 
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.55) transparent;
+  scrollbar-color: rgba(255, 255, 255, 0.50) transparent;
 }
 
 .nav-menu::-webkit-scrollbar {
@@ -175,7 +186,7 @@
 
 .nav-menu::-webkit-scrollbar-thumb {
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.46);
 }
 
 .nav-menu::-webkit-scrollbar:horizontal {
@@ -198,10 +209,10 @@
   padding: 0 11px;
 
   text-decoration: none;
-  color: rgba(255, 255, 255, 0.97);
+  color: rgba(255, 255, 255, 0.96);
 
-  background: rgba(120, 0, 0, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.075);
+  border: 1px solid rgba(255, 255, 255, 0.12);
 
   font-size: 12.5px;
   font-weight: 800;
@@ -210,7 +221,8 @@
   transition:
     background 0.18s ease,
     color 0.18s ease,
-    transform 0.18s ease;
+    transform 0.18s ease,
+    border-color 0.18s ease;
 
   z-index: 1;
 }
@@ -224,11 +236,13 @@
 }
 
 .nav-link:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.20);
+  color: #ffffff;
 }
 
 /* =========================================================
-   BOUTON ACTIF ORGANIQUE / GOUTTE / PAGE CONTINUE
+   BOUTON ACTIF ORGANIQUE / PAGE CONTINUE
    ========================================================= */
 
 .nav-link.active {
@@ -251,7 +265,7 @@
   gap: 10px;
 
   background: var(--page-bg);
-  color: var(--red-main);
+  color: var(--tis-red);
   border: none;
 
   border-top-left-radius: 20px !important;
@@ -260,7 +274,7 @@
   border-bottom-right-radius: 0 !important;
 
   box-shadow:
-    -7px 10px 22px rgba(80, 0, 0, 0.08),
+    -7px 10px 22px rgba(130, 0, 32, 0.10),
     14px 0 0 0 var(--page-bg);
 
   overflow: visible;
@@ -312,7 +326,7 @@
 
 .nav-link.active:hover {
   background: var(--page-bg);
-  color: var(--red-main);
+  color: var(--tis-red);
 }
 
 .nav-link.active .nav-icon,
@@ -322,11 +336,12 @@
 }
 
 .nav-link.active .nav-icon img {
-  filter: brightness(0) saturate(100%) invert(15%) sepia(89%) saturate(6410%) hue-rotate(356deg) brightness(101%) contrast(112%);
+  filter: brightness(0) saturate(100%) invert(18%) sepia(91%) saturate(4413%)
+    hue-rotate(334deg) brightness(93%) contrast(102%);
 }
 
 .nav-link.active .nav-label {
-  color: var(--red-main);
+  color: var(--tis-red);
 }
 
 /* =========================================================
@@ -349,6 +364,7 @@
   object-fit: contain;
   display: block;
   filter: brightness(0) invert(1);
+  opacity: 0.96;
 }
 
 .nav-label {
@@ -384,7 +400,7 @@
   padding: 10px 12px 6px 12px;
   margin-bottom: 10px;
 
-  border-top: 1px solid rgba(255, 255, 255, 0.24);
+  border-top: 1px solid rgba(255, 255, 255, 0.20);
 
   color: rgba(255, 255, 255, 0.95);
   font-size: 12.5px;
@@ -421,18 +437,23 @@
 
   border: 1px solid rgba(255, 255, 255, 0.22);
   border-radius: 16px;
-  background: rgba(100, 0, 0, 0.16);
+  background: rgba(255, 255, 255, 0.15);
 
   color: #ffffff;
   font-size: 12.5px;
   font-weight: 800;
 
   cursor: pointer;
-  transition: background 0.2s ease;
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .logout-btn:hover {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.22);
+  border-color: rgba(255, 255, 255, 0.34);
+  transform: translateY(-1px);
 }
 
 .logout-icon {
@@ -509,7 +530,7 @@
 }
 
 .welcome-text strong {
-  color: var(--red-main);
+  color: var(--tis-red);
 }
 
 /* =========================================================
@@ -526,7 +547,7 @@
   align-items: center;
 
   background: var(--search-bg);
-  border: 1px solid #efd5da;
+  border: 1px solid var(--search-border);
   border-radius: 999px;
   overflow: visible;
 }
@@ -547,7 +568,7 @@
 }
 
 .search-box input::placeholder {
-  color: #a59aa1;
+  color: #9ca3a7;
 }
 
 .search-box > button {
@@ -561,7 +582,7 @@
 
   border: none;
   border-radius: 999px;
-  background: linear-gradient(135deg, #e70000, #a40000);
+  background: linear-gradient(135deg, var(--tis-red), var(--tis-red-dark));
   color: #ffffff;
 
   display: flex;
@@ -569,7 +590,7 @@
   justify-content: center;
 
   cursor: pointer;
-  box-shadow: 0 6px 14px rgba(140, 0, 0, 0.16);
+  box-shadow: 0 6px 14px rgba(224, 0, 52, 0.16);
 }
 
 .search-box > button img {
@@ -594,9 +615,9 @@
   padding: 8px;
 
   background: #ffffff;
-  border: 1px solid #edd2d8;
+  border: 1px solid var(--card-border);
   border-radius: 18px;
-  box-shadow: 0 14px 35px rgba(120, 0, 0, 0.12);
+  box-shadow: 0 14px 35px rgba(64, 64, 64, 0.14);
 }
 
 .search-result-item {
@@ -619,7 +640,7 @@
 }
 
 .search-result-item:hover {
-  background: #fff1f3;
+  background: var(--tis-red-soft);
 }
 
 .search-result-icon {
@@ -628,7 +649,7 @@
   flex: 0 0 34px;
 
   border-radius: 12px;
-  background: #fce9ed;
+  background: var(--tis-red-soft);
 
   display: flex;
   align-items: center;
@@ -640,7 +661,8 @@
   height: 21px;
   object-fit: contain;
   display: block;
-  filter: brightness(0) saturate(100%) invert(14%) sepia(84%) saturate(5820%) hue-rotate(356deg) brightness(100%) contrast(114%);
+  filter: brightness(0) saturate(100%) invert(18%) sepia(91%) saturate(4413%)
+    hue-rotate(334deg) brightness(93%) contrast(102%);
 }
 
 .search-result-text {
@@ -682,7 +704,7 @@
   gap: 14px;
 
   padding-left: 18px;
-  border-left: 2px solid #ead1d6;
+  border-left: 2px solid var(--topbar-border);
 }
 
 .top-icon {
@@ -691,13 +713,18 @@
 
   border: none;
   border-radius: 50%;
-  background: #fffafa;
+  background: #ffffff;
 
   display: flex;
   align-items: center;
   justify-content: center;
 
   cursor: pointer;
+  box-shadow: 0 4px 12px rgba(64, 64, 64, 0.06);
+}
+
+.top-icon:hover {
+  background: var(--tis-red-soft);
 }
 
 .top-icon img {
@@ -705,7 +732,8 @@
   height: 20px;
   object-fit: contain;
   display: block;
-  filter: brightness(0) saturate(100%) invert(22%) sepia(15%) saturate(1308%) hue-rotate(300deg) brightness(80%) contrast(90%);
+  filter: brightness(0) saturate(100%) invert(23%) sepia(6%) saturate(284%)
+    hue-rotate(169deg) brightness(90%) contrast(86%);
 }
 
 .profile-btn {
@@ -717,7 +745,7 @@
   align-items: center;
   gap: 7px;
 
-  color: #06123b;
+  color: var(--text-dark);
 }
 
 .avatar {
@@ -726,8 +754,8 @@
   border-radius: 50%;
 
   background:
-    radial-gradient(circle, #151c2f 0 58%, transparent 60%),
-    conic-gradient(#00bb66, #005eff, #ff0033, #00bb66);
+    radial-gradient(circle, var(--all-dark-grey) 0 58%, transparent 60%),
+    conic-gradient(var(--tis-red), var(--all-blue), var(--all-yellow), var(--tis-red));
 
   color: #ffffff;
   font-size: 15px;
@@ -743,10 +771,10 @@
 .avatar-with-photo,
 .profile-btn .avatar-with-photo {
   background: #ffffff;
-  border: 3px solid #00b894;
+  border: 3px solid var(--all-blue);
   box-shadow:
-    0 0 0 2px #d60000,
-    0 8px 18px rgba(0, 0, 0, 0.12);
+    0 0 0 2px var(--tis-red),
+    0 8px 18px rgba(64, 64, 64, 0.12);
 }
 
 .avatar-with-photo img,
@@ -786,22 +814,14 @@ router-outlet + * {
 }
 
 /* =========================================================
-   DASHBOARD - HARMONISATION DES CARTES
+   HARMONISATION GÉNÉRALE DES CARTES INTERNES
    ========================================================= */
 
 ::ng-deep .stats-grid > *:nth-child(-n + 4),
-::ng-deep .top-stats-grid > *,
 ::ng-deep .hero-stats-grid > *,
 ::ng-deep .top-stat-card,
 ::ng-deep .hero-stat-card,
 ::ng-deep .highlight-card {
-  background: linear-gradient(
-    135deg,
-    var(--topbar-bg-1) 0%,
-    var(--topbar-bg-2) 48%,
-    var(--topbar-bg-3) 100%
-  ) !important;
-  border: 1px solid var(--topbar-border) !important;
   border-radius: 22px !important;
   box-shadow: var(--shadow-soft) !important;
 }
@@ -820,13 +840,12 @@ router-outlet + * {
 ::ng-deep .cards-grid > * {
   background: linear-gradient(
     135deg,
-    var(--card-bordeaux-bg-1) 0%,
-    var(--card-bordeaux-bg-2) 46%,
-    var(--card-bordeaux-bg-3) 100%
+    var(--card-bg-1) 0%,
+    var(--card-bg-2) 100%
   ) !important;
-  border: 1px solid var(--card-bordeaux-border) !important;
+  border: 1px solid var(--card-border) !important;
   border-radius: 22px !important;
-  box-shadow: 0 6px 16px rgba(120, 0, 0, 0.03) !important;
+  box-shadow: 0 6px 16px rgba(64, 64, 64, 0.04) !important;
 }
 
 ::ng-deep .stats-grid h2,
@@ -843,33 +862,13 @@ router-outlet + * {
   font-weight: 900 !important;
 }
 
-::ng-deep .stats-grid .value,
-::ng-deep .stats-grid .stat-value,
-::ng-deep .stats-grid .metric-value,
-::ng-deep .dashboard-card .value,
-::ng-deep .summary-card .value,
-::ng-deep .chart-card .value,
-::ng-deep .big-number,
-::ng-deep .metric-number {
-  color: var(--red-main) !important;
-  font-weight: 900 !important;
-}
-
 ::ng-deep .stats-grid p,
 ::ng-deep .charts-grid p,
 ::ng-deep .dashboard-card p,
 ::ng-deep .summary-card p,
 ::ng-deep .chart-card p,
 ::ng-deep .content-card p {
-  color: #23283d !important;
-}
-
-::ng-deep .stats-grid .icon-wrap,
-::ng-deep .dashboard-card .icon-wrap,
-::ng-deep .summary-card .icon-wrap,
-::ng-deep .chart-card .icon-wrap {
-  background: rgba(255, 255, 255, 0.52) !important;
-  border: 1px solid rgba(214, 0, 0, 0.07) !important;
+  color: var(--text-dark) !important;
 }
 
 /* =========================================================

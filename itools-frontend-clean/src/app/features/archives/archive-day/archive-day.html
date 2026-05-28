@@ -1,25 +1,56 @@
 <div class="archive-day-page">
   <section class="archive-card page-header">
+    <div class="header-context-symbols" aria-hidden="true">
+      <span class="context-orbit orbit-one"></span>
+      <span class="context-orbit orbit-two"></span>
+      <span class="context-dot dot-one"></span>
+      <span class="context-dot dot-two"></span>
+      <span class="context-dot dot-three"></span>
+    </div>
+
     <div class="card-inner header-inner">
       <div>
-        <span class="section-kicker">Historique</span>
+        <span class="section-kicker light">Historique</span>
+
         <h1 class="page-title">Archives du jour</h1>
+
         <p class="page-subtitle">
           {{ getFormattedSelectedDate() }}
         </p>
       </div>
 
       <div class="header-actions">
-        <button type="button" class="cancel-btn" (click)="backToCalendar()">
-          Retour calendrier
+        <button
+          type="button"
+          class="header-btn secondary"
+          title="Retour au calendrier"
+          aria-label="Retour au calendrier"
+          (click)="backToCalendar()"
+        >
+          <span class="btn-icon">←</span>
+          <span>Retour calendrier</span>
         </button>
 
-        <button type="button" class="refresh-btn" (click)="loadArchives()">
-          Actualiser
+        <button
+          type="button"
+          class="header-btn secondary"
+          title="Actualiser"
+          aria-label="Actualiser"
+          (click)="loadArchives()"
+        >
+          <span class="btn-icon">↻</span>
+          <span>Actualiser</span>
         </button>
 
-        <button type="button" class="download-btn" (click)="downloadDayArchives()">
-          Télécharger les données
+        <button
+          type="button"
+          class="header-btn primary"
+          title="Télécharger les opérations de cette date"
+          aria-label="Télécharger les opérations de cette date"
+          (click)="downloadDayArchives()"
+        >
+          <img src="/icons/actions/export.png" alt="" />
+          <span>Télécharger</span>
         </button>
       </div>
     </div>
@@ -33,12 +64,17 @@
     {{ errorMessage }}
   </div>
 
-  <section class="archive-card">
+  <section class="archive-card list-card">
     <div class="card-inner">
       <div class="list-header">
         <div>
           <span class="section-kicker">Détails</span>
+
           <h2 class="section-title">Opérations de cette date</h2>
+
+          <p>
+            Toutes les opérations enregistrées pour le jour sélectionné.
+          </p>
         </div>
 
         <span class="counter-badge">

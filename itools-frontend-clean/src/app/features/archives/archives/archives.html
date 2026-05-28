@@ -1,25 +1,56 @@
 <div class="archives-page">
   <section class="archives-card page-header">
+    <div class="header-context-symbols" aria-hidden="true">
+      <span class="context-orbit orbit-one"></span>
+      <span class="context-orbit orbit-two"></span>
+      <span class="context-dot dot-one"></span>
+      <span class="context-dot dot-two"></span>
+      <span class="context-dot dot-three"></span>
+    </div>
+
     <div class="card-inner header-inner">
       <div>
-        <span class="section-kicker">Historique</span>
+        <span class="section-kicker light">Historique</span>
+
         <h1 class="page-title">Archives</h1>
+
         <p class="page-subtitle">
           Calendrier des opérations effectuées dans l’application iTools.
         </p>
       </div>
 
       <div class="header-actions">
-        <button type="button" class="refresh-btn" (click)="loadArchives()">
-          Actualiser
+        <button
+          type="button"
+          class="header-btn secondary"
+          title="Actualiser"
+          aria-label="Actualiser"
+          (click)="loadArchives()"
+        >
+          <span class="btn-icon">↻</span>
+          <span>Actualiser</span>
         </button>
 
-        <button type="button" class="refresh-btn" (click)="goToToday()">
-          Aujourd’hui
+        <button
+          type="button"
+          class="header-btn secondary"
+          title="Revenir à aujourd’hui"
+          aria-label="Revenir à aujourd’hui"
+          (click)="goToToday()"
+        >
+          <span class="btn-icon">●</span>
+          <span>Aujourd’hui</span>
         </button>
 
-        <button type="button" class="download-btn" (click)="downloadArchives()">
-          Télécharger les archives
+        <button
+          type="button"
+          class="header-btn primary"
+          title="Télécharger les archives"
+          aria-label="Télécharger les archives"
+          (click)="downloadArchives()"
+        >
+          <img src="/icons/actions/export.png" alt="" />
+          <span>Télécharger</span>
         </button>
       </div>
     </div>
@@ -37,13 +68,18 @@
     <div class="card-inner">
       <div class="filters-title">
         <span class="section-kicker">Filtres</span>
-        <h2 class="section-title">Filtres</h2>
-        <p>Recherche, filtre par action et filtre par entité.</p>
+
+        <h2 class="section-title">Vue globale des archives</h2>
+
+        <p>
+          Rechercher, filtrer par action et filtrer par entité.
+        </p>
       </div>
 
       <div class="filters-grid">
         <div class="form-group">
           <label>Recherche</label>
+
           <input
             class="form-control"
             type="text"
@@ -55,12 +91,14 @@
 
         <div class="form-group">
           <label>Action</label>
+
           <select
             class="form-control"
             [(ngModel)]="selectedAction"
             (change)="applyFilters()"
           >
             <option value="">Toutes les actions</option>
+
             <option *ngFor="let action of actionOptions" [value]="action">
               {{ getActionLabel(action) }}
             </option>
@@ -69,12 +107,14 @@
 
         <div class="form-group">
           <label>Entité</label>
+
           <select
             class="form-control"
             [(ngModel)]="selectedEntity"
             (change)="applyFilters()"
           >
             <option value="">Toutes les entités</option>
+
             <option *ngFor="let entity of entityOptions" [value]="entity">
               {{ entity }}
             </option>
@@ -82,7 +122,13 @@
         </div>
 
         <div class="filters-actions">
-          <button type="button" class="reset-btn" (click)="resetFilters()">
+          <button
+            type="button"
+            class="reset-btn"
+            title="Réinitialiser les filtres"
+            aria-label="Réinitialiser les filtres"
+            (click)="resetFilters()"
+          >
             Réinitialiser
           </button>
         </div>
@@ -92,8 +138,27 @@
 
   <section class="archives-card calendar-card">
     <div class="card-inner">
+      <div class="calendar-header">
+        <div>
+          <span class="section-kicker">Calendrier</span>
+
+          <h2 class="section-title">Historique mensuel</h2>
+        </div>
+
+        <div class="calendar-current-state">
+          <span>Total filtré</span>
+          <strong>{{ filteredArchives.length }} opération(s)</strong>
+        </div>
+      </div>
+
       <div class="calendar-toolbar">
-        <button type="button" class="month-btn" (click)="previousMonth()">
+        <button
+          type="button"
+          class="month-btn"
+          title="Mois précédent"
+          aria-label="Mois précédent"
+          (click)="previousMonth()"
+        >
           ‹
         </button>
 
@@ -101,14 +166,20 @@
           {{ getMonthTitle() }}
         </h2>
 
-        <button type="button" class="month-btn" (click)="nextMonth()">
+        <button
+          type="button"
+          class="month-btn"
+          title="Mois suivant"
+          aria-label="Mois suivant"
+          (click)="nextMonth()"
+        >
           ›
         </button>
       </div>
 
       <div class="calendar-meta">
         <span>{{ filteredArchives.length }} opération(s) trouvée(s)</span>
-        <span>Clique sur une date pour voir l’aperçu.</span>
+        <span>Clique sur une date pour afficher l’aperçu, puis sur Voir en détail.</span>
       </div>
 
       <div class="loading" *ngIf="isLoading">
@@ -155,7 +226,13 @@
                   <p>{{ day.archives.length }} opération(s)</p>
                 </div>
 
-                <button type="button" class="close-bubble" (click)="selectedDay = null">
+                <button
+                  type="button"
+                  class="close-bubble"
+                  title="Fermer l’aperçu"
+                  aria-label="Fermer l’aperçu"
+                  (click)="selectedDay = null"
+                >
                   ×
                 </button>
               </div>
@@ -173,13 +250,15 @@
                 </div>
               </div>
 
-              <p class="more-text" *ngIf="day.archives.length > 5">
-                + {{ day.archives.length - 5 }} autre(s) opération(s)
+              <p class="more-text" *ngIf="day.archives.length > 3">
+                + {{ day.archives.length - 3 }} autre(s) opération(s)
               </p>
 
               <button
                 type="button"
                 class="bubble-btn view-btn"
+                title="Voir toutes les opérations de cette date"
+                aria-label="Voir toutes les opérations de cette date"
                 (click)="openDayDetails(day)"
               >
                 Voir en détail

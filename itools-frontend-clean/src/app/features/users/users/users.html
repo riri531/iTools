@@ -1,9 +1,6 @@
 <div class="users-page">
   <section class="users-card page-header">
     <div class="header-context-symbols" aria-hidden="true">
-      <span class="context-symbol symbol-user"></span>
-      <span class="context-symbol symbol-role"></span>
-      <span class="context-symbol symbol-email"></span>
       <span class="context-orbit orbit-one"></span>
       <span class="context-orbit orbit-two"></span>
       <span class="context-dot dot-one"></span>
@@ -12,29 +9,59 @@
     </div>
 
     <div class="card-inner header-inner">
-      <div>
-        <span class="section-kicker">Administration</span>
+      <div class="header-copy">
+        <span class="section-kicker light">Administration</span>
+
         <h1>Utilisateurs</h1>
+
         <p>
           Gestion des comptes, emails et rôles de l’application iTools.
         </p>
       </div>
 
       <div class="header-actions">
-        <button type="button" class="download-btn" (click)="downloadUsersData()">
-          Télécharger les données
+        <button
+          type="button"
+          class="header-btn secondary"
+          title="Télécharger les données"
+          aria-label="Télécharger les données"
+          (click)="downloadUsersData()"
+        >
+          <img src="/icons/actions/export.png" alt="" />
+          <span>Télécharger</span>
         </button>
 
-        <button type="button" class="download-btn" (click)="downloadTemplate()">
-          Télécharger modèle à remplir
+        <button
+          type="button"
+          class="header-btn secondary"
+          title="Télécharger le modèle à remplir"
+          aria-label="Télécharger le modèle à remplir"
+          (click)="downloadTemplate()"
+        >
+          <img src="/icons/actions/template.png" alt="" />
+          <span>Modèle Excel</span>
         </button>
 
-        <button type="button" class="import-btn" (click)="openImportModal()">
-          Import en masse
+        <button
+          type="button"
+          class="header-btn secondary"
+          title="Import en masse"
+          aria-label="Import en masse"
+          (click)="openImportModal()"
+        >
+          <img src="/icons/actions/import.png" alt="" />
+          <span>Import</span>
         </button>
 
-        <button type="button" class="add-btn" (click)="openCreateModal()">
-          Nouveau
+        <button
+          type="button"
+          class="header-btn primary"
+          title="Ajouter un nouvel utilisateur"
+          aria-label="Ajouter un nouvel utilisateur"
+          (click)="openCreateModal()"
+        >
+          <img src="/icons/actions/add.png" alt="" />
+          <span>Nouveau</span>
         </button>
       </div>
     </div>
@@ -51,40 +78,62 @@
   <section class="users-card filters-card">
     <div class="card-inner">
       <div class="filters-top">
-        <div>
+        <div class="filters-title-block">
           <span class="section-kicker">Filtres</span>
+
           <h2>Vue globale des utilisateurs</h2>
+
           <p>
-            Recherche, filtre par rôle, tri et choix du mode d’affichage.
+            Rechercher, filtrer et trier les utilisateurs disponibles.
           </p>
         </div>
 
-        <div class="view-switch">
-          <button
-            type="button"
-            [class.active]="viewMode === 'list'"
-            (click)="setViewMode('list')"
-          >
-            Liste
-          </button>
+        <div class="filters-top-right">
+          <div class="summary-grid summary-grid-top">
+            <div class="summary-card">
+              <span>Total</span>
+              <strong>{{ users.length }}</strong>
+            </div>
 
-          <button
-            type="button"
-            [class.active]="viewMode === 'images'"
-            (click)="setViewMode('images')"
-          >
-            Images
-          </button>
+            <div class="summary-card">
+              <span>Affichés</span>
+              <strong>{{ filteredUsers.length }}</strong>
+            </div>
+
+            <div class="summary-card">
+              <span>Rôles</span>
+              <strong>{{ roleOptions.length }}</strong>
+            </div>
+          </div>
+
+          <div class="view-switch">
+            <button
+              type="button"
+              [class.active]="viewMode === 'list'"
+              (click)="setViewMode('list')"
+            >
+              Liste
+            </button>
+
+            <button
+              type="button"
+              [class.active]="viewMode === 'images'"
+              (click)="setViewMode('images')"
+            >
+              Images
+            </button>
+          </div>
         </div>
       </div>
 
-      <div class="filters-grid">
+      <div class="filters-line">
         <div class="form-group search-field">
           <label>Recherche</label>
+
           <input
             class="form-control"
             type="text"
-            placeholder="Rechercher par nom, email, rôle, date..."
+            placeholder="Nom, email, rôle, date..."
             [(ngModel)]="searchText"
             (input)="applyFilters()"
           />
@@ -92,6 +141,7 @@
 
         <div class="form-group">
           <label>Rôle</label>
+
           <select
             class="form-control"
             [(ngModel)]="selectedRole"
@@ -110,6 +160,7 @@
 
         <div class="form-group">
           <label>Trier par</label>
+
           <select
             class="form-control"
             [(ngModel)]="sortField"
@@ -122,6 +173,7 @@
 
         <div class="form-group">
           <label>Ordre</label>
+
           <select
             class="form-control"
             [(ngModel)]="sortDirection"
@@ -132,28 +184,15 @@
           </select>
         </div>
 
-        <div class="filters-actions">
-          <button type="button" class="reset-btn" (click)="resetFilters()">
-            Réinitialiser
-          </button>
-        </div>
-      </div>
-
-      <div class="summary-grid">
-        <div class="summary-card">
-          <span>Total</span>
-          <strong>{{ users.length }}</strong>
-        </div>
-
-        <div class="summary-card">
-          <span>Affichés</span>
-          <strong>{{ filteredUsers.length }}</strong>
-        </div>
-
-        <div class="summary-card">
-          <span>Rôles</span>
-          <strong>{{ roleOptions.length }}</strong>
-        </div>
+        <button
+          type="button"
+          class="reset-btn"
+          title="Réinitialiser les filtres"
+          aria-label="Réinitialiser les filtres"
+          (click)="resetFilters()"
+        >
+          Réinitialiser
+        </button>
       </div>
     </div>
   </section>
@@ -163,12 +202,15 @@
       <div class="list-header">
         <div>
           <span class="section-kicker">Liste</span>
+
           <h2>Liste des utilisateurs</h2>
+
           <p>{{ filteredUsers.length }} utilisateur(s) trouvé(s)</p>
         </div>
 
         <div class="sort-state">
           <span>Tri actuel</span>
+
           <strong>
             {{ sortField === 'fullName' ? 'Nom' : 'Date de création' }}
             —
@@ -184,24 +226,36 @@
               <tr>
                 <th>ID</th>
                 <th>Image</th>
+
                 <th>
-                  <button type="button" class="th-sort-btn" (click)="toggleSort('fullName')">
+                  <button
+                    type="button"
+                    class="th-sort-btn"
+                    (click)="toggleSort('fullName')"
+                  >
                     Nom
                     <span *ngIf="sortField === 'fullName'">
                       {{ sortDirection === 'asc' ? '↑' : '↓' }}
                     </span>
                   </button>
                 </th>
+
                 <th>Email</th>
                 <th>Rôle</th>
+
                 <th>
-                  <button type="button" class="th-sort-btn" (click)="toggleSort('createdAt')">
+                  <button
+                    type="button"
+                    class="th-sort-btn"
+                    (click)="toggleSort('createdAt')"
+                  >
                     Date création
                     <span *ngIf="sortField === 'createdAt'">
                       {{ sortDirection === 'asc' ? '↑' : '↓' }}
                     </span>
                   </button>
                 </th>
+
                 <th>Actions</th>
               </tr>
             </thead>
@@ -254,21 +308,35 @@
                 </td>
 
                 <td class="actions">
-                  <button type="button" class="table-btn edit-btn" (click)="openEditModal(item)">
-                    Modifier
+                  <button
+                    type="button"
+                    class="table-btn edit-btn"
+                    title="Modifier"
+                    aria-label="Modifier"
+                    (click)="openEditModal(item)"
+                  >
+                    <img src="/icons/actions/edit.png" alt="" />
                   </button>
 
                   <button
                     *ngIf="canDownloadUserCard()"
                     type="button"
-                    class="table-btn identity-card-btn"
+                    class="table-btn pdf-btn"
+                    title="Télécharger la fiche PDF"
+                    aria-label="Télécharger la fiche PDF"
                     (click)="downloadUserCard(item)"
                   >
-                    Fiche PDF
+                    <img src="/icons/actions/pdf.png" alt="" />
                   </button>
 
-                  <button type="button" class="table-btn delete-btn" (click)="deleteUser(item)">
-                    Supprimer
+                  <button
+                    type="button"
+                    class="table-btn delete-btn"
+                    title="Supprimer"
+                    aria-label="Supprimer"
+                    (click)="deleteUser(item)"
+                  >
+                    <img src="/icons/actions/delete.png" alt="" />
                   </button>
                 </td>
               </tr>
@@ -310,21 +378,35 @@
             </div>
 
             <div class="image-card-actions">
-              <button type="button" class="table-btn edit-btn" (click)="openEditModal(item)">
-                Modifier
+              <button
+                type="button"
+                class="table-btn edit-btn"
+                title="Modifier"
+                aria-label="Modifier"
+                (click)="openEditModal(item)"
+              >
+                <img src="/icons/actions/edit.png" alt="" />
               </button>
 
               <button
                 *ngIf="canDownloadUserCard()"
                 type="button"
-                class="table-btn identity-card-btn"
+                class="table-btn pdf-btn"
+                title="Télécharger la fiche PDF"
+                aria-label="Télécharger la fiche PDF"
                 (click)="downloadUserCard(item)"
               >
-                Fiche PDF
+                <img src="/icons/actions/pdf.png" alt="" />
               </button>
 
-              <button type="button" class="table-btn delete-btn" (click)="deleteUser(item)">
-                Supprimer
+              <button
+                type="button"
+                class="table-btn delete-btn"
+                title="Supprimer"
+                aria-label="Supprimer"
+                (click)="deleteUser(item)"
+              >
+                <img src="/icons/actions/delete.png" alt="" />
               </button>
             </div>
           </article>
@@ -354,7 +436,13 @@
           </p>
         </div>
 
-        <button type="button" class="it-modal-close" (click)="closeModal()">×</button>
+        <button
+          type="button"
+          class="it-modal-close"
+          (click)="closeModal()"
+        >
+          ×
+        </button>
       </div>
 
       <div class="alert error" *ngIf="errorMessage">
@@ -364,6 +452,7 @@
       <form (ngSubmit)="submit()" class="users-form modal-form">
         <div class="form-group">
           <label>Nom complet</label>
+
           <input
             class="form-control"
             type="text"
@@ -375,6 +464,7 @@
 
         <div class="form-group">
           <label>Email</label>
+
           <input
             class="form-control"
             type="email"
@@ -387,8 +477,11 @@
         <div class="form-group">
           <label>
             Mot de passe
-            <span class="hint" *ngIf="isEditMode">(laisser vide pour ne pas changer)</span>
+            <span class="hint" *ngIf="isEditMode">
+              (laisser vide pour ne pas changer)
+            </span>
           </label>
+
           <input
             class="form-control"
             type="password"
@@ -400,6 +493,7 @@
 
         <div class="form-group">
           <label>Rôle</label>
+
           <select
             class="form-control"
             name="roleId"
@@ -425,7 +519,9 @@
 
               <ng-template #noSelectedImage>
                 <div class="image-upload-empty">
-                  <span>{{ form.fullName ? form.fullName.charAt(0).toUpperCase() : 'U' }}</span>
+                  <span>
+                    {{ form.fullName ? form.fullName.charAt(0).toUpperCase() : 'U' }}
+                  </span>
                   <small>Aucune photo</small>
                 </div>
               </ng-template>
@@ -433,6 +529,7 @@
 
             <div class="image-upload-content">
               <strong>Image de l’utilisateur</strong>
+
               <p>
                 Ajoute une photo de profil pour identifier visuellement cet utilisateur dans la liste,
                 la vue images et la fiche PDF.
@@ -447,13 +544,17 @@
               />
 
               <div class="image-upload-actions">
-                <button type="button" class="import-btn" (click)="userImageInput.click()">
+                <button
+                  type="button"
+                  class="header-btn secondary upload-btn"
+                  (click)="userImageInput.click()"
+                >
                   Choisir une photo
                 </button>
 
                 <button
                   type="button"
-                  class="delete-btn"
+                  class="header-btn danger-soft"
                   *ngIf="form.imagePreview || form.profilePhotoUrl"
                   (click)="removeSelectedImage()"
                 >
@@ -469,11 +570,20 @@
         </div>
 
         <div class="form-actions">
-          <button type="submit" class="form-submit-btn" [class.save-btn]="isEditMode" [class.add-btn]="!isEditMode">
+          <button
+            type="submit"
+            class="form-submit-btn"
+            [class.save-btn]="isEditMode"
+            [class.add-btn]="!isEditMode"
+          >
             {{ isEditMode ? 'Enregistrer' : 'Ajouter' }}
           </button>
 
-          <button type="button" class="cancel-btn" (click)="closeModal()">
+          <button
+            type="button"
+            class="cancel-btn"
+            (click)="closeModal()"
+          >
             Annuler
           </button>
         </div>
@@ -496,7 +606,13 @@
           </p>
         </div>
 
-        <button type="button" class="it-modal-close" (click)="closeImportModal()">×</button>
+        <button
+          type="button"
+          class="it-modal-close"
+          (click)="closeImportModal()"
+        >
+          ×
+        </button>
       </div>
 
       <div class="alert success" *ngIf="importSuccessMessage">
@@ -532,11 +648,19 @@
       </div>
 
       <div class="form-actions">
-        <button type="button" class="import-btn" (click)="importUsers()">
+        <button
+          type="button"
+          class="form-submit-btn save-btn"
+          (click)="importUsers()"
+        >
           Importer
         </button>
 
-        <button type="button" class="cancel-btn" (click)="closeImportModal()">
+        <button
+          type="button"
+          class="cancel-btn"
+          (click)="closeImportModal()"
+        >
           Annuler
         </button>
       </div>

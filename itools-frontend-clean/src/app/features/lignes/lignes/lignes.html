@@ -1,9 +1,6 @@
 <div class="lignes-page">
   <section class="lignes-card page-header">
     <div class="header-context-symbols" aria-hidden="true">
-      <span class="context-symbol symbol-grid"></span>
-      <span class="context-symbol symbol-tag"></span>
-      <span class="context-symbol symbol-image"></span>
       <span class="context-orbit orbit-one"></span>
       <span class="context-orbit orbit-two"></span>
       <span class="context-dot dot-one"></span>
@@ -12,29 +9,62 @@
     </div>
 
     <div class="card-inner header-inner">
-      <div>
-        <span class="section-kicker">Référentiel</span>
+      <div class="header-copy">
+        <span class="section-kicker light">Référentiel</span>
+
         <h1>Lignes</h1>
+
         <p>
           Gestion des lignes utilisées dans l’application iTools.
         </p>
       </div>
 
       <div class="header-actions">
-        <button type="button" class="download-btn" (click)="downloadLignesData()">
-          Télécharger les données
+        <button
+          type="button"
+          class="header-btn secondary"
+          title="Télécharger les données"
+          aria-label="Télécharger les données"
+          (click)="downloadLignesData()"
+        >
+          <img src="/icons/actions/export.png" alt="" />
+          <span>Télécharger</span>
         </button>
 
-        <button *ngIf="canManageData()" type="button" class="download-btn" (click)="downloadTemplate()">
-          Télécharger modèle à remplir
+        <button
+          *ngIf="canManageData()"
+          type="button"
+          class="header-btn secondary"
+          title="Télécharger le modèle à remplir"
+          aria-label="Télécharger le modèle à remplir"
+          (click)="downloadTemplate()"
+        >
+          <img src="/icons/actions/template.png" alt="" />
+          <span>Modèle Excel</span>
         </button>
 
-        <button *ngIf="canManageData()" type="button" class="import-btn" (click)="openImportModal()">
-          Import en masse
+        <button
+          *ngIf="canManageData()"
+          type="button"
+          class="header-btn secondary"
+          title="Import en masse"
+          aria-label="Import en masse"
+          (click)="openImportModal()"
+        >
+          <img src="/icons/actions/import.png" alt="" />
+          <span>Import</span>
         </button>
 
-        <button *ngIf="canManageData()" type="button" class="add-btn" (click)="openCreateModal()">
-          Nouveau
+        <button
+          *ngIf="canManageData()"
+          type="button"
+          class="header-btn primary"
+          title="Ajouter une nouvelle ligne"
+          aria-label="Ajouter une nouvelle ligne"
+          (click)="openCreateModal()"
+        >
+          <img src="/icons/actions/add.png" alt="" />
+          <span>Nouveau</span>
         </button>
       </div>
     </div>
@@ -51,40 +81,62 @@
   <section class="lignes-card filters-card">
     <div class="card-inner">
       <div class="filters-top">
-        <div>
+        <div class="filters-title-block">
           <span class="section-kicker">Filtres</span>
+
           <h2>Vue globale des lignes</h2>
+
           <p>
-            Recherche, filtre par nomenclature, tri et choix du mode d’affichage.
+            Rechercher, filtrer et trier les lignes disponibles.
           </p>
         </div>
 
-        <div class="view-switch">
-          <button
-            type="button"
-            [class.active]="viewMode === 'list'"
-            (click)="setViewMode('list')"
-          >
-            Liste
-          </button>
+        <div class="filters-top-right">
+          <div class="summary-grid summary-grid-top">
+            <div class="summary-card">
+              <span>Total</span>
+              <strong>{{ lignes.length }}</strong>
+            </div>
 
-          <button
-            type="button"
-            [class.active]="viewMode === 'images'"
-            (click)="setViewMode('images')"
-          >
-            Images
-          </button>
+            <div class="summary-card">
+              <span>Affichées</span>
+              <strong>{{ filteredLignes.length }}</strong>
+            </div>
+
+            <div class="summary-card">
+              <span>Nomenclatures</span>
+              <strong>{{ nomenclatureOptions.length }}</strong>
+            </div>
+          </div>
+
+          <div class="view-switch">
+            <button
+              type="button"
+              [class.active]="viewMode === 'list'"
+              (click)="setViewMode('list')"
+            >
+              Liste
+            </button>
+
+            <button
+              type="button"
+              [class.active]="viewMode === 'images'"
+              (click)="setViewMode('images')"
+            >
+              Images
+            </button>
+          </div>
         </div>
       </div>
 
-      <div class="filters-grid">
+      <div class="filters-line">
         <div class="form-group search-field">
           <label>Recherche</label>
+
           <input
             class="form-control"
             type="text"
-            placeholder="Rechercher par nom, ID, nomenclature, date..."
+            placeholder="Nom, ID, nomenclature, date..."
             [(ngModel)]="searchText"
             (input)="applyFilters()"
           />
@@ -92,12 +144,13 @@
 
         <div class="form-group">
           <label>Nomenclature</label>
+
           <select
             class="form-control"
             [(ngModel)]="selectedNomenclature"
             (change)="applyFilters()"
           >
-            <option value="">Toutes les nomenclatures</option>
+            <option value="">Toutes</option>
 
             <option
               *ngFor="let nomenclature of nomenclatureOptions"
@@ -110,6 +163,7 @@
 
         <div class="form-group">
           <label>Trier par</label>
+
           <select
             class="form-control"
             [(ngModel)]="sortField"
@@ -122,6 +176,7 @@
 
         <div class="form-group">
           <label>Ordre</label>
+
           <select
             class="form-control"
             [(ngModel)]="sortDirection"
@@ -132,28 +187,15 @@
           </select>
         </div>
 
-        <div class="filters-actions">
-          <button type="button" class="reset-btn" (click)="resetFilters()">
-            Réinitialiser
-          </button>
-        </div>
-      </div>
-
-      <div class="summary-grid">
-        <div class="summary-card">
-          <span>Total</span>
-          <strong>{{ lignes.length }}</strong>
-        </div>
-
-        <div class="summary-card">
-          <span>Affichées</span>
-          <strong>{{ filteredLignes.length }}</strong>
-        </div>
-
-        <div class="summary-card">
-          <span>Nomenclatures</span>
-          <strong>{{ nomenclatureOptions.length }}</strong>
-        </div>
+        <button
+          type="button"
+          class="reset-btn"
+          title="Réinitialiser les filtres"
+          aria-label="Réinitialiser les filtres"
+          (click)="resetFilters()"
+        >
+          Réinitialiser
+        </button>
       </div>
     </div>
   </section>
@@ -163,12 +205,15 @@
       <div class="list-header">
         <div>
           <span class="section-kicker">Liste</span>
-          <h2>Liste des lignes</h2>
+
+          <h2>Liste des lignes disponibles</h2>
+
           <p>{{ filteredLignes.length }} ligne(s) trouvée(s)</p>
         </div>
 
         <div class="sort-state">
           <span>Tri actuel</span>
+
           <strong>
             {{ sortField === 'nom' ? 'Nom' : 'Date de création' }}
             —
@@ -184,23 +229,35 @@
               <tr>
                 <th>ID</th>
                 <th>Image</th>
+
                 <th>
-                  <button type="button" class="th-sort-btn" (click)="toggleSort('nom')">
+                  <button
+                    type="button"
+                    class="th-sort-btn"
+                    (click)="toggleSort('nom')"
+                  >
                     Nom ligne
                     <span *ngIf="sortField === 'nom'">
                       {{ sortDirection === 'asc' ? '↑' : '↓' }}
                     </span>
                   </button>
                 </th>
+
                 <th>Nomenclature</th>
+
                 <th>
-                  <button type="button" class="th-sort-btn" (click)="toggleSort('createdAt')">
+                  <button
+                    type="button"
+                    class="th-sort-btn"
+                    (click)="toggleSort('createdAt')"
+                  >
                     Date création
                     <span *ngIf="sortField === 'createdAt'">
                       {{ sortDirection === 'asc' ? '↑' : '↓' }}
                     </span>
                   </button>
                 </th>
+
                 <th>Actions</th>
               </tr>
             </thead>
@@ -242,21 +299,48 @@
                 </td>
 
                 <td class="actions">
-                  <button *ngIf="canManageData()" type="button" class="table-btn edit-btn" (click)="openEditModal(item)">
-                    Modifier
+                  <button
+                    *ngIf="canManageData()"
+                    type="button"
+                    class="table-btn edit-btn"
+                    title="Modifier"
+                    aria-label="Modifier"
+                    (click)="openEditModal(item)"
+                  >
+                    <img src="/icons/actions/edit.png" alt="" />
                   </button>
 
                   <button
                     *ngIf="canDownloadLigneCard()"
                     type="button"
-                    class="table-btn identity-card-btn"
+                    class="table-btn pdf-btn"
+                    title="Télécharger la fiche PDF"
+                    aria-label="Télécharger la fiche PDF"
                     (click)="downloadLigneCard(item)"
                   >
-                    Fiche PDF
+                    <img src="/icons/actions/pdf.png" alt="" />
                   </button>
 
-                  <button *ngIf="canManageData()" type="button" class="table-btn delete-btn" (click)="deleteLigne(item)">
-                    Supprimer
+                  <button
+                    *ngIf="canCreateReclamation()"
+                    type="button"
+                    class="table-btn reclamation-btn"
+                    title="Passer une réclamation"
+                    aria-label="Passer une réclamation"
+                    (click)="openReclamationModal(item)"
+                  >
+                    <img src="/icons/actions/reclamation.png" alt="" />
+                  </button>
+
+                  <button
+                    *ngIf="canManageData()"
+                    type="button"
+                    class="table-btn delete-btn"
+                    title="Supprimer"
+                    aria-label="Supprimer"
+                    (click)="deleteLigne(item)"
+                  >
+                    <img src="/icons/actions/delete.png" alt="" />
                   </button>
                 </td>
               </tr>
@@ -292,21 +376,48 @@
             </div>
 
             <div class="image-card-actions">
-              <button *ngIf="canManageData()" type="button" class="table-btn edit-btn" (click)="openEditModal(item)">
-                Modifier
+              <button
+                *ngIf="canManageData()"
+                type="button"
+                class="table-btn edit-btn"
+                title="Modifier"
+                aria-label="Modifier"
+                (click)="openEditModal(item)"
+              >
+                <img src="/icons/actions/edit.png" alt="" />
               </button>
 
               <button
                 *ngIf="canDownloadLigneCard()"
                 type="button"
-                class="table-btn identity-card-btn"
+                class="table-btn pdf-btn"
+                title="Télécharger la fiche PDF"
+                aria-label="Télécharger la fiche PDF"
                 (click)="downloadLigneCard(item)"
               >
-                Fiche PDF
+                <img src="/icons/actions/pdf.png" alt="" />
               </button>
 
-              <button *ngIf="canManageData()" type="button" class="table-btn delete-btn" (click)="deleteLigne(item)">
-                Supprimer
+              <button
+                *ngIf="canCreateReclamation()"
+                type="button"
+                class="table-btn reclamation-btn"
+                title="Passer une réclamation"
+                aria-label="Passer une réclamation"
+                (click)="openReclamationModal(item)"
+              >
+                <img src="/icons/actions/reclamation.png" alt="" />
+              </button>
+
+              <button
+                *ngIf="canManageData()"
+                type="button"
+                class="table-btn delete-btn"
+                title="Supprimer"
+                aria-label="Supprimer"
+                (click)="deleteLigne(item)"
+              >
+                <img src="/icons/actions/delete.png" alt="" />
               </button>
             </div>
           </article>
@@ -336,7 +447,13 @@
           </p>
         </div>
 
-        <button type="button" class="it-modal-close" (click)="closeModal()">×</button>
+        <button
+          type="button"
+          class="it-modal-close"
+          (click)="closeModal()"
+        >
+          ×
+        </button>
       </div>
 
       <div class="alert error" *ngIf="errorMessage">
@@ -346,6 +463,7 @@
       <form (ngSubmit)="submit()" class="lignes-form modal-form">
         <div class="form-group">
           <label>Nom ligne</label>
+
           <input
             class="form-control"
             type="text"
@@ -358,6 +476,7 @@
 
         <div class="form-group">
           <label>Nomenclature</label>
+
           <select
             class="form-control"
             name="nomenclature"
@@ -365,7 +484,11 @@
             required
           >
             <option value="">Sélectionner une nomenclature</option>
-            <option *ngFor="let nomenclature of nomenclatureChoices" [value]="nomenclature">
+
+            <option
+              *ngFor="let nomenclature of nomenclatureChoices"
+              [value]="nomenclature"
+            >
               {{ nomenclature }}
             </option>
           </select>
@@ -373,6 +496,7 @@
 
         <div class="form-group">
           <label>Date de création</label>
+
           <input
             class="form-control"
             type="date"
@@ -395,7 +519,9 @@
 
               <ng-template #noSelectedImage>
                 <div class="image-upload-empty">
-                  <span>{{ form.nom ? form.nom.charAt(0).toUpperCase() : 'L' }}</span>
+                  <span>
+                    {{ form.nom ? form.nom.charAt(0).toUpperCase() : 'L' }}
+                  </span>
                   <small>Aucune photo</small>
                 </div>
               </ng-template>
@@ -403,6 +529,7 @@
 
             <div class="image-upload-content">
               <strong>Image de la ligne</strong>
+
               <p>
                 Ajoute une photo pour identifier visuellement cette ligne dans la liste,
                 la vue images et la fiche PDF.
@@ -417,13 +544,17 @@
               />
 
               <div class="image-upload-actions">
-                <button type="button" class="import-btn" (click)="ligneImageInput.click()">
+                <button
+                  type="button"
+                  class="header-btn secondary upload-btn"
+                  (click)="ligneImageInput.click()"
+                >
                   Choisir une photo
                 </button>
 
                 <button
                   type="button"
-                  class="delete-btn"
+                  class="header-btn danger-soft"
                   *ngIf="form.imagePreview || form.imageUrl"
                   (click)="removeSelectedImage()"
                 >
@@ -439,11 +570,20 @@
         </div>
 
         <div class="form-actions">
-          <button type="submit" class="form-submit-btn" [class.save-btn]="isEditMode" [class.add-btn]="!isEditMode">
+          <button
+            type="submit"
+            class="form-submit-btn"
+            [class.save-btn]="isEditMode"
+            [class.add-btn]="!isEditMode"
+          >
             {{ isEditMode ? 'Enregistrer' : 'Ajouter' }}
           </button>
 
-          <button type="button" class="cancel-btn" (click)="closeModal()">
+          <button
+            type="button"
+            class="cancel-btn"
+            (click)="closeModal()"
+          >
             Annuler
           </button>
         </div>
@@ -466,7 +606,13 @@
           </p>
         </div>
 
-        <button type="button" class="it-modal-close" (click)="closeImportModal()">×</button>
+        <button
+          type="button"
+          class="it-modal-close"
+          (click)="closeImportModal()"
+        >
+          ×
+        </button>
       </div>
 
       <div class="alert success" *ngIf="importSuccessMessage">
@@ -500,11 +646,19 @@
       </div>
 
       <div class="form-actions">
-        <button type="button" class="import-btn" (click)="importLignes()">
+        <button
+          type="button"
+          class="form-submit-btn save-btn"
+          (click)="importLignes()"
+        >
           Importer
         </button>
 
-        <button type="button" class="cancel-btn" (click)="closeImportModal()">
+        <button
+          type="button"
+          class="cancel-btn"
+          (click)="closeImportModal()"
+        >
           Annuler
         </button>
       </div>
@@ -526,7 +680,13 @@
           </p>
         </div>
 
-        <button type="button" class="it-modal-close" (click)="closeReclamationModal()">×</button>
+        <button
+          type="button"
+          class="it-modal-close"
+          (click)="closeReclamationModal()"
+        >
+          ×
+        </button>
       </div>
 
       <div class="alert success" *ngIf="reclamationSuccessMessage">
@@ -545,6 +705,7 @@
       <form class="lignes-form modal-form" (ngSubmit)="submitReclamation()">
         <div class="form-group">
           <label>Titre</label>
+
           <input
             class="form-control"
             type="text"
@@ -556,13 +717,17 @@
 
         <div class="form-group">
           <label>Type de problème</label>
+
           <select
             class="form-control"
             name="problemType"
             [(ngModel)]="reclamationForm.problemType"
             required
           >
-            <option *ngFor="let problemType of reclamationProblemTypes" [value]="problemType">
+            <option
+              *ngFor="let problemType of reclamationProblemTypes"
+              [value]="problemType"
+            >
               {{ problemType }}
             </option>
           </select>
@@ -570,6 +735,7 @@
 
         <div class="form-group">
           <label>Date de réclamation</label>
+
           <input
             class="form-control"
             type="date"
@@ -581,13 +747,17 @@
 
         <div class="form-group">
           <label>Priorité</label>
+
           <select
             class="form-control"
             name="priority"
             [(ngModel)]="reclamationForm.priority"
             required
           >
-            <option *ngFor="let priority of priorityOptions" [value]="priority">
+            <option
+              *ngFor="let priority of priorityOptions"
+              [value]="priority"
+            >
               {{ priority }}
             </option>
           </select>
@@ -595,6 +765,7 @@
 
         <div class="form-group">
           <label>Description du problème</label>
+
           <textarea
             class="form-control textarea-control"
             name="description"
@@ -606,11 +777,15 @@
         </div>
 
         <div class="form-actions">
-          <button type="submit" class="save-btn">
+          <button type="submit" class="form-submit-btn save-btn">
             Envoyer réclamation
           </button>
 
-          <button type="button" class="cancel-btn" (click)="closeReclamationModal()">
+          <button
+            type="button"
+            class="cancel-btn"
+            (click)="closeReclamationModal()"
+          >
             Annuler
           </button>
         </div>

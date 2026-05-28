@@ -1,9 +1,6 @@
 <div class="matieres-page">
   <section class="matieres-card page-header">
     <div class="header-context-symbols" aria-hidden="true">
-      <span class="context-symbol symbol-material"></span>
-      <span class="context-symbol symbol-process"></span>
-      <span class="context-symbol symbol-recycle"></span>
       <span class="context-orbit orbit-one"></span>
       <span class="context-orbit orbit-two"></span>
       <span class="context-dot dot-one"></span>
@@ -12,29 +9,62 @@
     </div>
 
     <div class="card-inner header-inner">
-      <div>
-        <span class="section-kicker">Référentiel</span>
+      <div class="header-copy">
+        <span class="section-kicker light">Référentiel</span>
+
         <h1>Matières</h1>
+
         <p>
           Gestion des matières utilisées dans les emplacements et les outillages.
         </p>
       </div>
 
       <div class="header-actions">
-        <button type="button" class="download-btn" (click)="downloadMatieresData()">
-          Télécharger les données
+        <button
+          type="button"
+          class="header-btn secondary"
+          title="Télécharger les données"
+          aria-label="Télécharger les données"
+          (click)="downloadMatieresData()"
+        >
+          <img src="/icons/actions/export.png" alt="" />
+          <span>Télécharger</span>
         </button>
 
-        <button *ngIf="canManageData()" type="button" class="download-btn" (click)="downloadTemplate()">
-          Télécharger modèle à remplir
+        <button
+          *ngIf="canManageData()"
+          type="button"
+          class="header-btn secondary"
+          title="Télécharger le modèle à remplir"
+          aria-label="Télécharger le modèle à remplir"
+          (click)="downloadTemplate()"
+        >
+          <img src="/icons/actions/template.png" alt="" />
+          <span>Modèle Excel</span>
         </button>
 
-        <button *ngIf="canManageData()" type="button" class="import-btn" (click)="openImportModal()">
-          Import en masse
+        <button
+          *ngIf="canManageData()"
+          type="button"
+          class="header-btn secondary"
+          title="Import en masse"
+          aria-label="Import en masse"
+          (click)="openImportModal()"
+        >
+          <img src="/icons/actions/import.png" alt="" />
+          <span>Import</span>
         </button>
 
-        <button *ngIf="canManageData()" type="button" class="add-btn" (click)="openCreateModal()">
-          Nouveau
+        <button
+          *ngIf="canManageData()"
+          type="button"
+          class="header-btn primary"
+          title="Ajouter une nouvelle matière"
+          aria-label="Ajouter une nouvelle matière"
+          (click)="openCreateModal()"
+        >
+          <img src="/icons/actions/add.png" alt="" />
+          <span>Nouveau</span>
         </button>
       </div>
     </div>
@@ -51,40 +81,62 @@
   <section class="matieres-card filters-card">
     <div class="card-inner">
       <div class="filters-top">
-        <div>
+        <div class="filters-title-block">
           <span class="section-kicker">Filtres</span>
+
           <h2>Vue globale des matières</h2>
+
           <p>
-            Recherche, filtre par process, tri et choix du mode d’affichage.
+            Rechercher, filtrer et trier les matières disponibles.
           </p>
         </div>
 
-        <div class="view-switch">
-          <button
-            type="button"
-            [class.active]="viewMode === 'list'"
-            (click)="setViewMode('list')"
-          >
-            Liste
-          </button>
+        <div class="filters-top-right">
+          <div class="summary-grid summary-grid-top">
+            <div class="summary-card">
+              <span>Total</span>
+              <strong>{{ matieres.length }}</strong>
+            </div>
 
-          <button
-            type="button"
-            [class.active]="viewMode === 'images'"
-            (click)="setViewMode('images')"
-          >
-            Images
-          </button>
+            <div class="summary-card">
+              <span>Affichées</span>
+              <strong>{{ filteredMatieres.length }}</strong>
+            </div>
+
+            <div class="summary-card">
+              <span>Process</span>
+              <strong>{{ processOptions.length }}</strong>
+            </div>
+          </div>
+
+          <div class="view-switch">
+            <button
+              type="button"
+              [class.active]="viewMode === 'list'"
+              (click)="setViewMode('list')"
+            >
+              Liste
+            </button>
+
+            <button
+              type="button"
+              [class.active]="viewMode === 'images'"
+              (click)="setViewMode('images')"
+            >
+              Images
+            </button>
+          </div>
         </div>
       </div>
 
-      <div class="filters-grid">
+      <div class="filters-line">
         <div class="form-group search-field">
           <label>Recherche</label>
+
           <input
             class="form-control"
             type="text"
-            placeholder="Rechercher par nom matière, process, date..."
+            placeholder="Nom, process, date..."
             [(ngModel)]="searchText"
             (input)="applyFilters()"
           />
@@ -92,6 +144,7 @@
 
         <div class="form-group">
           <label>Process</label>
+
           <select
             class="form-control"
             [(ngModel)]="selectedProcess"
@@ -107,6 +160,7 @@
 
         <div class="form-group">
           <label>Trier par</label>
+
           <select
             class="form-control"
             [(ngModel)]="sortField"
@@ -119,6 +173,7 @@
 
         <div class="form-group">
           <label>Ordre</label>
+
           <select
             class="form-control"
             [(ngModel)]="sortDirection"
@@ -129,28 +184,15 @@
           </select>
         </div>
 
-        <div class="filters-actions">
-          <button type="button" class="reset-btn" (click)="resetFilters()">
-            Réinitialiser
-          </button>
-        </div>
-      </div>
-
-      <div class="summary-grid">
-        <div class="summary-card">
-          <span>Total</span>
-          <strong>{{ matieres.length }}</strong>
-        </div>
-
-        <div class="summary-card">
-          <span>Affichées</span>
-          <strong>{{ filteredMatieres.length }}</strong>
-        </div>
-
-        <div class="summary-card">
-          <span>Process</span>
-          <strong>{{ processOptions.length }}</strong>
-        </div>
+        <button
+          type="button"
+          class="reset-btn"
+          title="Réinitialiser les filtres"
+          aria-label="Réinitialiser les filtres"
+          (click)="resetFilters()"
+        >
+          Réinitialiser
+        </button>
       </div>
     </div>
   </section>
@@ -160,12 +202,15 @@
       <div class="list-header">
         <div>
           <span class="section-kicker">Liste</span>
+
           <h2>Liste des matières</h2>
+
           <p>{{ filteredMatieres.length }} matière(s) trouvée(s)</p>
         </div>
 
         <div class="sort-state">
           <span>Tri actuel</span>
+
           <strong>
             {{ sortField === 'nomMatiere' ? 'Nom' : 'Date de création' }}
             —
@@ -181,6 +226,7 @@
               <tr>
                 <th>ID</th>
                 <th>Image</th>
+
                 <th>
                   <button type="button" class="th-sort-btn" (click)="toggleSort('nomMatiere')">
                     Nom matière
@@ -189,7 +235,9 @@
                     </span>
                   </button>
                 </th>
+
                 <th>Process</th>
+
                 <th>
                   <button type="button" class="th-sort-btn" (click)="toggleSort('createdAt')">
                     Date création
@@ -198,6 +246,7 @@
                     </span>
                   </button>
                 </th>
+
                 <th>Actions</th>
               </tr>
             </thead>
@@ -243,30 +292,48 @@
                 </td>
 
                 <td class="actions">
-                  <button *ngIf="canManageData()" type="button" class="table-btn edit-btn" (click)="openEditModal(item)">
-                    Modifier
+                  <button
+                    *ngIf="canManageData()"
+                    type="button"
+                    class="table-btn edit-btn"
+                    title="Modifier"
+                    aria-label="Modifier"
+                    (click)="openEditModal(item)"
+                  >
+                    <img src="/icons/actions/edit.png" alt="" />
                   </button>
 
                   <button
                     *ngIf="canDownloadMatiereCard()"
                     type="button"
-                    class="table-btn identity-card-btn"
+                    class="table-btn pdf-btn"
+                    title="Télécharger la fiche PDF"
+                    aria-label="Télécharger la fiche PDF"
                     (click)="downloadMatiereCard(item)"
                   >
-                    Fiche PDF
+                    <img src="/icons/actions/pdf.png" alt="" />
                   </button>
 
                   <button
                     *ngIf="canCreateReclamation()"
                     type="button"
-                    class="table-btn reclamation add-btn"
+                    class="table-btn reclamation-btn"
+                    title="Passer une réclamation"
+                    aria-label="Passer une réclamation"
                     (click)="openReclamationModal(item)"
                   >
-                    Passer réclamation
+                    <img src="/icons/actions/reclamation.png" alt="" />
                   </button>
 
-                  <button *ngIf="canManageData()" type="button" class="table-btn delete-btn" (click)="deleteMatiere(item)">
-                    Supprimer
+                  <button
+                    *ngIf="canManageData()"
+                    type="button"
+                    class="table-btn delete-btn"
+                    title="Supprimer"
+                    aria-label="Supprimer"
+                    (click)="deleteMatiere(item)"
+                  >
+                    <img src="/icons/actions/delete.png" alt="" />
                   </button>
                 </td>
               </tr>
@@ -306,30 +373,48 @@
             </div>
 
             <div class="image-card-actions">
-              <button *ngIf="canManageData()" type="button" class="table-btn edit-btn" (click)="openEditModal(item)">
-                Modifier
+              <button
+                *ngIf="canManageData()"
+                type="button"
+                class="table-btn edit-btn"
+                title="Modifier"
+                aria-label="Modifier"
+                (click)="openEditModal(item)"
+              >
+                <img src="/icons/actions/edit.png" alt="" />
               </button>
 
               <button
                 *ngIf="canDownloadMatiereCard()"
                 type="button"
-                class="table-btn identity-card-btn"
+                class="table-btn pdf-btn"
+                title="Télécharger la fiche PDF"
+                aria-label="Télécharger la fiche PDF"
                 (click)="downloadMatiereCard(item)"
               >
-                Fiche PDF
+                <img src="/icons/actions/pdf.png" alt="" />
               </button>
 
               <button
                 *ngIf="canCreateReclamation()"
                 type="button"
-                class="table-btn reclamation add-btn"
+                class="table-btn reclamation-btn"
+                title="Passer une réclamation"
+                aria-label="Passer une réclamation"
                 (click)="openReclamationModal(item)"
               >
-                Réclamation
+                <img src="/icons/actions/reclamation.png" alt="" />
               </button>
 
-              <button *ngIf="canManageData()" type="button" class="table-btn delete-btn" (click)="deleteMatiere(item)">
-                Supprimer
+              <button
+                *ngIf="canManageData()"
+                type="button"
+                class="table-btn delete-btn"
+                title="Supprimer"
+                aria-label="Supprimer"
+                (click)="deleteMatiere(item)"
+              >
+                <img src="/icons/actions/delete.png" alt="" />
               </button>
             </div>
           </article>
@@ -369,6 +454,7 @@
       <form (ngSubmit)="submit()" class="matieres-form modal-form">
         <div class="form-group">
           <label>Nom matière</label>
+
           <input
             class="form-control"
             type="text"
@@ -380,6 +466,7 @@
 
         <div class="form-group">
           <label>Process</label>
+
           <input
             class="form-control"
             type="text"
@@ -392,6 +479,7 @@
 
         <div class="form-group">
           <label>Date de création</label>
+
           <input
             class="form-control"
             type="date"
@@ -414,7 +502,9 @@
 
               <ng-template #noSelectedImage>
                 <div class="image-upload-empty">
-                  <span>{{ form.nomMatiere ? form.nomMatiere.charAt(0).toUpperCase() : 'M' }}</span>
+                  <span>
+                    {{ form.nomMatiere ? form.nomMatiere.charAt(0).toUpperCase() : 'M' }}
+                  </span>
                   <small>Aucune photo</small>
                 </div>
               </ng-template>
@@ -422,6 +512,7 @@
 
             <div class="image-upload-content">
               <strong>Image de la matière</strong>
+
               <p>
                 Ajoute une photo pour identifier visuellement cette matière dans la liste,
                 la vue images et la fiche PDF.
@@ -436,13 +527,17 @@
               />
 
               <div class="image-upload-actions">
-                <button type="button" class="import-btn" (click)="matiereImageInput.click()">
+                <button
+                  type="button"
+                  class="header-btn secondary upload-btn"
+                  (click)="matiereImageInput.click()"
+                >
                   Choisir une photo
                 </button>
 
                 <button
                   type="button"
-                  class="delete-btn"
+                  class="header-btn danger-soft"
                   *ngIf="form.imagePreview || form.imageUrl"
                   (click)="removeSelectedImage()"
                 >
@@ -458,7 +553,12 @@
         </div>
 
         <div class="form-actions">
-          <button type="submit" class="form-submit-btn" [class.save-btn]="isEditMode" [class.add-btn]="!isEditMode">
+          <button
+            type="submit"
+            class="form-submit-btn"
+            [class.save-btn]="isEditMode"
+            [class.add-btn]="!isEditMode"
+          >
             {{ isEditMode ? 'Enregistrer' : 'Ajouter' }}
           </button>
 
@@ -519,7 +619,11 @@
       </div>
 
       <div class="form-actions">
-        <button type="button" class="import-btn" (click)="importMatieres()">
+        <button
+          type="button"
+          class="form-submit-btn save-btn"
+          (click)="importMatieres()"
+        >
           Importer
         </button>
 
@@ -564,6 +668,7 @@
       <form class="matieres-form modal-form" (ngSubmit)="submitReclamation()">
         <div class="form-group">
           <label>Titre</label>
+
           <input
             class="form-control"
             type="text"
@@ -575,6 +680,7 @@
 
         <div class="form-group">
           <label>Type de problème</label>
+
           <select
             class="form-control"
             name="problemType"
@@ -589,6 +695,7 @@
 
         <div class="form-group">
           <label>Date de réclamation</label>
+
           <input
             class="form-control"
             type="date"
@@ -600,6 +707,7 @@
 
         <div class="form-group">
           <label>Priorité</label>
+
           <select
             class="form-control"
             name="priority"
@@ -614,6 +722,7 @@
 
         <div class="form-group">
           <label>Description du problème</label>
+
           <textarea
             class="form-control textarea-control"
             name="description"
@@ -625,7 +734,7 @@
         </div>
 
         <div class="form-actions">
-          <button type="submit" class="save-btn">
+          <button type="submit" class="form-submit-btn save-btn">
             Envoyer réclamation
           </button>
 

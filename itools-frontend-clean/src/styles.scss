@@ -1,48 +1,59 @@
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@500;600;700;800;900&family=Poppins:wght@400;500;600;700;800&family=Source+Sans+3:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fjalla+One&family=Lato:wght@300;400;700;900&display=swap');
 
 /* =========================================================
-   TYPOGRAPHIE GLOBALE ITOOLS
+   CHARTE GLOBALE ALL / TIS CIRCUITS
    ========================================================= */
 
 :root {
-  --font-display: 'Cormorant Garamond', serif;
-  --font-head: 'Montserrat', sans-serif;
-  --font-button: 'Poppins', sans-serif;
-  --font-body: 'Inter', sans-serif;
-  --font-label: 'Source Sans 3', sans-serif;
+  --tis-red: #e00034;
+  --tis-red-dark: #b00028;
+  --tis-red-deep: #820020;
+  --tis-red-soft: #fde8ee;
 
-  --text-dark: #0f2350;
-  --text-soft: #5f6f8a;
-  --text-light: #8a94aa;
+  --all-grey: #6c6f70;
+  --all-grey-soft: #eef0f1;
+  --all-dark-grey: #404040;
+
+  --all-blue: #096683;
+  --all-blue-dark: #064c61;
+  --all-blue-soft: #e5f3f7;
+
+  --all-yellow: #ffc000;
+  --all-yellow-dark: #c99600;
+  --all-yellow-soft: #fff6d8;
+
+  --ux-green: #2f8f5b;
+  --ux-green-dark: #1f6f45;
+  --ux-green-soft: #e8f5ee;
 
   --page-bg: #ffffff;
-  --card-bg: #fffafa;
+  --card-bg: #ffffff;
+  --card-soft: #fafafa;
+  --card-border: #d9dcde;
 
-  --border-soft: rgba(201, 22, 22, 0.14);
+  --input-bg: #f4f5f6;
+  --input-border: #d9dcde;
 
-  --danger-red: #c91515;
-  --danger-red-dark: #9f1717;
+  --text-dark: #404040;
+  --text-soft: #6c6f70;
 
-  --success-green: #16a34a;
-  --success-green-dark: #0f7a35;
-
-  --warning-yellow: #eab308;
-  --warning-yellow-dark: #b7791f;
-
-  --blue-main: #2563eb;
-  --blue-dark: #1d4ed8;
-
-  --purple-main: #7c3aed;
-
-  --gray-main: #6b7280;
-  --gray-dark: #374151;
-
-  --shadow-soft: 0 16px 34px rgba(131, 32, 32, 0.10);
+  --font-title: 'Fjalla One', Calibri, Arial, Helvetica, sans-serif;
+  --font-body: 'Lato', Calibri, Arial, Helvetica, sans-serif;
 }
 
 /* =========================================================
-   BASE
+   RESET GLOBAL
    ========================================================= */
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  width: 100%;
+  font-family: var(--font-body) !important;
+  color: var(--text-dark);
+  background: var(--page-bg);
+}
 
 *,
 *::before,
@@ -50,50 +61,22 @@
   box-sizing: border-box;
 }
 
-html {
-  font-size: 16px;
-  scroll-behavior: smooth;
-}
-
-body {
-  margin: 0;
-  background: var(--page-bg);
-  color: var(--text-dark);
-  font-family: var(--font-body);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
+body,
 button,
 input,
+select,
 textarea,
-select {
-  font: inherit;
-}
-
-a {
-  color: inherit;
-  text-decoration: none;
-}
-
+table,
+label,
+span,
+p,
+a,
+small,
 strong,
-b {
-  font-weight: 700;
+td,
+th {
+  font-family: var(--font-body) !important;
 }
-
-em,
-i {
-  font-style: italic;
-}
-
-::selection {
-  background: rgba(201, 21, 21, 0.16);
-  color: var(--text-dark);
-}
-
-/* =========================================================
-   GRANDS TITRES
-   ========================================================= */
 
 h1,
 h2,
@@ -101,771 +84,100 @@ h3,
 h4,
 h5,
 h6,
-.page-title,
-.main-title,
-.hero-title,
-.section-title,
-.panel-title,
-.card-title,
-.modal-title,
-.dialog-title,
-.big-title,
-.dashboard-title,
-.profile-title,
-.notifications-title,
-.archives-title,
-.reclamations-title,
-.designations-title,
-.users-title,
-.lignes-title,
-.outils-title,
-.matieres-title,
-.emplacements-title,
-.fournisseurs-title,
-.clients-title {
-  font-family: var(--font-display) !important;
-  color: var(--text-dark);
-  letter-spacing: 0.01em;
-  line-height: 1.08;
-  margin-top: 0;
-}
-
-h1,
-.page-title,
-.main-title,
-.hero-title,
-.big-title,
-.dashboard-title,
-.profile-title,
-.notifications-title,
-.archives-title,
-.reclamations-title,
-.designations-title,
-.users-title,
-.lignes-title,
-.outils-title,
-.matieres-title,
-.emplacements-title,
-.fournisseurs-title,
-.clients-title {
-  font-size: clamp(2.3rem, 2rem + 1vw, 3.5rem);
-  font-weight: 700;
-}
-
-h2,
-.section-title,
-.panel-title,
-.card-title,
-.modal-title,
-.dialog-title {
-  font-size: clamp(1.55rem, 1.35rem + 0.55vw, 2.2rem);
-  font-weight: 700;
-}
-
-h3,
-h4 {
-  font-size: clamp(1.2rem, 1.1rem + 0.35vw, 1.65rem);
-  font-weight: 600;
-}
-
-/* =========================================================
-   HEAD / TOPBAR / SIDEBAR / BADGES
-   ========================================================= */
-
-.topbar,
-.topbar *,
-.sidebar,
-.sidebar *,
+.logo-text,
 .brand-title,
-.brand-name,
-.brand-subtitle,
-.welcome-text,
-.user-role,
-.user-role-text,
-.sidebar-title,
-.sidebar-brand,
-.sidebar-section-title,
-.nav-label,
-.nav-item,
-.menu-item,
-.menu-item-label,
-.section-kicker,
-.kicker,
-.hero-kicker,
-.page-kicker,
-.card-kicker,
-.badge-label,
-.tab-label,
-.table thead th {
-  font-family: var(--font-head) !important;
+.page-title,
+.section-title,
+.chart-card h2,
+.filters-top h2,
+.list-header h2,
+.it-modal-title {
+  font-family: var(--font-title) !important;
+  letter-spacing: 0.25px;
 }
-
-.section-kicker,
-.kicker,
-.hero-kicker,
-.page-kicker,
-.card-kicker {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-
-  font-size: 0.76rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-
-  color: var(--danger-red);
-}
-
-.topbar,
-.sidebar,
-.brand-title,
-.brand-name,
-.brand-subtitle,
-.welcome-text,
-.user-role,
-.user-role-text,
-.nav-item,
-.menu-item,
-.menu-item-label {
-  font-weight: 600;
-  letter-spacing: 0.01em;
-}
-
-/* =========================================================
-   TEXTES / INSTRUCTIONS / DESCRIPTIONS
-   ========================================================= */
-
-p,
-small,
-.helper-text,
-.hint-text,
-.form-hint,
-.field-hint,
-.card-description,
-.section-description,
-.hero-description,
-.page-description,
-.subtitle,
-.sub-title,
-.text-muted,
-.empty-state,
-.notification-text,
-.instruction-text,
-.instructions,
-.legend-text,
-.table-summary,
-.stats-caption {
-  font-family: var(--font-body) !important;
-  color: var(--text-soft);
-  line-height: 1.6;
-}
-
-p,
-.card-description,
-.section-description,
-.hero-description,
-.page-description,
-.subtitle,
-.sub-title,
-.instruction-text,
-.instructions {
-  font-size: 0.98rem;
-  font-weight: 500;
-}
-
-/* =========================================================
-   LABELS / CHAMPS / TABLEAUX
-   ========================================================= */
-
-label,
-.form-label,
-.field-label,
-.input-label,
-.select-label,
-.textarea-label,
-.table-label,
-.stats-label,
-.metric-label,
-.meta-label,
-.table th,
-th,
-.badge,
-.chip,
-.tag,
-.status-pill,
-.role-pill,
-.filter-label,
-.group-label {
-  font-family: var(--font-label) !important;
-  color: var(--text-dark);
-  letter-spacing: 0.01em;
-}
-
-label,
-.form-label,
-.field-label,
-.input-label,
-.select-label,
-.textarea-label,
-.filter-label,
-.group-label {
-  font-size: 0.96rem;
-  font-weight: 700;
-}
-
-.table th,
-th,
-.table-label {
-  font-size: 0.9rem;
-  font-weight: 800;
-}
-
-.badge,
-.chip,
-.tag,
-.status-pill,
-.role-pill {
-  font-size: 0.82rem;
-  font-weight: 800;
-}
-
-/* =========================================================
-   CHAMPS DE SAISIE
-   ========================================================= */
-
-input,
-textarea,
-select {
-  font-family: var(--font-body) !important;
-  color: var(--text-dark);
-  font-weight: 500;
-}
-
-input::placeholder,
-textarea::placeholder,
-select,
-.option-placeholder,
-.placeholder-text {
-  font-family: var(--font-label) !important;
-  color: var(--text-light);
-  font-weight: 500;
-}
-
-/* =========================================================
-   TABLEAUX / DONNEES / VALEURS
-   ========================================================= */
-
-td,
-.table td,
-.table-cell,
-.data-cell,
-.value-text,
-.meta-value,
-.list-value,
-.info-value {
-  font-family: var(--font-body) !important;
-  color: var(--text-dark);
-  font-weight: 500;
-}
-
-.stat-value,
-.stat-number,
-.metric-value,
-.big-number,
-.hero-number,
-.counter-number {
-  font-family: var(--font-display) !important;
-  color: var(--text-dark);
-  font-weight: 700;
-  letter-spacing: 0;
-  line-height: 1;
-}
-
-/* =========================================================
-   CARTES / MODALES / BLOCS
-   ========================================================= */
-
-.card,
-.panel,
-.modal-content,
-.dialog-content,
-.widget,
-.stats-card,
-.table-card,
-.filter-card,
-.content-card {
-  background: var(--card-bg);
-  border: 1px solid var(--border-soft);
-  box-shadow: var(--shadow-soft);
-}
-
-/* =========================================================
-   BOUTONS GLOBAUX GRADIENT AVEC SYMBOLES - ITOOLS
-   ========================================================= */
 
 button,
-.btn,
-.action-btn,
-.secondary-btn,
-.danger-btn,
-.save-btn,
-.cancel-btn,
-.edit-btn,
-.delete-btn,
-.add-btn,
-.import-btn,
-.download-btn,
-.reset-btn,
-.refresh-btn,
-.view-btn,
-.close-btn,
-.validate-btn,
-.keep-btn,
-.mark-read-btn,
-.btn-edit,
-.btn-delete,
-.btn-add,
-.btn-save,
-.btn-keep,
-.btn-validate,
-.btn-cancel,
-.btn-close,
-.btn-reset,
-.btn-refresh,
-.btn-download,
-.btn-import,
-.btn-view,
-.btn-mark-read {
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  gap: 8px !important;
-
-  min-height: 38px;
-  padding: 10px 16px;
-
-  border-radius: 999px !important;
-  border: none !important;
-
-  font-family: var(--font-button) !important;
-  font-size: 12px;
-  font-weight: 800;
-  line-height: 1;
-
-  cursor: pointer;
-
-  transition:
-    transform 0.18s ease,
-    box-shadow 0.18s ease,
-    background 0.18s ease,
-    color 0.18s ease,
-    border-color 0.18s ease,
-    filter 0.18s ease;
-}
-
-button::before,
-.btn::before,
-.action-btn::before,
-.secondary-btn::before,
-.danger-btn::before,
-.save-btn::before,
-.cancel-btn::before,
-.edit-btn::before,
-.delete-btn::before,
-.add-btn::before,
-.import-btn::before,
-.download-btn::before,
-.reset-btn::before,
-.refresh-btn::before,
-.view-btn::before,
-.close-btn::before,
-.validate-btn::before,
-.keep-btn::before,
-.mark-read-btn::before,
-.btn-edit::before,
-.btn-delete::before,
-.btn-add::before,
-.btn-save::before,
-.btn-keep::before,
-.btn-validate::before,
-.btn-cancel::before,
-.btn-close::before,
-.btn-reset::before,
-.btn-refresh::before,
-.btn-download::before,
-.btn-import::before,
-.btn-view::before,
-.btn-mark-read::before {
-  width: 18px;
-  height: 18px;
-
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-
-  flex: 0 0 18px;
-
-  border-radius: 50%;
-
-  background: rgba(255, 255, 255, 0.92);
-  color: inherit;
-
-  font-size: 12px;
-  font-weight: 900;
-  line-height: 1;
-}
-
-/* =========================================================
-   MODIFIER : JAUNE + SYMBOLE STYLE
-   ========================================================= */
-
-.edit-btn,
-.btn-edit {
-  color: #ffffff !important;
-  background: linear-gradient(135deg, #fde047 0%, #facc15 42%, #eab308 72%, #b7791f 100%) !important;
-  box-shadow: 0 10px 22px rgba(234, 179, 8, 0.24) !important;
-}
-
-.edit-btn::before,
-.btn-edit::before {
-  content: '✎' !important;
-  color: #b7791f !important;
-}
-
-/* =========================================================
-   SUPPRIMER : ROUGE + POUBELLE
-   ========================================================= */
-
-.delete-btn,
-.danger-btn,
-.btn-delete {
-  color: #ffffff !important;
-  background: linear-gradient(135deg, #ff5b5b 0%, #ef4444 38%, #dc2626 70%, #9f1717 100%) !important;
-  box-shadow: 0 10px 22px rgba(220, 38, 38, 0.24) !important;
-}
-
-.delete-btn::before,
-.danger-btn::before,
-.btn-delete::before {
-  content: '🗑' !important;
-  color: #9f1717 !important;
-  font-size: 11px !important;
-}
-
-/* =========================================================
-   AJOUTER / NOUVEAU : VERT + PLUS
-   ========================================================= */
-
-.add-btn,
-.btn-add {
-  color: #ffffff !important;
-  background: linear-gradient(135deg, #4ade80 0%, #22c55e 38%, #16a34a 70%, #0f7a35 100%) !important;
-  box-shadow: 0 10px 22px rgba(22, 163, 74, 0.24) !important;
-}
-
-.add-btn::before,
-.btn-add::before {
-  content: '+' !important;
-  color: #0f7a35 !important;
-}
-
-/* action-btn utilisé pour Nouveau / Ajouter */
-.action-btn {
-  color: #ffffff !important;
-  background: linear-gradient(135deg, #4ade80 0%, #22c55e 38%, #16a34a 70%, #0f7a35 100%) !important;
-  box-shadow: 0 10px 22px rgba(22, 163, 74, 0.24) !important;
-}
-
-.action-btn::before {
-  content: '+' !important;
-  color: #0f7a35 !important;
-}
-
-/* =========================================================
-   CONSERVER / ENREGISTRER / VALIDER : VERT + CHECK
-   ========================================================= */
-
-.save-btn,
-.keep-btn,
-.validate-btn,
-.btn-save,
-.btn-keep,
-.btn-validate,
-.mark-read-btn,
-.btn-mark-read {
-  color: #ffffff !important;
-  background: linear-gradient(135deg, #4ade80 0%, #22c55e 38%, #16a34a 70%, #0f7a35 100%) !important;
-  box-shadow: 0 10px 22px rgba(22, 163, 74, 0.24) !important;
-}
-
-.save-btn::before,
-.keep-btn::before,
-.validate-btn::before,
-.btn-save::before,
-.btn-keep::before,
-.btn-validate::before,
-.mark-read-btn::before,
-.btn-mark-read::before {
-  content: '✓' !important;
-  color: #0f7a35 !important;
-}
-
-/* =========================================================
-   ANNULER / FERMER : GRIS + CROIX
-   ========================================================= */
-
-.cancel-btn,
-.close-btn,
-.btn-cancel,
-.btn-close {
-  color: #ffffff !important;
-  background: linear-gradient(135deg, #d1d5db 0%, #9ca3af 38%, #6b7280 70%, #374151 100%) !important;
-  box-shadow: 0 10px 22px rgba(75, 85, 99, 0.22) !important;
-}
-
-.cancel-btn::before,
-.close-btn::before,
-.btn-cancel::before,
-.btn-close::before {
-  content: '×' !important;
-  color: #374151 !important;
-}
-
-/* =========================================================
-   REINITIALISER / ACTUALISER : GRIS BLEUTE + ROTATION
-   ========================================================= */
-
-.reset-btn,
-.refresh-btn,
-.btn-reset,
-.btn-refresh {
-  color: #ffffff !important;
-  background: linear-gradient(135deg, #94a3b8 0%, #64748b 38%, #475569 70%, #334155 100%) !important;
-  box-shadow: 0 10px 22px rgba(71, 85, 105, 0.22) !important;
-}
-
-.reset-btn::before,
-.refresh-btn::before,
-.btn-reset::before,
-.btn-refresh::before {
-  content: '↻' !important;
-  color: #334155 !important;
-}
-
-/* =========================================================
-   TELECHARGER : BLEU + FLECHE BAS
-   ========================================================= */
-
-.download-btn,
-.btn-download {
-  color: #ffffff !important;
-  background: linear-gradient(135deg, #93c5fd 0%, #60a5fa 38%, #2563eb 70%, #1d4ed8 100%) !important;
-  box-shadow: 0 10px 22px rgba(37, 99, 235, 0.22) !important;
-}
-
-.download-btn::before,
-.btn-download::before {
-  content: '↓' !important;
-  color: #1d4ed8 !important;
-}
-
-/* =========================================================
-   IMPORTER : VIOLET + FLECHE HAUT
-   ========================================================= */
-
-.import-btn,
-.btn-import {
-  color: #ffffff !important;
-  background: linear-gradient(135deg, #c4b5fd 0%, #a78bfa 38%, #7c3aed 70%, #5b21b6 100%) !important;
-  box-shadow: 0 10px 22px rgba(124, 58, 237, 0.22) !important;
-}
-
-.import-btn::before,
-.btn-import::before {
-  content: '↑' !important;
-  color: #5b21b6 !important;
-}
-
-/* =========================================================
-   VOIR / CONSULTER : BLEU + OEIL SIMPLE
-   ========================================================= */
-
-.view-btn,
-.btn-view {
-  color: #ffffff !important;
-  background: linear-gradient(135deg, #7dd3fc 0%, #38bdf8 38%, #2563eb 70%, #1e40af 100%) !important;
-  box-shadow: 0 10px 22px rgba(37, 99, 235, 0.22) !important;
-}
-
-.view-btn::before,
-.btn-view::before {
-  content: '◎' !important;
-  color: #1e40af !important;
-}
-
-/* =========================================================
-   BOUTON SECONDAIRE GENERIQUE : GRADIENT CLAIR
-   ========================================================= */
-
-.secondary-btn {
-  color: var(--text-dark) !important;
-  background: linear-gradient(135deg, #ffffff 0%, #fff5f6 45%, #fde8ec 100%) !important;
-  border: 1px solid rgba(214, 0, 0, 0.14) !important;
-  box-shadow: 0 8px 18px rgba(120, 0, 0, 0.08) !important;
-}
-
-.secondary-btn::before {
-  content: '•' !important;
-  color: #ffffff !important;
-  background: var(--text-dark) !important;
-}
-
-/* =========================================================
-   BOUTON SIMPLE SANS CLASSE SPECIFIQUE
-   ========================================================= */
-
-button:not(.top-icon):not(.profile-btn):not(.month-btn):not(.close-bubble):not(.history-delete):not(.nav-link):not(.topic-choice):not(.question-choice):not(.quick-question):not(.overview-item):not(.history-item):not(.search-result-item):not(.profile-trigger) {
-  color: #ffffff;
-  background: linear-gradient(135deg, #ff5b5b 0%, #ef4444 38%, #dc2626 70%, #9f1717 100%);
-  box-shadow: 0 10px 22px rgba(201, 21, 21, 0.18);
-}
-
-button:not(.top-icon):not(.profile-btn):not(.month-btn):not(.close-bubble):not(.history-delete):not(.nav-link):not(.topic-choice):not(.question-choice):not(.quick-question):not(.overview-item):not(.history-item):not(.search-result-item):not(.profile-trigger)::before {
-  content: none;
-}
-
-/* =========================================================
-   HOVER GLOBAL
-   ========================================================= */
-
-button:hover,
-.btn:hover,
-.action-btn:hover,
-.secondary-btn:hover,
-.danger-btn:hover,
-.save-btn:hover,
-.cancel-btn:hover,
-.edit-btn:hover,
-.delete-btn:hover,
-.add-btn:hover,
-.import-btn:hover,
-.download-btn:hover,
-.reset-btn:hover,
-.refresh-btn:hover,
-.view-btn:hover,
-.close-btn:hover,
-.validate-btn:hover,
-.keep-btn:hover,
-.mark-read-btn:hover,
-.btn-edit:hover,
-.btn-delete:hover,
-.btn-add:hover,
-.btn-save:hover,
-.btn-keep:hover,
-.btn-validate:hover,
-.btn-cancel:hover,
-.btn-close:hover,
-.btn-reset:hover,
-.btn-refresh:hover,
-.btn-download:hover,
-.btn-import:hover,
-.btn-view:hover,
-.btn-mark-read:hover {
-  transform: translateY(-1px);
-  filter: brightness(1.03);
-}
-
-/* =========================================================
-   VERSION COMPACTE POUR TABLEAUX
-   ========================================================= */
-
-.table-actions .edit-btn,
-.table-actions .delete-btn,
-.table-actions .save-btn,
-.table-actions .cancel-btn,
-.table-actions .btn-edit,
-.table-actions .btn-delete,
-.table-actions .btn-save,
-.table-actions .btn-cancel,
-td .edit-btn,
-td .delete-btn,
-td .save-btn,
-td .cancel-btn,
-td .btn-edit,
-td .btn-delete,
-td .btn-save,
-td .btn-cancel {
-  min-height: 34px !important;
-  padding: 8px 13px !important;
-  font-size: 11px !important;
-}
-
-.table-actions .edit-btn::before,
-.table-actions .delete-btn::before,
-.table-actions .save-btn::before,
-.table-actions .cancel-btn::before,
-.table-actions .btn-edit::before,
-.table-actions .btn-delete::before,
-.table-actions .btn-save::before,
-.table-actions .btn-cancel::before,
-td .edit-btn::before,
-td .delete-btn::before,
-td .save-btn::before,
-td .cancel-btn::before,
-td .btn-edit::before,
-td .btn-delete::before,
-td .btn-save::before,
-td .btn-cancel::before {
-  width: 16px !important;
-  height: 16px !important;
-  flex-basis: 16px !important;
-  font-size: 11px !important;
-}
-
-/* =========================================================
-   SCROLLBAR DOUCE
-   ========================================================= */
-
-*::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
-}
-
-*::-webkit-scrollbar-track {
-  background: rgba(205, 190, 190, 0.25);
-  border-radius: 999px;
-}
-
-*::-webkit-scrollbar-thumb {
-  background: rgba(151, 151, 151, 0.55);
-  border-radius: 999px;
-}
-
-*::-webkit-scrollbar-thumb:hover {
-  background: rgba(120, 120, 120, 0.75);
-}
-
-/* =========================================================
-   CLASSES UTILITAIRES
-   ========================================================= */
-
-.font-display {
-  font-family: var(--font-display) !important;
-}
-
-.font-head {
-  font-family: var(--font-head) !important;
-}
-
-.font-button {
-  font-family: var(--font-button) !important;
-}
-
-.font-body {
+input,
+select,
+textarea {
   font-family: var(--font-body) !important;
 }
 
-.font-label {
-  font-family: var(--font-label) !important;
+button {
+  cursor: pointer;
+}
+
+img {
+  max-width: 100%;
+}
+
+a {
+  color: inherit;
+}
+
+/* =========================================================
+   SCROLLBAR GLOBAL DISCRÈTE
+   ========================================================= */
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f2f3;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c4c8ca;
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--all-grey);
+}
+
+/* =========================================================
+   CLASSES UTILITAIRES GLOBALES
+   ========================================================= */
+
+.text-tis-red {
+  color: var(--tis-red) !important;
+}
+
+.text-all-blue {
+  color: var(--all-blue) !important;
+}
+
+.text-all-grey {
+  color: var(--all-grey) !important;
+}
+
+.bg-tis-red {
+  background: var(--tis-red) !important;
+}
+
+.bg-all-blue {
+  background: var(--all-blue) !important;
+}
+
+.bg-all-yellow {
+  background: var(--all-yellow) !important;
+}
+
+.bg-all-grey {
+  background: var(--all-grey) !important;
+}
+
+/* =========================================================
+   ACCESSIBILITÉ
+   ========================================================= */
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid rgba(9, 102, 131, 0.28);
+  outline-offset: 2px;
 }
