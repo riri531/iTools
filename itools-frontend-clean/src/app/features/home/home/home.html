@@ -1,152 +1,168 @@
 <div class="home-page">
-
-  <aside class="side-drawer" [class.open]="sidebarOpen">
-    <div class="drawer-header">
-      <div>
-        <h2>iTools</h2>
-        <p>Gestion d’emplacement des outils</p>
-      </div>
-
-      <button type="button" class="drawer-close" (click)="closeSidebar()">
-        ×
-      </button>
-    </div>
-
-    <nav class="drawer-nav">
-      <a
-        *ngFor="let item of menuItems"
-        [routerLink]="item.route"
-        (click)="closeSidebar()"
-      >
-        <span>{{ item.icon }}</span>
-        {{ item.label }}
-      </a>
-    </nav>
-
-    <button type="button" class="logout-btn" (click)="logout()">
-      Déconnexion
-    </button>
-  </aside>
-
-  <div
-    class="drawer-overlay"
-    [class.show]="sidebarOpen"
-    (click)="closeSidebar()"
-  ></div>
-
   <header class="topbar">
-    <button type="button" class="menu-btn" (click)="openSidebar()">
-      ☰
-    </button>
-
-    <div class="brand">
-      <div class="brand-logo">TIS</div>
-
-      <div>
-        <h1>iTools</h1>
-        <p>Gestion d’emplacement des outils</p>
-      </div>
-    </div>
-
     <a routerLink="/app/dashboard" class="dashboard-btn">
       Dashboard
     </a>
   </header>
 
   <main class="home-content">
+    <section class="hero-intro">
+      <div class="hero-brand-card">
+        <img
+          src="/images/logo-tis-iTools.png"
+          alt="Logo iTools"
+          class="hero-big-logo"
+        />
 
-    <section class="hero">
-      <div class="hero-text">
-        <span class="label">TIS Circuits · Service Informatique</span>
-
-        <h2>
-          Une application web pour gérer les outillages et leurs emplacements.
-        </h2>
-
-        <p>
-          iTools permet de centraliser les informations liées aux outils, aux
-          emplacements et aux référentiels métier. Elle aide les utilisateurs à
-          suivre l’état des emplacements, améliorer l’organisation et garantir
-          une meilleure traçabilité.
-        </p>
-
-        <div class="hero-actions">
-          <a routerLink="/app/emplacements" class="primary-btn">
-            Voir les emplacements
-          </a>
-
-          <a routerLink="/app/outils" class="secondary-btn">
-            Voir les outillages
-          </a>
-        </div>
-      </div>
-
-      <div class="video-box">
-        <div class="video-title">
-          <span>Vidéo de présentation</span>
-          <strong>iTools</strong>
-        </div>
-
-        <video controls muted playsinline preload="metadata">
-          <source src="/videos/itools-presentation.mp4" type="video/mp4">
-          Votre navigateur ne supporte pas la lecture vidéo.
-        </video>
+        <h1>où est mon outil&nbsp;?</h1>
       </div>
     </section>
 
-    <section class="presentation">
-      <div class="presentation-card">
-        <span class="label">À propos de TIS Circuits</span>
+    <section class="hero-grid">
+      <article class="card hero-copy">
+        <div class="hero-glow"></div>
 
-        <h3>TIS Circuits</h3>
+        <span class="section-label">Gestion intelligente des outillages</span>
 
-        <p>
-          TIS Circuits est une entreprise industrielle spécialisée dans la
-          fabrication, l’assemblage, le test et le contrôle qualité des cartes
-          électroniques. Dans ce contexte, la gestion correcte des outils et de
-          leurs emplacements est essentielle pour assurer l’organisation et la
-          rapidité d’accès à l’information.
+        <h2>Gérez vos outillages avec plus de clarté.</h2>
+
+        <p class="hero-description">
+          iTools transforme le suivi manuel en une gestion digitale simple,
+          rapide et traçable.
         </p>
-      </div>
 
-      <div class="presentation-card">
-        <span class="label">Objectif de iTools</span>
+        <div class="hero-pills">
+          <span>Centralisé</span>
+          <span>Traçable</span>
+          <span>Moderne</span>
+        </div>
+      </article>
 
-        <h3>Pourquoi cette application ?</h3>
-
-        <p>
-          L’objectif de iTools est d’organiser les outillages, garantir leur bon
-          emplacement et offrir une vision claire sur les emplacements libres,
-          occupés ou hors service.
-        </p>
-      </div>
+      <article class="card hero-visual image-card">
+        <img
+          src="/images/home/hero-industry.png"
+          alt="Environnement industriel TIS Circuits"
+        />
+        <div class="image-shade"></div>
+      </article>
     </section>
 
-    <section class="strengths">
-      <div class="section-header">
-        <span class="label">Points forts</span>
-        <h2>Ce que iTools apporte</h2>
-      </div>
+    <section class="features-grid" aria-label="Points forts iTools">
+      <article
+        class="feature-blob"
+        *ngFor="let feature of features"
+        tabindex="0"
+      >
+        <div class="feature-icon-wrap">
+          <img
+            [src]="feature.icon"
+            [alt]="feature.title"
+            class="feature-icon"
+          />
+        </div>
 
-      <div class="strengths-grid">
-        <article class="strength-card" *ngFor="let strength of strengths">
-          <div class="check">✓</div>
-          <h3>{{ strength.title }}</h3>
-          <p>{{ strength.description }}</p>
+        <div class="feature-content">
+          <h3>{{ feature.title }}</h3>
+          <span class="feature-line"></span>
+          <p>{{ feature.text }}</p>
+        </div>
+      </article>
+    </section>
+
+    <section class="story-grid">
+      <article class="card story-image image-card">
+        <img
+          src="/images/home/manual-vs-digital.png"
+          alt="Transition entre gestion manuelle et gestion digitale"
+        />
+        <div class="image-shade soft"></div>
+      </article>
+
+      <article class="card story-copy">
+        <span class="section-label">Modernisation</span>
+
+        <h2>Moins de papier. Plus de visibilité.</h2>
+
+        <p>
+          iTools centralise l’information utile pour retrouver, affecter et
+          suivre les outils plus facilement.
+        </p>
+
+        <div class="compare-grid">
+          <div class="compare-card">
+            <span class="compare-label">Avant</span>
+            <strong>Recherche lente</strong>
+            <p>Informations dispersées et suivi manuel.</p>
+          </div>
+
+          <div class="compare-card">
+            <span class="compare-label now">Maintenant</span>
+            <strong>Vision instantanée</strong>
+            <p>Emplacements, statuts et historique centralisés.</p>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <section class="identity-grid">
+      <article class="card identity-copy">
+        <span class="section-label">TIS Circuits</span>
+
+        <h2>Un outil pensé pour le terrain.</h2>
+
+        <p>
+          Conçu pour accompagner les équipes dans un environnement industriel
+          exigeant.
+        </p>
+      </article>
+
+      <article class="card identity-image image-card">
+        <img
+          src="/images/home/tis-production.png"
+          alt="Production TIS Circuits"
+        />
+        <div class="image-shade soft"></div>
+      </article>
+
+      <article class="card identity-dark">
+        <span class="section-label dark-label">ALL Circuits</span>
+
+        <h2>Qualité, industrie, digitalisation.</h2>
+
+        <p>
+          Une logique de modernisation alignée avec l’esprit du groupe.
+        </p>
+      </article>
+    </section>
+
+    <section class="card rules-section">
+      <span class="section-label">Règles métier iTools</span>
+
+      <h2>Une logique simple pour un suivi fiable.</h2>
+
+      <p class="section-intro">
+        Quelques repères essentiels pour comprendre le fonctionnement métier de
+        l’application.
+      </p>
+
+      <div class="rules-grid">
+        <article class="rule-card" *ngFor="let rule of rules">
+          <span class="rule-number">{{ rule.id }}</span>
+          <h3>{{ rule.title }}</h3>
+          <p>{{ rule.text }}</p>
         </article>
       </div>
     </section>
 
-    <section class="modules">
-      <div>
-        <span class="label">Fonctionnalités</span>
+    <section class="card modules-section">
+      <div class="modules-copy">
+        <span class="section-label dark-label">Fonctionnalités</span>
 
-        <h2>Modules principaux</h2>
+        <h2>Tout l’essentiel dans un seul espace.</h2>
 
         <p>
-          L’application regroupe les modules nécessaires pour gérer les
-          utilisateurs, les référentiels, les emplacements, les outillages, les
-          réclamations, les archives et le tableau de bord.
+          Les modules utiles pour gérer les référentiels, les outillages,
+          les emplacements, les réclamations et l’historique.
         </p>
       </div>
 
@@ -157,9 +173,19 @@
       </div>
     </section>
 
+    <section class="card final-cta">
+      <div class="final-copy">
+        <span class="section-label">iTools</span>
+        <h2>Une gestion plus moderne commence ici.</h2>
+      </div>
+
+      <a routerLink="/app/dashboard" class="primary-btn cta-btn">
+        Ouvrir le dashboard
+      </a>
+    </section>
+
     <footer class="footer">
       © {{ currentYear }} iTools — TIS Circuits
     </footer>
-
   </main>
 </div>

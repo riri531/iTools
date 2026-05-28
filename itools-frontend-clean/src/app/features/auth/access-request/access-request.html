@@ -1,94 +1,131 @@
 <div class="access-page">
   <div class="page-overlay"></div>
-  <div class="red-outline red-outline-1"></div>
-  <div class="red-outline red-outline-2"></div>
+  <div class="page-light"></div>
 
-  <section class="access-card">
-    <h1>Demande d’accès</h1>
+  <main class="access-layout">
+    <section class="access-info">
+      <span class="info-kicker">Nouveau compte</span>
 
-    <p class="access-description">
-      Remplissez ce formulaire pour demander la création d’un compte iTools.
-      Votre demande sera transmise à l’administrateur.
-    </p>
+      <h1>Demande d’accès</h1>
 
-    <div class="alert success" *ngIf="successMessage">
-      {{ successMessage }}
-    </div>
+      <p>
+        Remplissez ce formulaire pour demander la création d’un compte iTools.
+        Votre demande sera transmise à l’administrateur pour validation.
+      </p>
 
-    <div class="alert error" *ngIf="errorMessage">
-      {{ errorMessage }}
-    </div>
+      <a routerLink="/login" class="back-link">
+        Retour à la connexion
+      </a>
+    </section>
 
-    <form class="access-form" (ngSubmit)="submit()">
-      <div class="form-grid">
-        <div class="input-shell">
-          <input
-            type="text"
-            name="fullName"
-            [(ngModel)]="form.fullName"
-            placeholder="Nom complet"
-            required
-          />
-        </div>
+    <section class="access-card">
+      <div class="card-header">
+        <span class="section-kicker">Formulaire</span>
 
-        <div class="input-shell">
-          <input
-            type="text"
-            name="matricule"
-            [(ngModel)]="form.matricule"
-            placeholder="Matricule TIS"
-            required
-          />
-        </div>
+        <h2>Informations demandeur</h2>
 
-        <div class="input-shell">
-          <input
-            type="email"
-            name="email"
-            [(ngModel)]="form.email"
-            placeholder="Adresse email"
-            autocomplete="email"
-            required
-          />
-        </div>
-
-        <div class="input-shell">
-          <input
-            type="text"
-            name="phoneNumber"
-            [(ngModel)]="form.phoneNumber"
-            placeholder="Numéro de téléphone"
-            required
-          />
-        </div>
-
-        <div class="input-shell full-row">
-          <input
-            type="text"
-            name="department"
-            [(ngModel)]="form.department"
-            placeholder="Service / Département"
-            required
-          />
-        </div>
-
-        <div class="textarea-shell full-row">
-          <textarea
-            name="message"
-            [(ngModel)]="form.message"
-            placeholder="Message optionnel"
-            rows="4"
-          ></textarea>
-        </div>
+        <p>Merci de renseigner les informations nécessaires au traitement.</p>
       </div>
 
-      <button class="access-btn" type="submit" [disabled]="loading">
-        {{ loading ? 'Envoi en cours...' : 'Envoyer la demande' }}
-      </button>
-    </form>
+      <div class="alert success" *ngIf="successMessage">
+        {{ successMessage }}
+      </div>
 
-    <div class="access-footer">
-      <a routerLink="/login">Retour à la connexion</a>
-    </div>
-  </section>
+      <div class="alert error" *ngIf="errorMessage">
+        {{ errorMessage }}
+      </div>
+
+      <form class="access-form" (ngSubmit)="submit()">
+        <div class="form-grid">
+          <div class="field-group">
+            <label>Nom complet</label>
+
+            <div class="input-shell">
+              <input
+                type="text"
+                name="fullName"
+                [(ngModel)]="form.fullName"
+                placeholder="Nom complet"
+                required
+              />
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label>Matricule TIS</label>
+
+            <div class="input-shell">
+              <input
+                type="text"
+                name="matricule"
+                [(ngModel)]="form.matricule"
+                placeholder="Matricule"
+                required
+              />
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label>Adresse email</label>
+
+            <div class="input-shell">
+              <input
+                type="email"
+                name="email"
+                [(ngModel)]="form.email"
+                placeholder="exp@allcircuits.com"
+                autocomplete="email"
+                required
+              />
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label>Téléphone</label>
+
+            <div class="input-shell">
+              <input
+                type="text"
+                name="phoneNumber"
+                [(ngModel)]="form.phoneNumber"
+                placeholder="+216 ..."
+                required
+              />
+            </div>
+          </div>
+
+          <div class="field-group full-row">
+            <label>Service / Département</label>
+
+            <div class="input-shell">
+              <input
+                type="text"
+                name="department"
+                [(ngModel)]="form.department"
+                placeholder="Production, informatique..."
+                required
+              />
+            </div>
+          </div>
+
+          <div class="field-group full-row">
+            <label>Message optionnel</label>
+
+            <div class="textarea-shell">
+              <textarea
+                name="message"
+                [(ngModel)]="form.message"
+                placeholder="Ajoutez un message si nécessaire..."
+                rows="4"
+              ></textarea>
+            </div>
+          </div>
+        </div>
+
+        <button class="access-btn" type="submit" [disabled]="loading">
+          {{ loading ? 'Envoi en cours...' : 'Envoyer la demande' }}
+        </button>
+      </form>
+    </section>
+  </main>
 </div>

@@ -66,6 +66,12 @@ export const routes: Routes = [
   },
 
   {
+    path: 'dashboard',
+    redirectTo: 'app/dashboard',
+    pathMatch: 'full'
+  },
+
+  {
     path: 'app',
     component: MainLayoutComponent,
     canActivate: [authGuard],

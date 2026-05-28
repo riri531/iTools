@@ -1,21 +1,45 @@
 <div class="login-page">
   <div class="page-overlay"></div>
-  <div class="red-outline red-outline-1"></div>
-  <div class="red-outline red-outline-2"></div>
+  <div class="page-light"></div>
 
-  <div class="scene">
-    <div class="login-wrapper">
-      <section class="login-panel">
-        <div class="panel-shine"></div>
+  <main class="login-layout">
+    <section class="login-info">
+      <span class="info-kicker">TIS Circuits</span>
 
-        <h1>SE CONNECTER</h1>
+      <h2>Gestion intelligente des outillages</h2>
 
-        <div class="error-box" *ngIf="errorMessage">
-          {{ errorMessage }}
-        </div>
+      <p>
+        Connectez-vous à votre espace iTools pour suivre les outillages,
+        les emplacements, les réclamations et les opérations importantes.
+      </p>
 
-        <form (ngSubmit)="submit()" class="login-form">
+      <div class="info-pills">
+        <span>Outillages</span>
+        <span>Emplacements</span>
+        <span>Traçabilité</span>
+      </div>
+    </section>
+
+    <section class="login-card">
+      <div class="card-header">
+        <span class="section-kicker">Connexion sécurisée</span>
+
+        <h1>Se connecter</h1>
+
+        <p>Accédez à votre espace professionnel iTools.</p>
+      </div>
+
+      <div class="error-box" *ngIf="errorMessage">
+        {{ errorMessage }}
+      </div>
+
+      <form (ngSubmit)="submit()" class="login-form">
+        <div class="field-group">
+          <label>Adresse email</label>
+
           <div class="input-shell">
+            <span class="input-icon">✉</span>
+
             <input
               type="email"
               name="email"
@@ -25,49 +49,52 @@
               required
             />
           </div>
+        </div>
+
+        <div class="field-group">
+          <label>Mot de passe</label>
 
           <div class="input-shell">
+            <span class="input-icon">●</span>
+
             <input
               type="password"
               name="password"
               [(ngModel)]="password"
-              placeholder="mot de passe"
+              placeholder="Mot de passe"
               autocomplete="current-password"
               required
             />
           </div>
+        </div>
 
-          <div class="login-options">
-            <label class="remember-wrap">
-              <input
-                type="checkbox"
-                name="rememberMe"
-                [(ngModel)]="rememberMe"
-              />
-              <span>Se souvenir de moi</span>
-            </label>
+        <div class="login-options">
+          <label class="remember-wrap">
+            <input
+              type="checkbox"
+              name="rememberMe"
+              [(ngModel)]="rememberMe"
+            />
 
-            <a routerLink="/forgot-password">Mot de passe oublié?</a>
-          </div>
+            <span>Se souvenir de moi</span>
+          </label>
 
-          <div class="recaptcha-wrap">
-            <div #recaptchaContainer></div>
-          </div>
+          <a routerLink="/forgot-password">Mot de passe oublié ?</a>
+        </div>
 
-          <button class="login-btn" type="submit" [disabled]="loading">
-            {{ loading ? 'Connexion...' : 'Se connecter' }}
-          </button>
+        <div class="recaptcha-wrap">
+          <div #recaptchaContainer></div>
+        </div>
 
-          <div class="login-footer">
-            Vous n’avez pas de compte?
-            <a routerLink="/access-request">demander l’accès</a>
-          </div>
-        </form>
-      </section>
+        <button class="login-btn" type="submit" [disabled]="loading">
+          {{ loading ? 'Connexion...' : 'Se connecter' }}
+        </button>
 
-      <section class="logo-area">
-        <img src="/images/itools-logo.png" alt="iTools" class="logo-img" />
-      </section>
-    </div>
-  </div>
+        <div class="login-footer">
+          <span>Vous n’avez pas de compte ?</span>
+          <a routerLink="/access-request">Demander l’accès</a>
+        </div>
+      </form>
+    </section>
+  </main>
 </div>

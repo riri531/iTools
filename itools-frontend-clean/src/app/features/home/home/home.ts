@@ -1,6 +1,6 @@
-import { Component, inject } from '@angular/core';
+import { Component } from '@angular/core';
 import { NgFor } from '@angular/common';
-import { Router, RouterLink } from '@angular/router';
+import { RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-home',
@@ -9,75 +9,76 @@ import { Router, RouterLink } from '@angular/router';
   styleUrl: './home.scss'
 })
 export class HomeComponent {
-  private router = inject(Router);
-
-  sidebarOpen = false;
   currentYear = new Date().getFullYear();
 
-  menuItems = [
-    { label: 'Accueil', route: '/home', icon: '🏠' },
-    { label: 'Dashboard', route: '/app/dashboard', icon: '📊' },
-    { label: 'Profil', route: '/app/profile', icon: '👤' },
-    { label: 'Réclamations', route: '/app/reclamations', icon: '✉️' },
-    { label: 'Utilisateurs', route: '/app/users', icon: '👥' },
-    { label: 'Désignations', route: '/app/designations', icon: '🏷️' },
-    { label: 'Lignes', route: '/app/lignes', icon: '📌' },
-    { label: 'Clients', route: '/app/clients', icon: '🤝' },
-    { label: 'Fournisseurs', route: '/app/fournisseurs', icon: '🏭' },
-    { label: 'Matières', route: '/app/matieres', icon: '⚙️' },
-    { label: 'Emplacements', route: '/app/emplacements', icon: '📍' },
-    { label: 'Outillages', route: '/app/outils', icon: '🧰' },
-    { label: 'Archives', route: '/app/archives', icon: '🗂️' }
+  features = [
+    {
+      icon: '/images/home/centraliser.png',
+      title: 'Centraliser',
+      text: 'Toutes les données utiles dans un espace clair.'
+    },
+    {
+      icon: '/images/home/localiser.png',
+      title: 'Localiser',
+      text: 'Des emplacements visibles en quelques secondes.'
+    },
+    {
+      icon: '/images/home/signaler.png',
+      title: 'Signaler',
+      text: 'Des réclamations simples à suivre.'
+    },
+    {
+      icon: '/images/home/tracabilite.png',
+      title: 'Tracer',
+      text: 'Un historique fiable des opérations.'
+    }
   ];
 
-  strengths = [
+  rules = [
     {
-      title: 'Organisation des outillages',
-      description: 'Centraliser les outils et faciliter leur suivi dans l’usine.'
+      id: '01',
+      title: 'Statut des emplacements',
+      text: 'Un emplacement peut être libre, occupé ou hors service selon sa disponibilité réelle.'
     },
     {
-      title: 'Gestion des emplacements',
-      description: 'Visualiser les emplacements libres, occupés ou hors service.'
+      id: '02',
+      title: 'Affectation des outils',
+      text: 'Un outil actif doit être affecté à un emplacement disponible pour garantir un suivi cohérent.'
     },
     {
+      id: '03',
+      title: 'Libération',
+      text: 'Lorsqu’un outil est retiré ou déplacé, son emplacement peut redevenir disponible.'
+    },
+    {
+      id: '04',
+      title: 'Référentiels métier',
+      text: 'Les désignations, lignes, clients, fournisseurs et matières structurent les données.'
+    },
+    {
+      id: '05',
       title: 'Accès par rôle',
-      description: 'Séparer les droits entre administrateur, responsable et employé.'
+      text: 'Les droits sont adaptés selon le profil : administrateur, responsable ou employé.'
     },
     {
-      title: 'Traçabilité',
-      description: 'Suivre les opérations importantes réalisées sur les outils.'
+      id: '06',
+      title: 'Historique',
+      text: 'Les opérations importantes sont historisées pour assurer un meilleur contrôle.'
     }
   ];
 
   modules = [
-    'Utilisateurs',
-    'Rôles',
+    'Dashboard',
+    'Outillages',
+    'Emplacements',
     'Désignations',
     'Lignes',
     'Clients',
     'Fournisseurs',
     'Matières',
-    'Emplacements',
-    'Outillages',
-    'Dashboard',
+    'Utilisateurs',
     'Réclamations',
+    'Notifications',
     'Archives'
   ];
-
-  openSidebar(): void {
-    this.sidebarOpen = true;
-  }
-
-  closeSidebar(): void {
-    this.sidebarOpen = false;
-  }
-
-  logout(): void {
-    localStorage.removeItem('token');
-    localStorage.removeItem('role');
-    localStorage.removeItem('fullName');
-    localStorage.removeItem('email');
-
-    this.router.navigate(['/login']);
-  }
 }
