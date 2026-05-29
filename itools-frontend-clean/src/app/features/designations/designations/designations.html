@@ -532,7 +532,7 @@
         <div class="form-group image-upload-group">
           <label>Photo associée à la désignation</label>
 
-          <div class="image-upload-box">
+          <div class="image-upload-box fixed-image-upload">
             <div class="image-upload-preview">
               <img
                 *ngIf="form.imagePreview || form.imageUrl; else noSelectedImage"
@@ -545,7 +545,7 @@
                   <span>
                     {{ form.name ? form.name.charAt(0).toUpperCase() : 'D' }}
                   </span>
-                  <small>Aucune photo</small>
+                  <small>Aucune photo sélectionnée</small>
                 </div>
               </ng-template>
             </div>
@@ -560,30 +560,48 @@
 
               <input
                 #designationImageInput
+                id="designationImageInput"
+                class="image-input-hidden"
                 type="file"
                 accept="image/*"
-                hidden
                 (change)="onImageSelected($event)"
               />
 
-              <div class="image-upload-actions">
+              <div class="image-upload-actions image-upload-actions-visible">
                 <button
                   type="button"
-                  class="header-btn secondary upload-btn"
+                  class="image-picker-btn"
                   (click)="designationImageInput.click()"
                 >
-                  Choisir une photo
+                  Sélectionner une image
                 </button>
 
                 <button
                   type="button"
-                  class="header-btn danger-soft"
+                  class="image-remove-btn"
                   *ngIf="form.imagePreview || form.imageUrl"
                   (click)="removeSelectedImage()"
                 >
-                  Retirer photo
+                  Retirer l’image
                 </button>
               </div>
+
+              <div class="selected-image-info" *ngIf="form.imageFile">
+                <span>Fichier sélectionné :</span>
+                <strong>{{ form.imageFile.name }}</strong>
+              </div>
+
+              <div
+                class="selected-image-info"
+                *ngIf="!form.imageFile && form.imageUrl && !form.removeImage"
+              >
+                <span>Image actuelle :</span>
+                <strong>conservée</strong>
+              </div>
+
+              <small class="image-upload-hint">
+                Formats acceptés : JPG, PNG, WEBP. Taille maximale : 5 Mo.
+              </small>
             </div>
           </div>
         </div>

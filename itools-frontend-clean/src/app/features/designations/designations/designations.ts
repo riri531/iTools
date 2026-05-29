@@ -357,6 +357,7 @@ export class DesignationsComponent implements OnInit {
 
     if (!file.type.startsWith('image/')) {
       this.showError('Veuillez sélectionner un fichier image valide.');
+      input.value = '';
       return;
     }
 
@@ -365,16 +366,26 @@ export class DesignationsComponent implements OnInit {
 
     if (file.size > maxSizeInBytes) {
       this.showError(`La taille de l’image ne doit pas dépasser ${maxSizeInMb} Mo.`);
+      input.value = '';
       return;
     }
 
     this.form.imageFile = file;
     this.form.removeImage = false;
+    this.errorMessage = '';
 
     const reader = new FileReader();
 
     reader.onload = () => {
       this.form.imagePreview = String(reader.result || '');
+      this.cdr.detectChanges();
+    };
+
+    reader.onerror = () => {
+      this.showError('Impossible de lire l’image sélectionnée.');
+      this.form.imageFile = null;
+      this.form.imagePreview = '';
+      input.value = '';
       this.cdr.detectChanges();
     };
 
