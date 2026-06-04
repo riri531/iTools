@@ -46,17 +46,30 @@ export class AuthService {
   login(data: LoginRequest): Observable<LoginResponse> {
     return this.http.post<LoginResponse>(`${this.apiUrl}/login`, data).pipe(
       tap((response) => {
-        const storage = data.rememberMe ? localStorage : sessionStorage;
+        const rememberMe = !!data.rememberMe;
+        const storage = rememberMe ? localStorage : sessionStorage;
+
+        localStorage.removeItem('token');
+        localStorage.removeItem('role');
+        localStorage.removeItem('email');
+        localStorage.removeItem('fullName');
+
+        sessionStorage.removeItem('token');
+        sessionStorage.removeItem('role');
+        sessionStorage.removeItem('email');
+        sessionStorage.removeItem('fullName');
 
         storage.setItem('token', response.token);
         storage.setItem('role', this.normalizeRole(response.role));
         storage.setItem('email', response.email);
         storage.setItem('fullName', response.fullName);
 
-        if (data.rememberMe) {
+        if (rememberMe) {
           localStorage.setItem('rememberedEmail', response.email);
+          localStorage.setItem('rememberMeEnabled', 'true');
         } else {
           localStorage.removeItem('rememberedEmail');
+          localStorage.removeItem('rememberMeEnabled');
         }
       })
     );
@@ -77,16 +90,26 @@ export class AuthService {
   }
 
   logout(): void {
+    const rememberedEmail = localStorage.getItem('rememberedEmail');
+    const rememberMeEnabled = localStorage.getItem('rememberMeEnabled');
+
     localStorage.removeItem('token');
     localStorage.removeItem('role');
     localStorage.removeItem('email');
     localStorage.removeItem('fullName');
-    localStorage.removeItem('rememberedEmail');
 
     sessionStorage.removeItem('token');
     sessionStorage.removeItem('role');
     sessionStorage.removeItem('email');
     sessionStorage.removeItem('fullName');
+
+    if (rememberMeEnabled === 'true' && rememberedEmail) {
+      localStorage.setItem('rememberedEmail', rememberedEmail);
+      localStorage.setItem('rememberMeEnabled', 'true');
+    } else {
+      localStorage.removeItem('rememberedEmail');
+      localStorage.removeItem('rememberMeEnabled');
+    }
   }
 
   getToken(): string | null {
@@ -110,11 +133,23 @@ export class AuthService {
     return localStorage.getItem('email') || sessionStorage.getItem('email');
   }
 
+  getRememberedEmail(): string {
+    return localStorage.getItem('rememberedEmail') || '';
+  }
+
+  isRememberMeEnabled(): boolean {
+    return localStorage.getItem('rememberMeEnabled') === 'true';
+  }
+
   updateCurrentUser(fullName: string, email: string): void {
     const storage = localStorage.getItem('token') ? localStorage : sessionStorage;
 
     storage.setItem('fullName', fullName);
     storage.setItem('email', email);
+
+    if (this.isRememberMeEnabled()) {
+      localStorage.setItem('rememberedEmail', email);
+    }
   }
 
   isLoggedIn(): boolean {
@@ -130,7 +165,7 @@ export class AuthService {
   }
 
   isEmploye(): boolean {
-    return this.getRole() === 'EMPLOYE' || this.getRole() === 'EMPLOYÉ';
+    return this.getRole() === 'EMPLOYE';
   }
 
   hasAnyRole(roles: string[]): boolean {
@@ -153,16 +188,13 @@ export class AuthService {
   canCreateReclamation(): boolean {
     const role = this.getRole();
 
-    return role === 'EMPLOYE' ||
-      role === 'EMPLOYÉ' ||
-      role === 'RESPONSABLE';
+    return role === 'EMPLOYE' || role === 'RESPONSABLE';
   }
 
   canTreatReclamation(): boolean {
     const role = this.getRole();
 
-    return role === 'ADMIN' ||
-      role === 'RESPONSABLE';
+    return role === 'ADMIN' || role === 'RESPONSABLE';
   }
 
   private normalizeRole(role: string | null | undefined): string {

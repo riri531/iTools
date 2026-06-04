@@ -33,31 +33,41 @@
         {{ errorMessage }}
       </div>
 
-      <form (ngSubmit)="submit()" class="login-form">
+      <form
+        id="loginForm"
+        name="loginForm"
+        class="login-form"
+        autocomplete="on"
+        (ngSubmit)="submit()"
+      >
         <div class="field-group">
-          <label>Adresse email</label>
+          <label for="loginEmail">Adresse email</label>
 
           <div class="input-shell">
             <span class="input-icon">✉</span>
 
             <input
+              id="loginEmail"
               type="email"
-              name="email"
+              name="username"
               [(ngModel)]="email"
               placeholder="exp@allcircuits.com"
-              autocomplete="email"
+              autocomplete="username email"
+              autocapitalize="none"
+              spellcheck="false"
               required
             />
           </div>
         </div>
 
         <div class="field-group">
-          <label>Mot de passe</label>
+          <label for="loginPassword">Mot de passe</label>
 
           <div class="input-shell">
             <span class="input-icon">●</span>
 
             <input
+              id="loginPassword"
               type="password"
               name="password"
               [(ngModel)]="password"
