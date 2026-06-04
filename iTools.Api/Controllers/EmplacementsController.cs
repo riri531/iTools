@@ -113,6 +113,11 @@ public class EmplacementsController : ControllerBase
         var numero = dto.Numero.Trim();
         var status = dto.Status.Trim();
 
+        if (NormalizeEmplacementStatus(status) == "OCCUPE")
+        {
+            return BadRequest("Le statut OCCUPE est réservé à l’affectation automatique d’un outil. Créez l’emplacement en LIBRE ou HS.");
+        }
+
         var exists = await _context.Emplacements.AnyAsync(e =>
             e.MatiereId == dto.MatiereId &&
             e.Armoire == armoire &&
@@ -179,6 +184,17 @@ public class EmplacementsController : ControllerBase
         var armoire = dto.Armoire.Trim();
         var numero = dto.Numero.Trim();
         var status = dto.Status.Trim();
+
+        var hasAssignedOutil = await _context.Outils.AnyAsync(o => o.EmplacementId == id);
+
+        if (hasAssignedOutil)
+        {
+            status = "OCCUPE";
+        }
+        else if (NormalizeEmplacementStatus(status) == "OCCUPE")
+        {
+            return BadRequest("Le statut OCCUPE est réservé à l’affectation automatique d’un outil.");
+        }
 
         var exists = await _context.Emplacements.AnyAsync(e =>
             e.MatiereId == dto.MatiereId &&
@@ -277,6 +293,13 @@ public class EmplacementsController : ControllerBase
         if (item == null)
         {
             return NotFound("Emplacement introuvable.");
+        }
+
+        var assignedOutilExists = await _context.Outils.AnyAsync(o => o.EmplacementId == id);
+
+        if (assignedOutilExists)
+        {
+            return BadRequest("Cet emplacement est occupé par un outil. Supprimez ou déplacez d’abord l’outil associé.");
         }
 
         var oldValues = new
@@ -431,6 +454,27 @@ public class EmplacementsController : ControllerBase
         }
 
         return null;
+    }
+
+    private string NormalizeEmplacementStatus(string? status)
+    {
+        var value = (status ?? string.Empty)
+            .Trim()
+            .ToUpperInvariant()
+            .Replace("É", "E")
+            .Replace("È", "E")
+            .Replace("Ê", "E")
+            .Replace("À", "A");
+
+        return value switch
+        {
+            "LIBRE" => "LIBRE",
+            "OCCUPE" => "OCCUPE",
+            "OCCUPÉ" => "OCCUPE",
+            "HS" => "HS",
+            "HORS SERVICE" => "HS",
+            _ => value
+        };
     }
 
     private async Task<string?> SaveImageAsync(IFormFile? image)

@@ -1430,3 +1430,16 @@ select.form-control {
     display: none;
   }
 }
+
+/* =========================================================
+   RÈGLE MÉTIER AFFECTATION OUTIL / EMPLACEMENT
+========================================================= */
+
+.field-hint {
+  display: block;
+  margin-top: 7px;
+  color: #7b8193;
+  font-size: 0.74rem;
+  line-height: 1.45;
+  font-weight: 800;
+}

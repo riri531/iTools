@@ -708,12 +708,16 @@
             [(ngModel)]="form.emplacementId"
             required
           >
-            <option [value]="0">Sélectionner un emplacement</option>
+            <option [value]="0">Sélectionner un emplacement libre et en service</option>
 
             <option *ngFor="let emplacement of getFormEmplacements()" [value]="emplacement.id">
               {{ getEmplacementLabel(emplacement) }}
             </option>
           </select>
+
+          <small class="field-hint">
+            Seuls les emplacements libres et en service sont proposés. Un emplacement occupé ne peut pas recevoir un deuxième outil.
+          </small>
         </div>
 
         <div class="form-group">

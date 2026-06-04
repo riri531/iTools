@@ -247,6 +247,7 @@ export class OutilsComponent implements OnInit {
   };
 
   isEditMode = false;
+  private originalEmplacementId = 0;
   successMessage = '';
   errorMessage = '';
 
@@ -310,7 +311,20 @@ export class OutilsComponent implements OnInit {
   }
 
   getFormEmplacements(): EmplacementItem[] {
-    return this.getContextEmplacements();
+    const currentId = Number(this.form.emplacementId || 0);
+
+    return this.getContextEmplacements().filter(emplacement => {
+      if (this.isEditMode && currentId > 0 && emplacement.id === currentId) {
+        return true;
+      }
+
+      return this.isEmplacementLibre(emplacement) &&
+        !this.isEmplacementAlreadyAssigned(emplacement.id);
+    });
+  }
+
+  getAssignableEmplacementsCount(): number {
+    return this.getFormEmplacements().length;
   }
 
 
@@ -353,6 +367,7 @@ export class OutilsComponent implements OnInit {
       next: (data) => {
         this.outils = data || [];
         this.outilsLoaded = true;
+        this.ensureFormEmplacementInContext();
         this.refreshView();
       },
       error: (err: any) => {
@@ -561,8 +576,8 @@ export class OutilsComponent implements OnInit {
       return;
     }
 
-    if (this.designationContextId && this.getContextEmplacements().length === 0) {
-      this.showError("Aucun emplacement n'est lié à cette désignation. Créez d'abord un emplacement avec cette désignation.");
+    if (this.getFormEmplacements().length === 0) {
+      this.showError("Aucun emplacement libre et en service n’est disponible pour cette désignation. Créez ou libérez d’abord un emplacement.");
       return;
     }
 
@@ -597,6 +612,7 @@ export class OutilsComponent implements OnInit {
       removeImage: false
     };
 
+    this.originalEmplacementId = item.emplacementId;
     this.isEditMode = true;
     this.errorMessage = '';
     this.showModal = true;
@@ -850,8 +866,29 @@ export class OutilsComponent implements OnInit {
       return;
     }
 
+    const selectedEmplacement = this.emplacements.find(
+      emplacement => emplacement.id === Number(this.form.emplacementId)
+    );
+
+    if (!selectedEmplacement) {
+      this.showError("L’emplacement sélectionné est introuvable.");
+      return;
+    }
+
     if (this.designationContextId && !this.getContextEmplacements().some(emplacement => emplacement.id === Number(this.form.emplacementId))) {
       this.showError("L’emplacement sélectionné ne correspond pas à la désignation ouverte.");
+      return;
+    }
+
+    const canUseSelectedEmplacement =
+      (this.isEditMode && Number(this.form.emplacementId) === this.getOriginalFormEmplacementId()) ||
+      (
+        this.isEmplacementLibre(selectedEmplacement) &&
+        !this.isEmplacementAlreadyAssigned(selectedEmplacement.id)
+      );
+
+    if (!canUseSelectedEmplacement) {
+      this.showError("L’emplacement sélectionné doit être libre et en service. Un emplacement ne peut recevoir qu’un seul outil.");
       return;
     }
 
@@ -952,6 +989,9 @@ export class OutilsComponent implements OnInit {
   }
 
   resetForm(): void {
+    this.originalEmplacementId = 0;
+    this.isEditMode = false;
+
     this.form = {
       id: 0,
       ligneId: this.lignes.length > 0 ? this.lignes[0].id : 0,
@@ -971,7 +1011,6 @@ export class OutilsComponent implements OnInit {
       removeImage: false
     };
 
-    this.isEditMode = false;
     this.errorMessage = '';
     this.cdr.detectChanges();
   }
@@ -1013,12 +1052,12 @@ export class OutilsComponent implements OnInit {
   }
 
   private getDefaultEmplacementId(): number {
-    const emplacement = this.getContextEmplacements()[0];
+    const emplacement = this.getFormEmplacements()[0];
     return emplacement ? emplacement.id : 0;
   }
 
   private ensureFormEmplacementInContext(): void {
-    const availableEmplacements = this.getContextEmplacements();
+    const availableEmplacements = this.getFormEmplacements();
 
     if (availableEmplacements.length === 0) {
       this.form.emplacementId = 0;
@@ -1032,6 +1071,39 @@ export class OutilsComponent implements OnInit {
     if (!currentStillAvailable) {
       this.form.emplacementId = availableEmplacements[0].id;
     }
+  }
+
+  private getOriginalFormEmplacementId(): number {
+    return Number(this.originalEmplacementId || 0);
+  }
+
+  private isEmplacementLibre(emplacement: EmplacementItem): boolean {
+    return this.normalizeEmplacementStatus(emplacement.status) === 'LIBRE';
+  }
+
+  private isEmplacementAlreadyAssigned(emplacementId: number): boolean {
+    return this.outils.some(outil =>
+      Number(outil.emplacementId) === Number(emplacementId) &&
+      (!this.isEditMode || Number(outil.id) !== Number(this.form.id))
+    );
+  }
+
+  private normalizeEmplacementStatus(value: string): string {
+    const normalized = this.normalizeText(value);
+
+    if (normalized === 'libre') {
+      return 'LIBRE';
+    }
+
+    if (normalized === 'occupe' || normalized === 'occupé') {
+      return 'OCCUPE';
+    }
+
+    if (normalized === 'hs' || normalized === 'hors service') {
+      return 'HS';
+    }
+
+    return String(value || '').trim().toUpperCase().replace('É', 'E');
   }
 
   private inferDesignationContextNameFromEmplacements(): void {
@@ -1116,12 +1188,21 @@ export class OutilsComponent implements OnInit {
     const matiere = emplacement.matiere?.nomMatiere || '';
     const designation = emplacement.designation?.name || '';
     const base = `${emplacement.armoire}-${emplacement.numero}`;
+    const status = this.normalizeEmplacementStatus(emplacement.status);
 
-    if (matiere || designation) {
-      return `${base} | ${matiere} | ${designation}`;
+    const parts = [base];
+
+    if (matiere) {
+      parts.push(matiere);
     }
 
-    return base;
+    if (designation) {
+      parts.push(designation);
+    }
+
+    parts.push(status === 'OCCUPE' ? 'Occupé' : status === 'HS' ? 'HS' : 'Libre');
+
+    return parts.join(' | ');
   }
 
   getOutilReclamationLabel(item: OutilItem): string {

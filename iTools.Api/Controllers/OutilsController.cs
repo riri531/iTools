@@ -110,12 +110,16 @@ public class OutilsController : ControllerBase
             return BadRequest(validationError);
         }
 
+        var emplacement = await _context.Emplacements
+            .FirstAsync(e => e.Id == dto.EmplacementId);
+
         var ott = dto.OTT.Trim();
         var codeOutillage = dto.CodeOutillage.Trim();
         var status = dto.Status.Trim();
         var justificationHS = status == "HS" ? dto.JustificationHS?.Trim() : "";
 
         var imageUrl = await SaveImageAsync(dto.Image);
+        var now = DateTime.UtcNow;
 
         var item = new Outil
         {
@@ -130,9 +134,12 @@ public class OutilsController : ControllerBase
             JustificationHS = justificationHS,
             DateAffectation = dto.DateAffectation,
             ImageUrl = imageUrl,
-            CreatedAt = dto.CreatedAt ?? DateTime.UtcNow,
+            CreatedAt = dto.CreatedAt ?? now,
             UpdatedAt = null
         };
+
+        emplacement.Status = "OCCUPE";
+        emplacement.UpdatedAt = now;
 
         _context.Outils.Add(item);
         await _context.SaveChangesAsync();
@@ -143,7 +150,7 @@ public class OutilsController : ControllerBase
             action: "CREATE",
             entityName: "Outil",
             entityId: item.Id,
-            description: $"Ajout de l’outil : {item.CodeOutillage}",
+            description: $"Ajout de l’outil : {item.CodeOutillage}. Emplacement {emplacement.Armoire}-{emplacement.Numero} passé automatiquement à OCCUPE.",
             oldValues: null,
             newValues: result
         );
@@ -167,6 +174,8 @@ public class OutilsController : ControllerBase
         {
             return NotFound("Outil introuvable.");
         }
+
+        var oldEmplacementId = item.EmplacementId;
 
         var validationError = await ValidateDtoAsync(
             dto.LigneId,
@@ -223,6 +232,7 @@ public class OutilsController : ControllerBase
         }
 
         var status = dto.Status.Trim();
+        var now = DateTime.UtcNow;
 
         item.LigneId = dto.LigneId;
         item.ClientId = dto.ClientId;
@@ -235,7 +245,36 @@ public class OutilsController : ControllerBase
         item.JustificationHS = status == "HS" ? dto.JustificationHS?.Trim() : "";
         item.DateAffectation = dto.DateAffectation;
         item.CreatedAt = dto.CreatedAt ?? item.CreatedAt;
-        item.UpdatedAt = DateTime.UtcNow;
+        item.UpdatedAt = now;
+
+        if (oldEmplacementId != dto.EmplacementId)
+        {
+            var oldEmplacement = await _context.Emplacements
+                .FirstOrDefaultAsync(e => e.Id == oldEmplacementId);
+
+            if (oldEmplacement != null)
+            {
+                oldEmplacement.Status = "LIBRE";
+                oldEmplacement.UpdatedAt = now;
+            }
+
+            var newEmplacement = await _context.Emplacements
+                .FirstAsync(e => e.Id == dto.EmplacementId);
+
+            newEmplacement.Status = "OCCUPE";
+            newEmplacement.UpdatedAt = now;
+        }
+        else
+        {
+            var currentEmplacement = await _context.Emplacements
+                .FirstOrDefaultAsync(e => e.Id == dto.EmplacementId);
+
+            if (currentEmplacement != null)
+            {
+                currentEmplacement.Status = "OCCUPE";
+                currentEmplacement.UpdatedAt = now;
+            }
+        }
 
         await _context.SaveChangesAsync();
 
@@ -272,7 +311,9 @@ public class OutilsController : ControllerBase
             action: "UPDATE",
             entityName: "Outil",
             entityId: item.Id,
-            description: $"Modification de l’outil : {item.CodeOutillage}",
+            description: oldEmplacementId == dto.EmplacementId
+                ? $"Modification de l’outil : {item.CodeOutillage}"
+                : $"Modification de l’outil : {item.CodeOutillage}. Ancien emplacement libéré et nouvel emplacement passé à OCCUPE.",
             oldValues: oldValues,
             newValues: newValues
         );
@@ -323,6 +364,12 @@ public class OutilsController : ControllerBase
             DeleteImageFile(item.ImageUrl);
         }
 
+        if (item.Emplacement != null)
+        {
+            item.Emplacement.Status = "LIBRE";
+            item.Emplacement.UpdatedAt = DateTime.UtcNow;
+        }
+
         _context.Outils.Remove(item);
         await _context.SaveChangesAsync();
 
@@ -330,7 +377,7 @@ public class OutilsController : ControllerBase
             action: "DELETE",
             entityName: "Outil",
             entityId: id,
-            description: $"Suppression de l’outil : {oldValues.CodeOutillage}",
+            description: $"Suppression de l’outil : {oldValues.CodeOutillage}. L’emplacement associé est repassé à LIBRE.",
             oldValues: oldValues,
             newValues: null
         );
@@ -507,10 +554,49 @@ public class OutilsController : ControllerBase
             return "FournisseurId invalide.";
         }
 
-        var emplacementExists = await _context.Emplacements.AnyAsync(x => x.Id == emplacementId);
-        if (!emplacementExists)
+        var emplacement = await _context.Emplacements
+            .FirstOrDefaultAsync(x => x.Id == emplacementId);
+
+        if (emplacement == null)
         {
             return "EmplacementId invalide.";
+        }
+
+        var isSameEmplacementAsCurrentTool = false;
+
+        if (currentId.HasValue)
+        {
+            var currentOutil = await _context.Outils
+                .AsNoTracking()
+                .FirstOrDefaultAsync(o => o.Id == currentId.Value);
+
+            isSameEmplacementAsCurrentTool =
+                currentOutil != null &&
+                currentOutil.EmplacementId == emplacementId;
+        }
+
+        if (!isSameEmplacementAsCurrentTool)
+        {
+            var emplacementStatus = NormalizeEmplacementStatus(emplacement.Status);
+
+            if (emplacementStatus == "HS")
+            {
+                return "L’emplacement sélectionné est hors service. Un outil doit être affecté uniquement à un emplacement en service et libre.";
+            }
+
+            if (emplacementStatus != "LIBRE")
+            {
+                return "L’emplacement sélectionné n’est pas libre. Un emplacement ne peut être associé qu’à un seul outil.";
+            }
+
+            var emplacementAlreadyAssigned = await _context.Outils.AnyAsync(o =>
+                o.EmplacementId == emplacementId &&
+                (!currentId.HasValue || o.Id != currentId.Value));
+
+            if (emplacementAlreadyAssigned)
+            {
+                return "Cet emplacement est déjà associé à un autre outil. Un emplacement ne peut recevoir qu’un seul outil.";
+            }
         }
 
         var cleanOtt = ott.Trim();
@@ -528,6 +614,27 @@ public class OutilsController : ControllerBase
         }
 
         return null;
+    }
+
+    private string NormalizeEmplacementStatus(string? status)
+    {
+        var value = (status ?? string.Empty)
+            .Trim()
+            .ToUpperInvariant()
+            .Replace("É", "E")
+            .Replace("È", "E")
+            .Replace("Ê", "E")
+            .Replace("À", "A");
+
+        return value switch
+        {
+            "LIBRE" => "LIBRE",
+            "OCCUPE" => "OCCUPE",
+            "OCCUPÉ" => "OCCUPE",
+            "HS" => "HS",
+            "HORS SERVICE" => "HS",
+            _ => value
+        };
     }
 
     private async Task<string?> SaveImageAsync(IFormFile? image)
