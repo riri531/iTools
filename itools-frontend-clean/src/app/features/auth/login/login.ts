@@ -14,6 +14,7 @@ import { AuthService } from '../../../core/services/auth';
 declare global {
   interface Window {
     grecaptcha: any;
+    PasswordCredential: any;
   }
 }
 
@@ -61,7 +62,9 @@ export class LoginComponent implements OnInit, AfterViewInit {
   submit(): void {
     this.errorMessage = '';
 
-    if (!this.email.trim() || !this.password.trim()) {
+    const cleanEmail = this.email.trim();
+
+    if (!cleanEmail || !this.password.trim()) {
       this.errorMessage = 'Veuillez saisir votre email et votre mot de passe.';
       return;
     }
@@ -75,14 +78,29 @@ export class LoginComponent implements OnInit, AfterViewInit {
 
     this.loading = true;
 
+    const passwordForBrowser = this.password;
+
     this.authService.login({
-      email: this.email.trim(),
+      email: cleanEmail,
       password: this.password,
       rememberMe: this.rememberMe,
       recaptchaToken: recaptchaToken
     }).subscribe({
-      next: () => {
+      next: async () => {
         this.loading = false;
+
+        if (this.rememberMe) {
+          localStorage.setItem('rememberedEmail', cleanEmail);
+          localStorage.setItem('rememberMeEnabled', 'true');
+        } else {
+          localStorage.removeItem('rememberedEmail');
+          localStorage.removeItem('rememberMeEnabled');
+        }
+
+        await this.askBrowserToSavePassword(cleanEmail, passwordForBrowser);
+
+        this.password = '';
+
         this.router.navigate(['/home']);
       },
 
@@ -95,9 +113,35 @@ export class LoginComponent implements OnInit, AfterViewInit {
         this.errorMessage =
           typeof err?.error === 'string'
             ? err.error
-            : 'Email ou mot de passe invalide.';
+            : err?.error?.message || 'Email ou mot de passe invalide.';
       }
     });
+  }
+
+  private async askBrowserToSavePassword(email: string, password: string): Promise<void> {
+    try {
+      if (!this.rememberMe) {
+        return;
+      }
+
+      if (
+        'credentials' in navigator &&
+        typeof window.PasswordCredential !== 'undefined'
+      ) {
+        const credential = new window.PasswordCredential({
+          id: email,
+          name: email,
+          password: password
+        });
+
+        await navigator.credentials.store(credential);
+      }
+    } catch (error) {
+      console.warn(
+        'Le navigateur n’a pas accepté l’enregistrement automatique du mot de passe.',
+        error
+      );
+    }
   }
 
   private loadRecaptchaScript(): Promise<void> {

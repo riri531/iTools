@@ -41,18 +41,127 @@
         (ngSubmit)="submit()"
       >
         <div class="field-group">
-          <label for="loginEmail">Adresse email</label>
+          <label for="loginUsername">Adresse email</label>
 
           <div class="input-shell">
             <span class="input-icon">✉</span>
 
             <input
-              id="loginEmail"
+              id="loginUsername"
               type="email"
               name="username"
               [(ngModel)]="email"
               placeholder="exp@allcircuits.com"
-              autocomplete="username email"
+              autocomplete="username"
+              autocapitalize="none"
+              spellcheck="false"
+              required
+            />
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label for="loginPassword">Mot de passe</label>
+
+          <div class="input-shell">
+            <span class="input-icon">●</span>
+
+            <input
+              id="loginPassword"
+              type="password"
+              name="password"
+              [(ngModel)]="password"
+              placeholder="Mot de passe"
+              autocomplete="current-password"
+              required
+            />
+          </div>
+        </div>
+
+        <div class="login-options">
+          <label class="remember-wrap">
+            <input
+              type="checkbox"
+              name="rememberMe"
+              [(ngModel)]="rememberMe"
+            />
+
+            <span>Se souvenir de moi</span>
+          </label>
+
+          <a routerLink="/forgot-password">Mot de passe oublié ?</a>
+        </div>
+
+        <div class="recaptcha-wrap">
+          <div #recaptchaContainer></div>
+        </div>
+
+        <button class="login-btn" type="submit" [disabled]="loading">
+          {{ loading ? 'Connexion...' : 'Se connecter' }}
+        </button>
+
+        <div class="login-footer">
+          <span>Vous n’avez pas de compte ?</span>
+          <a routerLink="/access-request">Demander l’accès</a>
+        </div>
+      </form>
+    </section>
+  </main>
+</div><div class="login-page">
+  <div class="page-overlay"></div>
+  <div class="page-light"></div>
+
+  <main class="login-layout">
+    <section class="login-info">
+      <span class="info-kicker">TIS Circuits</span>
+
+      <h2>Gestion intelligente des outillages</h2>
+
+      <p>
+        Connectez-vous à votre espace iTools pour suivre les outillages,
+        les emplacements, les réclamations et les opérations importantes.
+      </p>
+
+      <div class="info-pills">
+        <span>Outillages</span>
+        <span>Emplacements</span>
+        <span>Traçabilité</span>
+      </div>
+    </section>
+
+    <section class="login-card">
+      <div class="card-header">
+        <span class="section-kicker">Connexion sécurisée</span>
+
+        <h1>Se connecter</h1>
+
+        <p>Accédez à votre espace professionnel iTools.</p>
+      </div>
+
+      <div class="error-box" *ngIf="errorMessage">
+        {{ errorMessage }}
+      </div>
+
+      <form
+        id="loginForm"
+        name="loginForm"
+        class="login-form"
+        autocomplete="on"
+        (ngSubmit)="submit()"
+      >
+        <div class="field-group">
+          <label for="loginUsername">Adresse email</label>
+
+          <div class="input-shell">
+            <span class="input-icon">✉</span>
+
+            <input
+              id="loginUsername"
+              type="email"
+              name="username"
+              [(ngModel)]="email"
+              placeholder="exp@allcircuits.com"
+              autocomplete="username"
               autocapitalize="none"
               spellcheck="false"
               required
