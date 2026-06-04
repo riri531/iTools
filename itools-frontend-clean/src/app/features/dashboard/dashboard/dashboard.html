@@ -1,4 +1,33 @@
 <div class="dashboard-page">
+  <div class="dashboard-toolbar">
+    <div>
+      <span class="dashboard-kicker">Tableau de bord</span>
+      <h1>Vue instantanée de l’activité iTools</h1>
+      <p>
+        Les indicateurs se mettent à jour automatiquement toutes les 30 secondes.
+      </p>
+    </div>
+
+    <div class="refresh-zone">
+      <span class="last-update" *ngIf="lastUpdatedAt">
+        Dernière mise à jour : {{ lastUpdatedAt | date:'dd/MM/yyyy HH:mm:ss' }}
+      </span>
+
+      <button
+        type="button"
+        class="refresh-btn"
+        (click)="refreshNow()"
+        [disabled]="isLoading"
+      >
+        {{ isLoading ? 'Actualisation...' : 'Actualiser' }}
+      </button>
+    </div>
+  </div>
+
+  <div class="dashboard-alert error" *ngIf="errorMessage">
+    {{ errorMessage }}
+  </div>
+
   <!-- =========================
        BANNIÈRES DU HAUT
        ========================= -->
@@ -10,7 +39,7 @@
       </div>
 
       <div class="stat-content">
-        <strong class="stat-number">6</strong>
+        <strong class="stat-number">{{ stats.freeEmplacements }}</strong>
         <span class="stat-label">
           Emplacements<br />
           libres
@@ -24,7 +53,7 @@
       </div>
 
       <div class="stat-content">
-        <strong class="stat-number">6</strong>
+        <strong class="stat-number">{{ stats.outils }}</strong>
         <span class="stat-label">
           Outillages
         </span>
@@ -37,7 +66,7 @@
       </div>
 
       <div class="stat-content">
-        <strong class="stat-number">1</strong>
+        <strong class="stat-number">{{ stats.hsEmplacements }}</strong>
         <span class="stat-label">
           Emplacements<br />
           HS
@@ -51,7 +80,7 @@
       </div>
 
       <div class="stat-content">
-        <strong class="stat-number">9</strong>
+        <strong class="stat-number">{{ stats.users }}</strong>
         <span class="stat-label">
           Utilisateurs<br />
           inscrits
@@ -78,61 +107,41 @@
 
       <div class="bar-chart">
         <div class="bar-y-axis">
-          <span>1</span>
+          <span>{{ yAxisMaxLabel }}</span>
           <span>0</span>
         </div>
 
-        <div class="bar-area">
+        <div
+          class="bar-area"
+          [style.grid-template-columns]="'repeat(' + toolReservationStats.length + ', 1fr)'"
+        >
           <div class="bar-grid"></div>
 
-          <div class="bar-item bar-empty">
+          <div
+            class="bar-item"
+            *ngFor="let item of toolReservationStats"
+            [class.bar-empty]="item.count === 0"
+          >
+            <div
+              class="bar-fill bar-fill--active"
+              *ngIf="item.count > 0"
+              [style.height.%]="(item.count / maxReservationValue) * 100"
+            ></div>
+
             <div class="bar-tooltip">
-              <strong>Outil : ----</strong>
-              <span>Réservations : 0</span>
-              <span>Statut : Aucune réservation</span>
+              <strong>Outil : {{ item.label }}</strong>
+              <span>Réservations : {{ item.count }}</span>
+              <span>Statut : {{ item.statusLabel }}</span>
             </div>
           </div>
 
-          <div class="bar-item bar-empty">
-            <div class="bar-tooltip">
-              <strong>Outil : 125</strong>
-              <span>Réservations : 0</span>
-              <span>Statut : Aucune réservation</span>
-            </div>
-          </div>
-
-          <div class="bar-item bar-empty">
-            <div class="bar-tooltip">
-              <strong>Outil : 54545445</strong>
-              <span>Réservations : 0</span>
-              <span>Statut : Aucune réservation</span>
-            </div>
-          </div>
-
-          <div class="bar-item">
-            <div class="bar-fill bar-fill--active"></div>
-
-            <div class="bar-tooltip">
-              <strong>Outil : OUT-001</strong>
-              <span>Réservations : 1</span>
-              <span>Statut : Réservé</span>
-            </div>
-          </div>
-
-          <div class="bar-item bar-empty">
-            <div class="bar-tooltip">
-              <strong>Outil : OUT-002</strong>
-              <span>Réservations : 0</span>
-              <span>Statut : Aucune réservation</span>
-            </div>
-          </div>
-
-          <div class="bar-x-axis">
-            <span>----</span>
-            <span>125</span>
-            <span>54545445</span>
-            <span>OUT-001</span>
-            <span>OUT-002</span>
+          <div
+            class="bar-x-axis"
+            [style.grid-template-columns]="'repeat(' + toolReservationStats.length + ', 1fr)'"
+          >
+            <span *ngFor="let item of toolReservationStats">
+              {{ item.label }}
+            </span>
           </div>
         </div>
       </div>
@@ -150,45 +159,31 @@
       </div>
 
       <div class="pie-legend">
-        <span>
-          <i class="legend-color legend-libre"></i>
-          LIBRE
-        </span>
-
-        <span>
-          <i class="legend-color legend-occupe"></i>
-          OCCUPÉ
-        </span>
-
-        <span>
-          <i class="legend-color legend-hs"></i>
-          HS
+        <span *ngFor="let part of emplacementParts">
+          <i
+            class="legend-color"
+            [style.background]="part.colorVar"
+          ></i>
+          {{ part.label }}
         </span>
       </div>
 
       <div class="pie-wrapper">
-        <div class="pie-chart">
-          <div class="pie-zone pie-zone--libre">
-            <div class="pie-tooltip">
-              <strong>Statut : LIBRE</strong>
-              <span>Valeur : 6</span>
-              <span>Pourcentage : 85.71%</span>
-            </div>
+        <div
+          class="pie-chart"
+          [style.background]="pieChartBackground"
+        >
+          <div class="pie-center">
+            <strong>{{ stats.totalEmplacements }}</strong>
+            <span>Total</span>
           </div>
 
-          <div class="pie-zone pie-zone--hs">
-            <div class="pie-tooltip">
-              <strong>Statut : HS</strong>
-              <span>Valeur : 1</span>
-              <span>Pourcentage : 14.29%</span>
-            </div>
-          </div>
-
-          <div class="pie-zone pie-zone--occupe">
-            <div class="pie-tooltip">
-              <strong>Statut : OCCUPÉ</strong>
-              <span>Valeur : 0</span>
-              <span>Pourcentage : 0%</span>
+          <div class="pie-tooltip-zone">
+            <div class="pie-tooltip static-tooltip">
+              <strong>État des emplacements</strong>
+              <span>LIBRE : {{ stats.freeEmplacements }} — {{ getPieTooltip('LIBRE') }}</span>
+              <span>OCCUPÉ : {{ stats.occupiedEmplacements }} — {{ getPieTooltip('OCCUPÉ') }}</span>
+              <span>HS : {{ stats.hsEmplacements }} — {{ getPieTooltip('HS') }}</span>
             </div>
           </div>
         </div>

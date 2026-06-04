@@ -80,6 +80,7 @@ export class ProfileComponent implements OnInit, OnDestroy {
   isLoadingProfile = false;
   isSavingProfile = false;
   isChangingPassword = false;
+  isSendingRecoveryEmail = false;
   isUploadingPhoto = false;
   isDeletingPhoto = false;
 
@@ -325,6 +326,40 @@ export class ProfileComponent implements OnInit, OnDestroy {
       newPassword: '',
       confirmPassword: ''
     };
+  }
+
+  sendRecoveryEmail(): void {
+    this.successMessage = '';
+    this.errorMessage = '';
+
+    const email = (this.profile?.email || this.authService.getEmail() || '').trim();
+
+    if (!email) {
+      this.errorMessage = 'Adresse email introuvable. Recharge le profil puis réessaie.';
+      this.cdr.detectChanges();
+      return;
+    }
+
+    this.isSendingRecoveryEmail = true;
+
+    this.authService.forgotPassword({ email }).subscribe({
+      next: (response) => {
+        this.isSendingRecoveryEmail = false;
+        this.showSuccess(
+          response?.message || 'Un mail de récupération a été envoyé à ton adresse email.'
+        );
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error(err);
+        this.isSendingRecoveryEmail = false;
+        this.errorMessage = this.getErrorMessage(
+          err,
+          'Erreur lors de l’envoi du mail de récupération.'
+        );
+        this.cdr.detectChanges();
+      }
+    });
   }
 
   openViewPhotoModal(): void {

@@ -222,7 +222,7 @@
       <div class="panel-header">
         <span class="section-kicker">Sécurité</span>
         <h1>Login & mot de passe</h1>
-        <p>Change ton mot de passe de connexion.</p>
+        <p>Change ton mot de passe de connexion ou demande un mail de récupération.</p>
       </div>
 
       <form class="profile-form security-form" (ngSubmit)="changePassword()">
@@ -279,6 +279,25 @@
           </button>
         </div>
       </form>
+
+      <div class="security-recovery-card">
+        <div class="security-recovery-text">
+          <span class="security-recovery-kicker">Récupération</span>
+          <h2>Mot de passe oublié ?</h2>
+          <p>
+            Reçois un mail de récupération sur ton adresse professionnelle pour créer un nouveau mot de passe.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          class="recovery-mail-btn"
+          (click)="sendRecoveryEmail()"
+          [disabled]="isSendingRecoveryEmail"
+        >
+          {{ isSendingRecoveryEmail ? 'Envoi en cours...' : 'Envoyer mail de récupération' }}
+        </button>
+      </div>
     </section>
   </main>
 </div>

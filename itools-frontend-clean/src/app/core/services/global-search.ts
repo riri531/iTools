@@ -30,13 +30,11 @@ export class GlobalSearchService {
 
     return this.http
       .get<GlobalSearchResult[]>(this.apiUrl, {
-        params: {
-          keyword: q
-        },
+        params: { keyword: q },
         headers: this.getAuthHeaders()
       })
       .pipe(
-        timeout(6000),
+        timeout(8000),
         map(results => Array.isArray(results) ? results : []),
         catchError(error => {
           console.error('Erreur recherche globale :', error);

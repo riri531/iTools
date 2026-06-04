@@ -483,6 +483,92 @@ button:disabled {
   box-shadow: none !important;
 }
 
+
+/* =========================================================
+   SÉCURITÉ - RÉCUPÉRATION MOT DE PASSE
+   ========================================================= */
+
+.security-recovery-card {
+  width: min(760px, 100%);
+  margin-top: 18px;
+  padding: 18px;
+  border-radius: 20px;
+  border: 1px solid rgba(224, 0, 52, 0.12);
+  background:
+    radial-gradient(circle at 10% 0%, rgba(224, 0, 52, 0.08), transparent 36%),
+    linear-gradient(135deg, #ffffff 0%, #fff8fa 100%);
+  box-shadow: 0 8px 18px rgba(64, 64, 64, 0.04);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.security-recovery-text {
+  min-width: 0;
+}
+
+.security-recovery-kicker {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: var(--all-blue-soft);
+  color: var(--all-blue);
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.security-recovery-text h2 {
+  margin: 0 0 6px;
+  color: var(--text-dark);
+  font-size: 1.45rem;
+  line-height: 1.05;
+  font-weight: 400 !important;
+}
+
+.security-recovery-text p {
+  max-width: 470px;
+  margin: 0;
+  color: var(--text-soft);
+  font-size: 13px;
+  line-height: 1.45;
+  font-weight: 700;
+}
+
+.recovery-mail-btn {
+  min-height: 42px;
+  flex: 0 0 auto;
+  padding: 12px 22px;
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  color: #ffffff;
+  background: linear-gradient(135deg, var(--tis-red) 0%, var(--tis-red-dark) 100%);
+  font-size: 13px;
+  font-weight: 900;
+  box-shadow: 0 10px 22px rgba(224, 0, 52, 0.16);
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    background 0.18s ease;
+}
+
+.recovery-mail-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 26px rgba(224, 0, 52, 0.20);
+}
+
+.recovery-mail-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
 /* =========================================================
    PHOTO MANAGEMENT
    ========================================================= */
@@ -1047,6 +1133,15 @@ button:disabled {
 }
 
 @media (max-width: 760px) {
+  .security-recovery-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .recovery-mail-btn {
+    width: 100%;
+  }
+
   .profile-panel,
   .profile-side-card {
     padding: 18px;
