@@ -330,11 +330,29 @@ public class OutilsController : ControllerBase
             .Include(o => o.Client)
             .Include(o => o.Fournisseur)
             .Include(o => o.Emplacement)
+                .ThenInclude(e => e!.Matiere)
+            .Include(o => o.Emplacement)
+                .ThenInclude(e => e!.Designation)
             .FirstOrDefaultAsync(o => o.Id == id);
 
         if (item == null)
         {
             return NotFound("Outil introuvable.");
+        }
+
+        var oldEmplacement = item.Emplacement;
+
+        if (oldEmplacement == null)
+        {
+            return BadRequest("L’outil n’a pas d’emplacement valide.");
+        }
+
+        var archiveDesignation = await _context.Designations
+            .FirstOrDefaultAsync(d => d.Name.Trim().ToLower() == "archivage");
+
+        if (archiveDesignation == null)
+        {
+            return BadRequest("La désignation 'archivage' est introuvable. Veuillez créer cette désignation avant d’archiver les outils.");
         }
 
         var oldValues = new
@@ -347,7 +365,9 @@ public class OutilsController : ControllerBase
             item.FournisseurId,
             FournisseurName = item.Fournisseur != null ? item.Fournisseur.NomFournisseur : "",
             item.EmplacementId,
-            EmplacementLabel = item.Emplacement != null ? (item.Emplacement.Armoire + " - " + item.Emplacement.Numero) : "",
+            EmplacementLabel = oldEmplacement.Armoire + " - " + oldEmplacement.Numero,
+            EmplacementStatus = oldEmplacement.Status,
+            DesignationName = oldEmplacement.Designation != null ? oldEmplacement.Designation.Name : "",
             item.OTT,
             item.CodeOutillage,
             item.Status,
@@ -359,30 +379,137 @@ public class OutilsController : ControllerBase
             item.UpdatedAt
         };
 
-        if (!string.IsNullOrWhiteSpace(item.ImageUrl))
+        var alreadyInArchive = oldEmplacement.DesignationId == archiveDesignation.Id;
+
+        if (alreadyInArchive)
         {
-            DeleteImageFile(item.ImageUrl);
+            oldEmplacement.Status = "OCCUPE";
+            oldEmplacement.UpdatedAt = DateTime.UtcNow;
+
+            item.Status = "HS";
+            item.JustificationHS = string.IsNullOrWhiteSpace(item.JustificationHS)
+                ? "Outil déjà présent dans la désignation archivage."
+                : item.JustificationHS;
+            item.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+
+            var alreadyArchivedValues = await ToDtoQuery(item.Id).FirstAsync();
+
+            await _archiveService.AddAsync(
+                action: "ARCHIVE_TOOL",
+                entityName: "Outil",
+                entityId: item.Id,
+                description: $"L’outil {item.CodeOutillage} est déjà dans la désignation archivage. Son statut est confirmé à HS.",
+                oldValues: oldValues,
+                newValues: alreadyArchivedValues
+            );
+
+            return Ok(new
+            {
+                message = "L’outil est déjà dans la désignation archivage. Son statut a été confirmé à HS."
+            });
         }
 
-        if (item.Emplacement != null)
+        var archiveNumero = $"OUTIL-{item.Id}";
+
+        var archiveEmplacement = await _context.Emplacements
+            .FirstOrDefaultAsync(e =>
+                e.DesignationId == archiveDesignation.Id &&
+                e.Armoire == "ARCHIVAGE" &&
+                e.Numero == archiveNumero
+            );
+
+        if (archiveEmplacement == null)
         {
-            item.Emplacement.Status = "LIBRE";
-            item.Emplacement.UpdatedAt = DateTime.UtcNow;
+            archiveEmplacement = new Emplacement
+            {
+                MatiereId = oldEmplacement.MatiereId,
+                Armoire = "ARCHIVAGE",
+                Numero = archiveNumero,
+                DesignationId = archiveDesignation.Id,
+                Status = "OCCUPE",
+                ImageUrl = oldEmplacement.ImageUrl,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = null
+            };
+
+            _context.Emplacements.Add(archiveEmplacement);
+            await _context.SaveChangesAsync();
+        }
+        else
+        {
+            var archiveAlreadyUsed = await _context.Outils.AnyAsync(o =>
+                o.EmplacementId == archiveEmplacement.Id &&
+                o.Id != item.Id
+            );
+
+            if (archiveAlreadyUsed)
+            {
+                return BadRequest("L’emplacement d’archivage de cet outil est déjà utilisé par un autre outil.");
+            }
+
+            archiveEmplacement.Status = "OCCUPE";
+            archiveEmplacement.UpdatedAt = DateTime.UtcNow;
         }
 
-        _context.Outils.Remove(item);
+        oldEmplacement.Status = "LIBRE";
+        oldEmplacement.UpdatedAt = DateTime.UtcNow;
+
+        item.EmplacementId = archiveEmplacement.Id;
+        item.Status = "HS";
+        item.JustificationHS = "Outil supprimé de sa désignation d’origine et déplacé vers la désignation archivage.";
+        item.UpdatedAt = DateTime.UtcNow;
+
         await _context.SaveChangesAsync();
 
+        var updatedItem = await _context.Outils
+            .Include(o => o.Ligne)
+            .Include(o => o.Client)
+            .Include(o => o.Fournisseur)
+            .Include(o => o.Emplacement)
+                .ThenInclude(e => e!.Matiere)
+            .Include(o => o.Emplacement)
+                .ThenInclude(e => e!.Designation)
+            .FirstAsync(o => o.Id == id);
+
+        var newValues = new
+        {
+            updatedItem.Id,
+            updatedItem.LigneId,
+            LigneName = updatedItem.Ligne != null ? updatedItem.Ligne.Nom : "",
+            updatedItem.ClientId,
+            ClientName = updatedItem.Client != null ? updatedItem.Client.NomClient : "",
+            updatedItem.FournisseurId,
+            FournisseurName = updatedItem.Fournisseur != null ? updatedItem.Fournisseur.NomFournisseur : "",
+            updatedItem.EmplacementId,
+            EmplacementLabel = updatedItem.Emplacement != null ? updatedItem.Emplacement.Armoire + " - " + updatedItem.Emplacement.Numero : "",
+            EmplacementStatus = updatedItem.Emplacement != null ? updatedItem.Emplacement.Status : "",
+            DesignationName = updatedItem.Emplacement?.Designation != null ? updatedItem.Emplacement.Designation.Name : "",
+            updatedItem.OTT,
+            updatedItem.CodeOutillage,
+            updatedItem.Status,
+            updatedItem.Valeur,
+            updatedItem.JustificationHS,
+            updatedItem.DateAffectation,
+            updatedItem.ImageUrl,
+            updatedItem.CreatedAt,
+            updatedItem.UpdatedAt
+        };
+
         await _archiveService.AddAsync(
-            action: "DELETE",
+            action: "ARCHIVE_TOOL",
             entityName: "Outil",
-            entityId: id,
-            description: $"Suppression de l’outil : {oldValues.CodeOutillage}. L’emplacement associé est repassé à LIBRE.",
+            entityId: item.Id,
+            description: $"Archivage de l’outil : {item.CodeOutillage}. L’outil est déplacé vers la désignation archivage avec le statut HS.",
             oldValues: oldValues,
-            newValues: null
+            newValues: newValues
         );
 
-        return NoContent();
+        return Ok(new
+        {
+            message = "L’outil a été déplacé vers la désignation archivage avec le statut HS."
+        });
     }
 
     [HttpGet("{id}/identity-card")]
