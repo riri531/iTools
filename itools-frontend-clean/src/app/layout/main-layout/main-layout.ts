@@ -10,11 +10,11 @@ import {
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import {
   Subject,
-  debounceTime,
-  distinctUntilChanged,
-  switchMap,
+  catchError,
+  finalize,
+  of,
   takeUntil,
-  of
+  timeout
 } from 'rxjs';
 import {
   GlobalSearchResult,
@@ -60,8 +60,8 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
   private authService = inject(AuthService);
   private globalSearchService = inject(GlobalSearchService);
 
-  private searchSubject = new Subject<string>();
   private destroy$ = new Subject<void>();
+  private searchRequestId = 0;
 
   private apiUrl = 'http://localhost:5160/api/Profile';
   private baseUrl = 'http://localhost:5160';
@@ -69,6 +69,7 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
   searchText = '';
   searchFocused = false;
   searchLoading = false;
+  searchHasBeenSubmitted = false;
   searchResults: GlobalSearchResult[] = [];
 
   userName = localStorage.getItem('fullName') || 'Rania Admin';
@@ -133,7 +134,17 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
       label: 'Emplacements',
       route: '/app/emplacements',
       icon: '/icons/emplacement.png',
-      keywords: ['emplacement', 'emplacements', 'libre', 'libres', 'occupé', 'occupe', 'hs', 'hors service', 'stockage'],
+      keywords: [
+        'emplacement',
+        'emplacements',
+        'libre',
+        'libres',
+        'occupé',
+        'occupe',
+        'hs',
+        'hors service',
+        'stockage'
+      ],
       roles: ['ADMIN', 'RESPONSABLE', 'EMPLOYE', 'EMPLOYÉ']
     },
     {
@@ -159,6 +170,22 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
     }
   ];
 
+  private profileUpdatedHandler = () => {
+    this.loadTopbarProfile();
+  };
+
+  ngOnInit(): void {
+    this.loadTopbarProfile();
+    window.addEventListener('profile-updated', this.profileUpdatedHandler);
+  }
+
+  ngOnDestroy(): void {
+    window.removeEventListener('profile-updated', this.profileUpdatedHandler);
+
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
   get navItems(): NavItem[] {
     const role = this.userRole.toUpperCase();
 
@@ -169,47 +196,6 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
 
       return item.roles.includes(role);
     });
-  }
-
-  private profileUpdatedHandler = () => {
-    this.loadTopbarProfile();
-  };
-
-  constructor() {
-    this.searchSubject
-      .pipe(
-        debounceTime(250),
-        distinctUntilChanged(),
-        switchMap(value => {
-          const keyword = value.trim();
-
-          if (!keyword) {
-            this.searchLoading = false;
-            return of([]);
-          }
-
-          this.searchLoading = true;
-          return this.globalSearchService.search(keyword);
-        }),
-        takeUntil(this.destroy$)
-      )
-      .subscribe({
-        next: backendResults => {
-          const pageResults = this.getPageResults(this.searchText);
-          this.searchResults = [...pageResults, ...backendResults];
-          this.searchLoading = false;
-        },
-        error: error => {
-          console.error(error);
-          this.searchResults = this.getPageResults(this.searchText);
-          this.searchLoading = false;
-        }
-      });
-  }
-
-  ngOnInit(): void {
-    this.loadTopbarProfile();
-    window.addEventListener('profile-updated', this.profileUpdatedHandler);
   }
 
   get initials(): string {
@@ -233,7 +219,11 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
   }
 
   get showSearchResults(): boolean {
-    return this.searchFocused && this.searchText.trim().length > 0;
+    return (
+      this.searchFocused &&
+      this.searchHasBeenSubmitted &&
+      this.searchText.trim().length > 0
+    );
   }
 
   getTopbarProfilePhotoUrl(): string {
@@ -264,10 +254,6 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
 
   onSearchFocus(): void {
     this.searchFocused = true;
-
-    if (this.searchText.trim()) {
-      this.searchSubject.next(this.searchText);
-    }
   }
 
   onSearchBlur(): void {
@@ -276,41 +262,91 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
     }, 180);
   }
 
-  onSearchChange(): void {
+  onSearchInput(): void {
+    this.searchHasBeenSubmitted = false;
+    this.searchLoading = false;
+    this.searchResults = [];
+    this.searchRequestId++;
+  }
+
+  submitSearch(): void {
     const keyword = this.searchText.trim();
 
+    this.searchFocused = true;
+    this.searchHasBeenSubmitted = true;
+
     if (!keyword) {
-      this.searchResults = [];
+      this.clearSearchResults();
+      return;
+    }
+
+    const currentRequestId = ++this.searchRequestId;
+
+    this.searchResults = [];
+    this.searchLoading = true;
+
+    this.globalSearchService.search(keyword)
+      .pipe(
+        timeout(6000),
+        catchError(error => {
+          console.error('Erreur recherche globale :', error);
+          return of([] as GlobalSearchResult[]);
+        }),
+        finalize(() => {
+          if (currentRequestId === this.searchRequestId) {
+            this.searchLoading = false;
+          }
+        }),
+        takeUntil(this.destroy$)
+      )
+      .subscribe({
+        next: backendResults => {
+          if (currentRequestId !== this.searchRequestId) {
+            return;
+          }
+
+          const pageResults = this.getPageResults(keyword);
+          const mergedResults = this.mergeSearchResults(backendResults, pageResults);
+          this.searchResults = mergedResults;
+
+          const bestResult = this.getBestSearchResult(keyword, mergedResults);
+
+          if (bestResult) {
+            this.goToResult(bestResult);
+            return;
+          }
+
+          this.searchLoading = false;
+        },
+        error: error => {
+          console.error('Erreur inattendue recherche globale :', error);
+
+          if (currentRequestId === this.searchRequestId) {
+            this.searchResults = this.getPageResults(keyword);
+            this.searchLoading = false;
+
+            const bestPageResult = this.getBestSearchResult(keyword, this.searchResults);
+
+            if (bestPageResult) {
+              this.goToResult(bestPageResult);
+            }
+          }
+        }
+      });
+  }
+
+  goToResult(result: GlobalSearchResult): void {
+    if (!result?.route) {
       this.searchLoading = false;
       return;
     }
 
-    this.searchLoading = true;
-    this.searchSubject.next(keyword);
-  }
-
-  submitSearch(): void {
-    const firstResult = this.searchResults[0];
-
-    if (firstResult) {
-      this.goToResult(firstResult);
-      return;
-    }
-
-    const keyword = this.searchText.trim();
-
-    if (keyword) {
-      this.router.navigate(['/app/dashboard'], {
-        queryParams: { q: keyword }
-      });
-    }
-  }
-
-  goToResult(result: GlobalSearchResult): void {
     this.searchText = '';
     this.searchFocused = false;
+    this.searchHasBeenSubmitted = false;
     this.searchResults = [];
     this.searchLoading = false;
+    this.searchRequestId++;
 
     this.router.navigateByUrl(result.route);
   }
@@ -328,19 +364,63 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
   }
 
   logout(): void {
-    localStorage.removeItem('token');
-    localStorage.removeItem('role');
-    localStorage.removeItem('fullName');
-    localStorage.removeItem('email');
-
+    this.authService.logout();
     this.router.navigate(['/login']);
   }
 
-  ngOnDestroy(): void {
-    window.removeEventListener('profile-updated', this.profileUpdatedHandler);
+  private clearSearchResults(): void {
+    this.searchResults = [];
+    this.searchLoading = false;
+    this.searchHasBeenSubmitted = false;
+    this.searchRequestId++;
+  }
 
-    this.destroy$.next();
-    this.destroy$.complete();
+  private mergeSearchResults(
+    primaryResults: GlobalSearchResult[],
+    secondaryResults: GlobalSearchResult[]
+  ): GlobalSearchResult[] {
+    const merged = [...primaryResults, ...secondaryResults];
+    const seen = new Set<string>();
+
+    return merged.filter(result => {
+      const key = `${result.route || ''}|${result.label || ''}|${result.type || ''}`;
+
+      if (seen.has(key)) {
+        return false;
+      }
+
+      seen.add(key);
+      return true;
+    });
+  }
+
+  private getBestSearchResult(
+    keyword: string,
+    results: GlobalSearchResult[]
+  ): GlobalSearchResult | null {
+    if (!results.length) {
+      return null;
+    }
+
+    const q = this.normalizeText(keyword);
+
+    const exactResult = results.find(result =>
+      this.normalizeText(result.label || '') === q
+    );
+
+    if (exactResult) {
+      return exactResult;
+    }
+
+    const startsWithResult = results.find(result =>
+      this.normalizeText(result.label || '').startsWith(q)
+    );
+
+    if (startsWithResult) {
+      return startsWithResult;
+    }
+
+    return results[0];
   }
 
   private getPageResults(keyword: string): GlobalSearchResult[] {

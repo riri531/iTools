@@ -63,15 +63,19 @@
           autocomplete="off"
           (focus)="onSearchFocus()"
           (blur)="onSearchBlur()"
-          (ngModelChange)="onSearchChange()"
+          (ngModelChange)="onSearchInput()"
         />
 
-        <button type="submit" aria-label="Rechercher">
+        <button
+          type="submit"
+          aria-label="Rechercher"
+          [disabled]="searchLoading"
+        >
           <img src="/icons/recherche.png" alt="Rechercher" />
         </button>
 
         <div class="search-results" *ngIf="showSearchResults">
-          <div class="search-empty" *ngIf="searchLoading">
+          <div class="search-empty" *ngIf="searchLoading && searchResults.length === 0">
             Recherche en cours...
           </div>
 
@@ -125,7 +129,10 @@
           aria-label="Profil"
           (click)="goToProfile()"
         >
-          <span class="avatar avatar-with-photo" *ngIf="getTopbarProfilePhotoUrl(); else initialsAvatar">
+          <span
+            class="avatar avatar-with-photo"
+            *ngIf="getTopbarProfilePhotoUrl(); else initialsAvatar"
+          >
             <img [src]="getTopbarProfilePhotoUrl()" alt="Photo de profil" />
           </span>
 
