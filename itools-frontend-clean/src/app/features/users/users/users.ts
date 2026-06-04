@@ -68,6 +68,8 @@ export class UsersComponent implements OnInit {
     removeImage: false
   };
 
+  passwordVisible = true;
+
   isEditMode = false;
   successMessage = '';
   errorMessage = '';
@@ -177,6 +179,12 @@ export class UsersComponent implements OnInit {
   openCreateModal(): void {
     this.resetForm();
     this.isEditMode = false;
+    this.passwordVisible = true;
+
+    if (!this.form.password) {
+      this.generatePassword();
+    }
+
     this.showModal = true;
     this.cdr.detectChanges();
   }
@@ -198,6 +206,7 @@ export class UsersComponent implements OnInit {
     };
 
     this.isEditMode = true;
+    this.passwordVisible = false;
     this.errorMessage = '';
     this.showModal = true;
     this.cdr.detectChanges();
@@ -206,6 +215,7 @@ export class UsersComponent implements OnInit {
   closeModal(): void {
     this.showModal = false;
     this.errorMessage = '';
+    this.passwordVisible = true;
     this.cdr.detectChanges();
   }
 
@@ -249,6 +259,83 @@ export class UsersComponent implements OnInit {
     this.form.profilePhotoUrl = '';
     this.form.removeImage = true;
     this.cdr.detectChanges();
+  }
+
+
+  generatePassword(): void {
+    this.form.password = this.generateStrongPassword();
+    this.passwordVisible = true;
+    this.errorMessage = '';
+    this.cdr.detectChanges();
+  }
+
+  togglePasswordVisibility(): void {
+    this.passwordVisible = !this.passwordVisible;
+    this.cdr.detectChanges();
+  }
+
+  getPasswordStrengthLabel(): string {
+    const score = this.getPasswordScore(this.form.password);
+
+    if (!this.form.password) {
+      return 'Non généré';
+    }
+
+    if (score >= 5) {
+      return 'Très fort';
+    }
+
+    if (score >= 4) {
+      return 'Fort';
+    }
+
+    if (score >= 3) {
+      return 'Moyen';
+    }
+
+    return 'Faible';
+  }
+
+  getPasswordStrengthClass(): string {
+    const score = this.getPasswordScore(this.form.password);
+
+    if (!this.form.password) {
+      return 'empty';
+    }
+
+    if (score >= 5) {
+      return 'very-strong';
+    }
+
+    if (score >= 4) {
+      return 'strong';
+    }
+
+    if (score >= 3) {
+      return 'medium';
+    }
+
+    return 'weak';
+  }
+
+  passwordHasMinLength(): boolean {
+    return this.form.password.length >= 12;
+  }
+
+  passwordHasUppercase(): boolean {
+    return /[A-Z]/.test(this.form.password);
+  }
+
+  passwordHasLowercase(): boolean {
+    return /[a-z]/.test(this.form.password);
+  }
+
+  passwordHasDigit(): boolean {
+    return /\d/.test(this.form.password);
+  }
+
+  passwordHasSpecial(): boolean {
+    return /[!@#$%^&*()_\-+=\[\]{};:,.?]/.test(this.form.password);
   }
 
   openImportModal(): void {
@@ -577,7 +664,7 @@ export class UsersComponent implements OnInit {
       id: 0,
       fullName: '',
       email: '',
-      password: '',
+      password: this.generateStrongPassword(),
       roleId: this.roles.length > 0 ? this.roles[0].id : 0,
       createdAt: this.getTodayForInput(),
       profilePhotoUrl: '',
@@ -587,6 +674,7 @@ export class UsersComponent implements OnInit {
     };
 
     this.isEditMode = false;
+    this.passwordVisible = true;
     this.errorMessage = '';
     this.cdr.detectChanges();
   }
@@ -605,7 +693,12 @@ export class UsersComponent implements OnInit {
     }
 
     if (!this.isEditMode && !this.form.password.trim()) {
-      this.showError('Le mot de passe est obligatoire.');
+      this.showError('Le mot de passe est obligatoire. Cliquez sur “Générer” pour créer un mot de passe sécurisé.');
+      return;
+    }
+
+    if (this.form.password.trim() && !this.isPasswordSecure(this.form.password.trim())) {
+      this.showError('Le mot de passe doit contenir au moins 12 caractères, une majuscule, une minuscule, un chiffre et un caractère spécial.');
       return;
     }
 
@@ -635,7 +728,7 @@ export class UsersComponent implements OnInit {
     } else {
       this.userService.createUser(formData).subscribe({
         next: () => {
-          this.showSuccess('Utilisateur ajouté avec succès.');
+          this.showSuccess('Utilisateur ajouté avec succès. Un email contenant le mot de passe temporaire a été envoyé.');
           this.closeModal();
 
           setTimeout(() => {
@@ -868,6 +961,78 @@ export class UsersComponent implements OnInit {
     }
 
     return date.toISOString().slice(0, 10);
+  }
+
+
+  private generateStrongPassword(): string {
+    const uppercase = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+    const lowercase = 'abcdefghijkmnopqrstuvwxyz';
+    const digits = '23456789';
+    const specials = '!@#$%^&*()-_=+?';
+    const all = uppercase + lowercase + digits + specials;
+
+    const passwordChars = [
+      this.pickRandomChar(uppercase),
+      this.pickRandomChar(lowercase),
+      this.pickRandomChar(digits),
+      this.pickRandomChar(specials)
+    ];
+
+    while (passwordChars.length < 14) {
+      passwordChars.push(this.pickRandomChar(all));
+    }
+
+    return this.shuffle(passwordChars).join('');
+  }
+
+  private pickRandomChar(source: string): string {
+    const index = Math.floor(Math.random() * source.length);
+    return source.charAt(index);
+  }
+
+  private shuffle(values: string[]): string[] {
+    return values
+      .map(value => ({ value, sort: Math.random() }))
+      .sort((a, b) => a.sort - b.sort)
+      .map(item => item.value);
+  }
+
+  private isPasswordSecure(password: string): boolean {
+    return password.length >= 12 &&
+      /[A-Z]/.test(password) &&
+      /[a-z]/.test(password) &&
+      /\d/.test(password) &&
+      /[!@#$%^&*()_\-+=\[\]{};:,.?]/.test(password);
+  }
+
+  private getPasswordScore(password: string): number {
+    if (!password) {
+      return 0;
+    }
+
+    let score = 0;
+
+    if (password.length >= 12) {
+      score++;
+    }
+
+    if (/[A-Z]/.test(password)) {
+      score++;
+    }
+
+    if (/[a-z]/.test(password)) {
+      score++;
+    }
+
+    if (/\d/.test(password)) {
+      score++;
+    }
+
+    if (/[!@#$%^&*()_\-+=\[\]{};:,.?]/.test(password)) {
+      score++;
+    }
+
+    return score;
   }
 
   private normalizeText(value: string | null | undefined): string {

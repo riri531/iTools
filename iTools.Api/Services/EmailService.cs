@@ -156,6 +156,88 @@ iTools - Gestion d’emplacement des outils
         await SendEmailAsync(message);
     }
 
+
+    public async Task SendNewUserCreatedEmailAsync(
+        string toEmail,
+        string fullName,
+        string loginEmail,
+        string temporaryPassword,
+        string roleName)
+    {
+        var message = new MimeMessage();
+
+        message.From.Add(new MailboxAddress(_settings.FromName, _settings.FromEmail));
+        message.To.Add(MailboxAddress.Parse(toEmail));
+        message.Subject = "Création de votre compte iTools";
+
+        var safeName = string.IsNullOrWhiteSpace(fullName) ? "Utilisateur" : fullName;
+        var safeRole = string.IsNullOrWhiteSpace(roleName) ? "Non renseigné" : roleName;
+
+        var bodyBuilder = new BodyBuilder
+        {
+            HtmlBody = $@"
+                <div style='font-family: Arial, sans-serif; line-height: 1.6; color: #222;'>
+                    <h2 style='color:#c1121f;'>Bienvenue sur iTools</h2>
+
+                    <p>Bonjour {safeName},</p>
+
+                    <p>
+                        Votre compte a été créé par l’administrateur sur l’application
+                        <strong>iTools</strong>.
+                    </p>
+
+                    <p>Voici vos informations de connexion :</p>
+
+                    <div style='padding:14px;
+                                border-radius:10px;
+                                background:#f3f4f6;
+                                border:1px solid #ddd;
+                                margin:16px 0;'>
+                        <p><strong>Email :</strong> {loginEmail}</p>
+                        <p><strong>Mot de passe temporaire :</strong> {temporaryPassword}</p>
+                        <p><strong>Rôle :</strong> {safeRole}</p>
+                    </div>
+
+                    <p>
+                        Ce mot de passe respecte les contraintes de sécurité :
+                        longueur minimale, majuscule, minuscule, chiffre et caractère spécial.
+                    </p>
+
+                    <p>
+                        Pour votre sécurité, veuillez vous connecter puis modifier votre mot de passe
+                        dès que possible.
+                    </p>
+
+                    <hr />
+
+                    <p style='font-size:12px;color:#666;'>
+                        iTools - Gestion d’emplacement des outils
+                    </p>
+                </div>",
+            TextBody = $@"
+Bonjour {safeName},
+
+Votre compte a été créé par l’administrateur sur l’application iTools.
+
+Voici vos informations de connexion :
+
+Email : {loginEmail}
+Mot de passe temporaire : {temporaryPassword}
+Rôle : {safeRole}
+
+Ce mot de passe respecte les contraintes de sécurité : longueur minimale, majuscule, minuscule, chiffre et caractère spécial.
+
+Pour votre sécurité, veuillez vous connecter puis modifier votre mot de passe dès que possible.
+
+iTools - Gestion d’emplacement des outils
+"
+        };
+
+        message.Body = bodyBuilder.ToMessageBody();
+
+        await SendEmailAsync(message);
+    }
+
     public async Task SendAccessRequestRejectedEmailAsync(
         string toEmail,
         string fullName,

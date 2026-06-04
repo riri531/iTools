@@ -474,21 +474,71 @@
           />
         </div>
 
-        <div class="form-group">
+        <div class="form-group password-generator-group">
           <label>
-            Mot de passe
+            Mot de passe temporaire
             <span class="hint" *ngIf="isEditMode">
               (laisser vide pour ne pas changer)
             </span>
           </label>
 
-          <input
-            class="form-control"
-            type="password"
-            name="password"
-            [(ngModel)]="form.password"
-            [required]="!isEditMode"
-          />
+          <div class="password-field-row">
+            <input
+              class="form-control password-control"
+              [type]="passwordVisible ? 'text' : 'password'"
+              name="password"
+              [(ngModel)]="form.password"
+              [required]="!isEditMode"
+              placeholder="Mot de passe sécurisé généré automatiquement"
+            />
+
+            <button
+              type="button"
+              class="password-icon-btn"
+              title="Afficher / masquer"
+              aria-label="Afficher ou masquer le mot de passe"
+              (click)="togglePasswordVisibility()"
+            >
+              {{ passwordVisible ? 'Masquer' : 'Voir' }}
+            </button>
+          </div>
+
+          <div class="password-actions-row">
+            <button
+              type="button"
+              class="password-generate-btn"
+              (click)="generatePassword()"
+            >
+              {{ form.password ? 'Régénérer mot de passe' : 'Générer mot de passe' }}
+            </button>
+
+            <span
+              class="password-strength"
+              [class.empty]="getPasswordStrengthClass() === 'empty'"
+              [class.weak]="getPasswordStrengthClass() === 'weak'"
+              [class.medium]="getPasswordStrengthClass() === 'medium'"
+              [class.strong]="getPasswordStrengthClass() === 'strong'"
+              [class.very-strong]="getPasswordStrengthClass() === 'very-strong'"
+            >
+              Sécurité : {{ getPasswordStrengthLabel() }}
+            </span>
+          </div>
+
+          <div class="password-rules">
+            <span [class.valid]="passwordHasMinLength()">12 caractères minimum</span>
+            <span [class.valid]="passwordHasUppercase()">1 majuscule</span>
+            <span [class.valid]="passwordHasLowercase()">1 minuscule</span>
+            <span [class.valid]="passwordHasDigit()">1 chiffre</span>
+            <span [class.valid]="passwordHasSpecial()">1 caractère spécial</span>
+          </div>
+
+          <small class="password-mail-hint" *ngIf="!isEditMode">
+            Après validation, ce mot de passe temporaire sera envoyé automatiquement par email au nouvel utilisateur.
+          </small>
+
+          <small class="password-mail-hint" *ngIf="isEditMode">
+            Si tu saisis ou régénères un mot de passe, il remplacera l’ancien mot de passe.
+          </small>
         </div>
 
         <div class="form-group">
@@ -645,6 +695,7 @@
         <strong>password</strong>,
         <strong>roleName</strong>,
         <strong>createdAt</strong>.
+        Les mots de passe importés doivent respecter les contraintes de sécurité.
       </div>
 
       <div class="form-actions">

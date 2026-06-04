@@ -49,7 +49,7 @@ export class AuthService {
         const storage = data.rememberMe ? localStorage : sessionStorage;
 
         storage.setItem('token', response.token);
-        storage.setItem('role', response.role);
+        storage.setItem('role', this.normalizeRole(response.role));
         storage.setItem('email', response.email);
         storage.setItem('fullName', response.fullName);
 
@@ -94,7 +94,12 @@ export class AuthService {
   }
 
   getRole(): string | null {
-    return localStorage.getItem('role') || sessionStorage.getItem('role');
+    const role =
+      localStorage.getItem('role') ||
+      sessionStorage.getItem('role') ||
+      '';
+
+    return this.normalizeRole(role);
   }
 
   getFullName(): string | null {
@@ -125,11 +130,45 @@ export class AuthService {
   }
 
   isEmploye(): boolean {
-    return this.getRole() === 'EMPLOYE';
+    return this.getRole() === 'EMPLOYE' || this.getRole() === 'EMPLOYÉ';
   }
 
   hasAnyRole(roles: string[]): boolean {
     const currentRole = this.getRole();
-    return !!currentRole && roles.includes(currentRole);
+
+    if (!currentRole) {
+      return false;
+    }
+
+    const normalizedRoles = roles.map(role => this.normalizeRole(role));
+
+    return normalizedRoles.includes(currentRole);
+  }
+
+  canManageData(): boolean {
+    const role = this.getRole();
+    return role === 'ADMIN' || role === 'RESPONSABLE';
+  }
+
+  canCreateReclamation(): boolean {
+    const role = this.getRole();
+
+    return role === 'EMPLOYE' ||
+      role === 'EMPLOYÉ' ||
+      role === 'RESPONSABLE';
+  }
+
+  canTreatReclamation(): boolean {
+    const role = this.getRole();
+
+    return role === 'ADMIN' ||
+      role === 'RESPONSABLE';
+  }
+
+  private normalizeRole(role: string | null | undefined): string {
+    return String(role || '')
+      .trim()
+      .toUpperCase()
+      .replace('É', 'E');
   }
 }

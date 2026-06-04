@@ -158,8 +158,17 @@ export class LignesComponent implements OnInit {
     return role === 'ADMIN' || role === 'RESPONSABLE';
   }
   canCreateReclamation(): boolean {
-    const role = String(this.authService.getRole() || localStorage.getItem('role') || '').toUpperCase();
-    return role === 'ADMIN' || role === 'RESPONSABLE';
+    const role = String(
+      this.authService.getRole() ||
+      localStorage.getItem('role') ||
+      sessionStorage.getItem('role') ||
+      ''
+    )
+      .trim()
+      .toUpperCase()
+      .replace('É', 'E');
+
+    return role === 'EMPLOYE' || role === 'RESPONSABLE';
   }
   canDownloadLigneCard(): boolean {
     const role = String(this.authService.getRole() || localStorage.getItem('role') || '').toUpperCase();
@@ -662,7 +671,7 @@ export class LignesComponent implements OnInit {
 
   openReclamationModal(item: LigneItem): void {
     if (!this.canCreateReclamation()) {
-      this.showError("Vous n'avez pas le droit de passer une réclamation.");
+      this.showError("Un administrateur ne peut pas passer de réclamation. Seuls les employés et les responsables peuvent créer une réclamation.");
       return;
     }
 
@@ -695,7 +704,7 @@ export class LignesComponent implements OnInit {
     this.reclamationSuccessMessage = '';
 
     if (!this.canCreateReclamation()) {
-      this.reclamationErrorMessage = "Vous n'avez pas le droit de passer une réclamation.";
+      this.reclamationErrorMessage = "Un administrateur ne peut pas passer de réclamation. Seuls les employés et les responsables peuvent créer une réclamation.";
       this.cdr.detectChanges();
       return;
     }

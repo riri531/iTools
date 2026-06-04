@@ -502,17 +502,12 @@ export class ReclamationsComponent implements OnInit {
   }
 
   canStart(item: ReclamationDto): boolean {
-    if (this.isClosed(item)) {
-      return false;
-    }
-
-    if (this.isCreator(item)) {
+    if (this.isClosed(item) || this.isCreator(item)) {
       return false;
     }
 
     if (this.isAdmin) {
-      return item.assignedToRole === 'ADMIN' &&
-        item.createdByUserRole === 'RESPONSABLE' &&
+      return this.isForAdminTreatment(item) &&
         (item.status === 'EN_ATTENTE' || item.status === 'ESCALADEE_ADMIN');
     }
 
@@ -530,30 +525,22 @@ export class ReclamationsComponent implements OnInit {
       return false;
     }
 
-    if (this.isClosed(item)) {
-      return false;
-    }
-
-    if (this.isCreator(item)) {
+    if (this.isClosed(item) || this.isCreator(item)) {
       return false;
     }
 
     return item.assignedToRole === 'RESPONSABLE' &&
-      item.createdByUserRole === 'EMPLOYE';
+      item.createdByUserRole === 'EMPLOYE' &&
+      (item.status === 'EN_ATTENTE' || item.status === 'EN_COURS');
   }
 
   canTreat(item: ReclamationDto): boolean {
-    if (this.isClosed(item)) {
-      return false;
-    }
-
-    if (this.isCreator(item)) {
+    if (this.isClosed(item) || this.isCreator(item)) {
       return false;
     }
 
     if (this.isAdmin) {
-      return item.assignedToRole === 'ADMIN' &&
-        item.createdByUserRole === 'RESPONSABLE';
+      return this.isForAdminTreatment(item);
     }
 
     if (this.isResponsable) {
@@ -565,7 +552,7 @@ export class ReclamationsComponent implements OnInit {
   }
 
   canDelete(item: ReclamationDto): boolean {
-    return this.isAdmin && item.assignedToRole === 'ADMIN';
+    return this.isAdmin && this.isForAdminTreatment(item);
   }
 
   canShowActions(item: ReclamationDto): boolean {
@@ -587,18 +574,18 @@ export class ReclamationsComponent implements OnInit {
 
   getRoleInfoText(): string {
     if (this.isAdmin) {
-      return 'Admin : vous traitez uniquement les réclamations transmises par les responsables.';
+      return 'Admin : vous traitez uniquement les réclamations créées par les responsables ou escaladées par eux.';
     }
 
     if (this.isResponsable) {
       if (this.responsableView === 'EMPLOYES') {
-        return 'Responsable : vous consultez les réclamations des employés à traiter.';
+        return 'Responsable : vous traitez les réclamations des employés et vous pouvez les escalader vers l’admin si nécessaire.';
       }
 
-      return 'Responsable : vous consultez vos propres réclamations envoyées aux admins pour suivi.';
+      return 'Responsable : vous suivez vos propres réclamations automatiquement transmises à l’admin.';
     }
 
-    return 'Employé : vous pouvez suivre l’état de vos réclamations.';
+    return 'Employé : vous pouvez envoyer des réclamations et suivre leur état de traitement.';
   }
 
   getListTitle(): string {
@@ -611,7 +598,7 @@ export class ReclamationsComponent implements OnInit {
     }
 
     if (this.isAdmin) {
-      return 'Réclamations des responsables à traiter';
+      return 'Réclamations transférées à l’admin';
     }
 
     return 'Mes réclamations';
@@ -756,6 +743,10 @@ export class ReclamationsComponent implements OnInit {
   }
 
   private matchesActiveTab(item: ReclamationDto): boolean {
+    if (this.isEmploye && !this.isCreator(item)) {
+      return false;
+    }
+
     if (this.isResponsable) {
       if (this.responsableView === 'EMPLOYES') {
         const isEmployeReclamation =
@@ -769,12 +760,18 @@ export class ReclamationsComponent implements OnInit {
       }
 
       if (this.responsableView === 'MINE') {
-        const isMyReclamation = this.isCreator(item);
+        const isMyReclamationSentToAdmin =
+          this.isCreator(item) &&
+          item.assignedToRole === 'ADMIN';
 
-        if (!isMyReclamation) {
+        if (!isMyReclamationSentToAdmin) {
           return false;
         }
       }
+    }
+
+    if (this.isAdmin && !this.isForAdminTreatment(item)) {
+      return false;
     }
 
     switch (this.activeTab) {
@@ -786,8 +783,7 @@ export class ReclamationsComponent implements OnInit {
 
       case 'ASSIGNED':
         if (this.isAdmin) {
-          return item.assignedToRole === 'ADMIN' &&
-            item.createdByUserRole === 'RESPONSABLE';
+          return this.isForAdminTreatment(item);
         }
 
         if (this.isResponsable) {
@@ -809,6 +805,23 @@ export class ReclamationsComponent implements OnInit {
       default:
         return true;
     }
+  }
+
+
+  private isForAdminTreatment(item: ReclamationDto): boolean {
+    return item.assignedToRole === 'ADMIN' &&
+      (
+        item.createdByUserRole === 'RESPONSABLE' ||
+        item.status === 'ESCALADEE_ADMIN' ||
+        this.hasEscalationHistory(item)
+      );
+  }
+
+  private hasEscalationHistory(item: ReclamationDto): boolean {
+    return !!item.histories?.some(history =>
+      history.action === 'ESCALATE_TO_ADMIN' ||
+      history.newStatus === 'ESCALADEE_ADMIN'
+    );
   }
 
   private loadReadState(): void {

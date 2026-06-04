@@ -15,20 +15,43 @@ public class ReclamationsController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
 
+    private const string RoleAdmin = "ADMIN";
+    private const string RoleResponsable = "RESPONSABLE";
+    private const string RoleEmploye = "EMPLOYE";
+
+    private const string StatusEnAttente = "EN_ATTENTE";
+    private const string StatusEnCours = "EN_COURS";
+    private const string StatusEscaladeeAdmin = "ESCALADEE_ADMIN";
+    private const string StatusTraitee = "TRAITEE";
+    private const string StatusRefusee = "REFUSEE";
+    private const string StatusCloturee = "CLOTUREE";
+
+    private const string ActionCreate = "CREATE";
+    private const string ActionStartTreatment = "START_TREATMENT";
+    private const string ActionEscalateToAdmin = "ESCALATE_TO_ADMIN";
+    private const string ActionTreat = "TREAT";
+    private const string ActionDelete = "DELETE";
+
     public ReclamationsController(ApplicationDbContext context)
     {
         _context = context;
     }
 
+    // =========================================================
+    // GET : réclamations visibles selon le rôle connecté
+    // =========================================================
+
     [HttpGet]
-    [Authorize(Roles = "ADMIN,RESPONSABLE,EMPLOYE")]
+    [Authorize(Roles = "ADMIN,RESPONSABLE,EMPLOYE,EMPLOYÉ")]
     public async Task<ActionResult<IEnumerable<ReclamationDto>>> GetAll()
     {
         var currentUserId = GetCurrentUserId();
         var currentRole = GetCurrentUserRole();
 
         if (currentUserId == null)
+        {
             return Unauthorized("Utilisateur non authentifié.");
+        }
 
         var query = _context.Reclamations
             .Include(r => r.CreatedByUser)
@@ -39,41 +62,72 @@ public class ReclamationsController : ControllerBase
                 .ThenInclude(h => h.ActionByUser)
             .AsQueryable();
 
-        if (currentRole == "ADMIN")
+        if (currentRole == RoleAdmin)
         {
+            // ADMIN :
+            // - ne voit pas les réclamations des employés encore chez le responsable.
+            // - voit uniquement les réclamations créées par les responsables
+            //   ou escaladées/transférées par un responsable.
             query = query.Where(r =>
-                r.AssignedToRole == "ADMIN");
+                r.AssignedToRole == RoleAdmin &&
+                (
+                    r.CreatedByUser!.Role!.Name == RoleResponsable ||
+                    r.Status == StatusEscaladeeAdmin ||
+                    r.Histories.Any(h =>
+                        h.Action == ActionEscalateToAdmin ||
+                        h.NewStatus == StatusEscaladeeAdmin
+                    )
+                )
+            );
         }
-        else if (currentRole == "RESPONSABLE")
+        else if (currentRole == RoleResponsable)
         {
+            // RESPONSABLE :
+            // - voit les réclamations des employés qui lui sont destinées.
+            // - voit ses propres réclamations envoyées à l’admin pour suivi.
             query = query.Where(r =>
-                r.AssignedToRole == "RESPONSABLE" ||
-                r.CreatedByUserId == currentUserId.Value);
+                (
+                    r.AssignedToRole == RoleResponsable &&
+                    r.CreatedByUser!.Role!.Name == RoleEmploye
+                )
+                ||
+                r.CreatedByUserId == currentUserId.Value
+            );
+        }
+        else if (currentRole == RoleEmploye)
+        {
+            // EMPLOYE :
+            // - voit seulement ses propres réclamations.
+            query = query.Where(r => r.CreatedByUserId == currentUserId.Value);
         }
         else
         {
-            query = query.Where(r =>
-                r.CreatedByUserId == currentUserId.Value);
+            return Forbid();
         }
 
-        var items = await query
+        var reclamations = await query
             .OrderByDescending(r => r.CreatedAt)
-            .Select(r => ToDto(r))
             .ToListAsync();
+
+        var items = reclamations
+            .Select(ToDto)
+            .ToList();
 
         return Ok(items);
     }
 
     [HttpGet("mine")]
-    [Authorize(Roles = "RESPONSABLE,EMPLOYE")]
+    [Authorize(Roles = "ADMIN,RESPONSABLE,EMPLOYE,EMPLOYÉ")]
     public async Task<ActionResult<IEnumerable<ReclamationDto>>> GetMine()
     {
         var currentUserId = GetCurrentUserId();
 
         if (currentUserId == null)
+        {
             return Unauthorized("Utilisateur non authentifié.");
+        }
 
-        var items = await _context.Reclamations
+        var reclamations = await _context.Reclamations
             .Include(r => r.CreatedByUser)
                 .ThenInclude(u => u!.Role)
             .Include(r => r.AssignedToUser)
@@ -82,50 +136,28 @@ public class ReclamationsController : ControllerBase
                 .ThenInclude(h => h.ActionByUser)
             .Where(r => r.CreatedByUserId == currentUserId.Value)
             .OrderByDescending(r => r.CreatedAt)
-            .Select(r => ToDto(r))
             .ToListAsync();
+
+        var items = reclamations
+            .Select(ToDto)
+            .ToList();
 
         return Ok(items);
     }
 
-    [HttpGet("assigned")]
-    [Authorize(Roles = "ADMIN,RESPONSABLE")]
-    public async Task<ActionResult<IEnumerable<ReclamationDto>>> GetAssignedToMeOrRole()
-    {
-        var currentUserId = GetCurrentUserId();
-        var currentRole = GetCurrentUserRole();
-
-        if (currentUserId == null)
-            return Unauthorized("Utilisateur non authentifié.");
-
-        var items = await _context.Reclamations
-            .Include(r => r.CreatedByUser)
-                .ThenInclude(u => u!.Role)
-            .Include(r => r.AssignedToUser)
-            .Include(r => r.TreatedByUser)
-            .Include(r => r.Histories)
-                .ThenInclude(h => h.ActionByUser)
-            .Where(r =>
-                r.AssignedToRole == currentRole ||
-                r.AssignedToUserId == currentUserId.Value)
-            .OrderByDescending(r => r.CreatedAt)
-            .Select(r => ToDto(r))
-            .ToListAsync();
-
-        return Ok(items);
-    }
-
-    [HttpGet("{id}")]
-    [Authorize(Roles = "ADMIN,RESPONSABLE,EMPLOYE")]
+    [HttpGet("{id:int}")]
+    [Authorize(Roles = "ADMIN,RESPONSABLE,EMPLOYE,EMPLOYÉ")]
     public async Task<ActionResult<ReclamationDto>> GetById(int id)
     {
         var currentUserId = GetCurrentUserId();
         var currentRole = GetCurrentUserRole();
 
         if (currentUserId == null)
+        {
             return Unauthorized("Utilisateur non authentifié.");
+        }
 
-        var item = await _context.Reclamations
+        var reclamation = await _context.Reclamations
             .Include(r => r.CreatedByUser)
                 .ThenInclude(u => u!.Role)
             .Include(r => r.AssignedToUser)
@@ -134,130 +166,195 @@ public class ReclamationsController : ControllerBase
                 .ThenInclude(h => h.ActionByUser)
             .FirstOrDefaultAsync(r => r.Id == id);
 
-        if (item == null)
+        if (reclamation == null)
+        {
             return NotFound("Réclamation introuvable.");
+        }
 
-        if (!CanAccessReclamation(item, currentUserId.Value, currentRole))
-            return Forbid();
+        if (!CanView(reclamation, currentUserId.Value, currentRole))
+        {
+            return Forbid("Vous n'avez pas le droit de consulter cette réclamation.");
+        }
 
-        return Ok(ToDto(item));
+        return Ok(ToDto(reclamation));
     }
 
+    // =========================================================
+    // POST : création réclamation
+    // =========================================================
+
     [HttpPost]
-    [Authorize(Roles = "RESPONSABLE,EMPLOYE")]
+    [Authorize(Roles = "RESPONSABLE,EMPLOYE,EMPLOYÉ")]
     public async Task<ActionResult<ReclamationDto>> Create(CreateReclamationDto dto)
     {
         var currentUserId = GetCurrentUserId();
+        var currentRole = GetCurrentUserRole();
 
         if (currentUserId == null)
+        {
             return Unauthorized("Utilisateur non authentifié.");
+        }
+
+        // RÈGLE MÉTIER PRINCIPALE :
+        // L’ADMIN ne crée jamais de réclamation.
+        // Il traite seulement les réclamations créées par les responsables
+        // ou escaladées/transférées par les responsables.
+        if (currentRole == RoleAdmin)
+        {
+            return Forbid("Un administrateur ne peut pas créer de réclamation. Il peut uniquement traiter les réclamations transférées par un responsable.");
+        }
+
+        if (currentRole != RoleEmploye && currentRole != RoleResponsable)
+        {
+            return Forbid("Vous n'avez pas le droit de créer une réclamation.");
+        }
 
         if (string.IsNullOrWhiteSpace(dto.Title))
+        {
             return BadRequest("Le titre de la réclamation est obligatoire.");
+        }
 
         if (string.IsNullOrWhiteSpace(dto.ProblemType))
+        {
             return BadRequest("Le type de problème est obligatoire.");
+        }
 
         if (string.IsNullOrWhiteSpace(dto.Description))
-            return BadRequest("La description est obligatoire.");
+        {
+            return BadRequest("La description du problème est obligatoire.");
+        }
 
         if (string.IsNullOrWhiteSpace(dto.SourcePage))
+        {
             return BadRequest("La page source est obligatoire.");
+        }
 
         if (string.IsNullOrWhiteSpace(dto.EntityName))
-            return BadRequest("L’entité concernée est obligatoire.");
+        {
+            return BadRequest("Le nom de l'entité concernée est obligatoire.");
+        }
 
         var creator = await _context.Users
             .Include(u => u.Role)
             .FirstOrDefaultAsync(u => u.Id == currentUserId.Value);
 
         if (creator == null)
-            return NotFound("Utilisateur introuvable.");
-
-        var creatorRole = creator.Role != null ? creator.Role.Name : "";
-
-        if (creatorRole == "ADMIN")
-            return Forbid();
-
-        var assignedRole = creatorRole switch
         {
-            "EMPLOYE" => "RESPONSABLE",
-            "RESPONSABLE" => "ADMIN",
-            _ => "RESPONSABLE"
-        };
+            return Unauthorized("Utilisateur introuvable.");
+        }
 
-        var item = new Reclamation
+        var creatorRole = NormalizeRole(creator.Role?.Name ?? currentRole);
+
+        string assignedToRole;
+
+        if (creatorRole == RoleEmploye)
+        {
+            // EMPLOYE -> RESPONSABLE
+            assignedToRole = RoleResponsable;
+        }
+        else if (creatorRole == RoleResponsable)
+        {
+            // RESPONSABLE -> ADMIN directement
+            assignedToRole = RoleAdmin;
+        }
+        else
+        {
+            return Forbid("Seuls les employés et les responsables peuvent créer une réclamation.");
+        }
+
+        var now = DateTime.Now;
+
+        var reclamation = new Reclamation
         {
             Title = dto.Title.Trim(),
             ProblemType = dto.ProblemType.Trim(),
             Description = dto.Description.Trim(),
-            ReclamationDate = dto.ReclamationDate ?? DateTime.Now,
+            ReclamationDate = dto.ReclamationDate ?? now,
             SourcePage = dto.SourcePage.Trim(),
             EntityName = dto.EntityName.Trim(),
             EntityId = dto.EntityId,
-            EntityLabel = dto.EntityLabel?.Trim() ?? "",
-            Status = "EN_ATTENTE",
-            Priority = string.IsNullOrWhiteSpace(dto.Priority) ? "NORMALE" : dto.Priority.Trim(),
-            AssignedToRole = assignedRole,
+            EntityLabel = dto.EntityLabel?.Trim() ?? string.Empty,
+            Status = StatusEnAttente,
+            Priority = NormalizePriority(dto.Priority),
+            AssignedToRole = assignedToRole,
+            AssignedToUserId = null,
             CreatedByUserId = creator.Id,
-            CreatedAt = DateTime.Now,
-            UpdatedAt = DateTime.Now
+            Decision = null,
+            Resolution = null,
+            TreatedAt = null,
+            TreatedByUserId = null,
+            CreatedAt = now,
+            UpdatedAt = now
         };
 
-        _context.Reclamations.Add(item);
+        _context.Reclamations.Add(reclamation);
         await _context.SaveChangesAsync();
 
-        await AddHistoryAsync(
-            item.Id,
+        await AddHistory(
+            reclamation.Id,
             creator.Id,
-            "CREATE",
-            "",
-            item.Status,
-            $"Création de la réclamation : {item.Title}"
+            ActionCreate,
+            string.Empty,
+            StatusEnAttente,
+            $"Réclamation créée par {creator.FullName} et envoyée à {assignedToRole}."
         );
 
-        await AddArchiveAsync(
-            creator,
-            action: "CREATE_RECLAMATION",
-            entityId: item.Id,
-            description: $"Création d’une réclamation : {item.Title}",
-            oldValues: null,
-            newValues: new
+        await AddArchive(
+            creator.Id,
+            creator.FullName,
+            creatorRole,
+            "Création réclamation",
+            "Reclamation",
+            reclamation.Id,
+            $"Création d'une réclamation : {reclamation.Title}. Destinataire : {assignedToRole}.",
+            null,
+            new
             {
-                item.Id,
-                item.Title,
-                item.ProblemType,
-                item.Description,
-                item.SourcePage,
-                item.EntityName,
-                item.EntityId,
-                item.EntityLabel,
-                item.Status,
-                item.Priority,
-                item.AssignedToRole
+                reclamation.Id,
+                reclamation.Title,
+                reclamation.ProblemType,
+                reclamation.SourcePage,
+                reclamation.EntityName,
+                reclamation.EntityId,
+                reclamation.EntityLabel,
+                reclamation.Priority,
+                reclamation.AssignedToRole
             }
         );
 
-        await NotifyRoleAsync(
-            assignedRole,
-            title: "Nouvelle réclamation",
-            message: $"{creator.FullName} a créé une réclamation : {item.Title}",
-            type: "RECLAMATION"
+        await NotifyUsersByRole(
+            assignedToRole,
+            "Nouvelle réclamation",
+            $"{creator.FullName} a envoyé une réclamation : {reclamation.Title}.",
+            "Reclamation"
         );
 
-        await NotifyUserAsync(
+        await NotifyUser(
             creator.Id,
-            title: "Réclamation envoyée",
-            message: $"Votre réclamation « {item.Title} » a été envoyée au rôle {assignedRole}.",
-            type: "RECLAMATION"
+            "Réclamation envoyée",
+            assignedToRole == RoleResponsable
+                ? "Votre réclamation a été envoyée au responsable pour traitement."
+                : "Votre réclamation a été envoyée à l'administrateur pour traitement.",
+            "Reclamation"
         );
 
-        var createdItem = await GetFullReclamation(item.Id);
+        await _context.SaveChangesAsync();
 
-        return CreatedAtAction(nameof(GetById), new { id = item.Id }, ToDto(createdItem!));
+        var created = await GetLoadedReclamation(reclamation.Id);
+
+        if (created == null)
+        {
+            return Ok();
+        }
+
+        return CreatedAtAction(nameof(GetById), new { id = created.Id }, ToDto(created));
     }
 
-    [HttpPut("{id}/start")]
+    // =========================================================
+    // PUT : commencer traitement
+    // =========================================================
+
+    [HttpPut("{id:int}/start")]
     [Authorize(Roles = "ADMIN,RESPONSABLE")]
     public async Task<IActionResult> StartTreatment(int id, StartReclamationDto dto)
     {
@@ -265,67 +362,81 @@ public class ReclamationsController : ControllerBase
         var currentRole = GetCurrentUserRole();
 
         if (currentUserId == null)
+        {
             return Unauthorized("Utilisateur non authentifié.");
+        }
 
-        var user = await GetCurrentUser();
+        var user = await _context.Users
+            .Include(u => u.Role)
+            .FirstOrDefaultAsync(u => u.Id == currentUserId.Value);
 
         if (user == null)
-            return NotFound("Utilisateur introuvable.");
+        {
+            return Unauthorized("Utilisateur introuvable.");
+        }
 
-        var item = await _context.Reclamations
-            .Include(r => r.CreatedByUser)
-                .ThenInclude(u => u!.Role)
-            .FirstOrDefaultAsync(r => r.Id == id);
+        var reclamation = await GetLoadedReclamation(id);
 
-        if (item == null)
+        if (reclamation == null)
+        {
             return NotFound("Réclamation introuvable.");
+        }
 
-        if (!CanTreatReclamation(item, currentUserId.Value, currentRole))
-            return Forbid();
+        if (!CanStartTreatment(reclamation, currentUserId.Value, currentRole))
+        {
+            return Forbid("Vous n'avez pas le droit de commencer le traitement de cette réclamation.");
+        }
 
-        var oldStatus = item.Status;
+        if (IsClosed(reclamation))
+        {
+            return BadRequest("Cette réclamation est déjà clôturée ou traitée.");
+        }
 
-        item.Status = "EN_COURS";
-        item.AssignedToUserId = currentUserId.Value;
-        item.UpdatedAt = DateTime.Now;
+        var oldStatus = reclamation.Status;
+        reclamation.Status = StatusEnCours;
+        reclamation.AssignedToUserId = user.Id;
+        reclamation.UpdatedAt = DateTime.Now;
 
-        await _context.SaveChangesAsync();
-
-        await AddHistoryAsync(
-            item.Id,
-            currentUserId.Value,
-            "START_TREATMENT",
+        await AddHistory(
+            reclamation.Id,
+            user.Id,
+            ActionStartTreatment,
             oldStatus,
-            item.Status,
+            reclamation.Status,
             string.IsNullOrWhiteSpace(dto.Comment)
-                ? "Traitement commencé."
+                ? $"Traitement commencé par {user.FullName}."
                 : dto.Comment.Trim()
         );
 
-        await AddArchiveAsync(
-            user,
-            action: "START_RECLAMATION",
-            entityId: item.Id,
-            description: $"Début de traitement de la réclamation : {item.Title}",
-            oldValues: new { Status = oldStatus },
-            newValues: new
-            {
-                item.Status,
-                item.AssignedToUserId
-            }
+        await AddArchive(
+            user.Id,
+            user.FullName,
+            currentRole,
+            "Début traitement réclamation",
+            "Reclamation",
+            reclamation.Id,
+            $"Début de traitement de la réclamation : {reclamation.Title}.",
+            new { oldStatus },
+            new { newStatus = reclamation.Status, assignedToUserId = user.Id }
         );
 
-        await NotifyUserAsync(
-            item.CreatedByUserId,
-            title: "Réclamation en cours",
-            message: $"Votre réclamation « {item.Title} » est en cours de traitement.",
-            type: "RECLAMATION"
+        await NotifyUser(
+            reclamation.CreatedByUserId,
+            "Réclamation en cours de traitement",
+            $"Votre réclamation \"{reclamation.Title}\" est maintenant en cours de traitement.",
+            "Reclamation"
         );
 
-        return NoContent();
+        await _context.SaveChangesAsync();
+
+        return Ok(new { message = "Traitement commencé avec succès." });
     }
 
-    [HttpPut("{id}/escalate")]
+    // =========================================================
+    // PUT : escalade vers admin
+    // =========================================================
+
+    [HttpPut("{id:int}/escalate")]
     [Authorize(Roles = "RESPONSABLE")]
     public async Task<IActionResult> EscalateToAdmin(int id, EscalateReclamationDto dto)
     {
@@ -333,79 +444,105 @@ public class ReclamationsController : ControllerBase
         var currentRole = GetCurrentUserRole();
 
         if (currentUserId == null)
+        {
             return Unauthorized("Utilisateur non authentifié.");
+        }
 
-        var user = await GetCurrentUser();
+        var user = await _context.Users
+            .Include(u => u.Role)
+            .FirstOrDefaultAsync(u => u.Id == currentUserId.Value);
 
         if (user == null)
-            return NotFound("Utilisateur introuvable.");
+        {
+            return Unauthorized("Utilisateur introuvable.");
+        }
 
-        var item = await _context.Reclamations
-            .Include(r => r.CreatedByUser)
-                .ThenInclude(u => u!.Role)
-            .FirstOrDefaultAsync(r => r.Id == id);
+        var reclamation = await GetLoadedReclamation(id);
 
-        if (item == null)
+        if (reclamation == null)
+        {
             return NotFound("Réclamation introuvable.");
+        }
 
-        if (!CanTreatReclamation(item, currentUserId.Value, currentRole))
-            return Forbid();
+        if (!CanEscalateToAdmin(reclamation, currentUserId.Value, currentRole))
+        {
+            return Forbid("Vous n'avez pas le droit de transférer cette réclamation à l'administrateur.");
+        }
+
+        if (IsClosed(reclamation))
+        {
+            return BadRequest("Cette réclamation est déjà clôturée ou traitée.");
+        }
 
         if (string.IsNullOrWhiteSpace(dto.Reason))
-            return BadRequest("La raison de l’escalade est obligatoire.");
+        {
+            return BadRequest("La raison du transfert vers l'administrateur est obligatoire.");
+        }
 
-        var oldStatus = item.Status;
+        var oldStatus = reclamation.Status;
+        var oldAssignedToRole = reclamation.AssignedToRole;
 
-        item.Status = "ESCALADEE_ADMIN";
-        item.AssignedToRole = "ADMIN";
-        item.AssignedToUserId = null;
-        item.Priority = string.IsNullOrWhiteSpace(dto.Priority) ? "HAUTE" : dto.Priority.Trim();
-        item.UpdatedAt = DateTime.Now;
+        reclamation.Status = StatusEscaladeeAdmin;
+        reclamation.AssignedToRole = RoleAdmin;
+        reclamation.AssignedToUserId = null;
+        reclamation.Priority = NormalizePriority(dto.Priority);
+        reclamation.UpdatedAt = DateTime.Now;
 
-        await _context.SaveChangesAsync();
-
-        await AddHistoryAsync(
-            item.Id,
-            currentUserId.Value,
-            "ESCALATE_TO_ADMIN",
+        await AddHistory(
+            reclamation.Id,
+            user.Id,
+            ActionEscalateToAdmin,
             oldStatus,
-            item.Status,
+            reclamation.Status,
             dto.Reason.Trim()
         );
 
-        await AddArchiveAsync(
-            user,
-            action: "ESCALATE_RECLAMATION",
-            entityId: item.Id,
-            description: $"Réclamation escaladée vers ADMIN : {item.Title}",
-            oldValues: new { Status = oldStatus },
-            newValues: new
+        await AddArchive(
+            user.Id,
+            user.FullName,
+            currentRole,
+            "Transfert réclamation à l'admin",
+            "Reclamation",
+            reclamation.Id,
+            $"Réclamation transférée à l'administrateur : {reclamation.Title}.",
+            new
             {
-                item.Status,
-                item.AssignedToRole,
-                item.Priority,
-                Reason = dto.Reason
+                oldStatus,
+                oldAssignedToRole
+            },
+            new
+            {
+                newStatus = reclamation.Status,
+                newAssignedToRole = reclamation.AssignedToRole,
+                priority = reclamation.Priority,
+                reason = dto.Reason.Trim()
             }
         );
 
-        await NotifyRoleAsync(
-            "ADMIN",
-            title: "Réclamation escaladée",
-            message: $"Une réclamation a été escaladée vers les admins : {item.Title}",
-            type: "RECLAMATION"
+        await NotifyUsersByRole(
+            RoleAdmin,
+            "Réclamation transférée",
+            $"Le responsable {user.FullName} a transféré une réclamation à l'admin : {reclamation.Title}.",
+            "Reclamation"
         );
 
-        await NotifyUserAsync(
-            item.CreatedByUserId,
-            title: "Réclamation escaladée",
-            message: $"Votre réclamation « {item.Title} » a été transmise aux admins.",
-            type: "RECLAMATION"
+        await NotifyUser(
+            reclamation.CreatedByUserId,
+            "Réclamation transférée à l'admin",
+            $"Votre réclamation \"{reclamation.Title}\" a été transférée à l'administrateur.",
+            "Reclamation"
         );
 
-        return NoContent();
+        await _context.SaveChangesAsync();
+
+        return Ok(new { message = "Réclamation transférée à l'administrateur avec succès." });
     }
 
-    [HttpPut("{id}/treat")]
+    // =========================================================
+    // PUT : traitement / décision
+    // =========================================================
+
+    [HttpPut("{id:int}/treat")]
     [Authorize(Roles = "ADMIN,RESPONSABLE")]
     public async Task<IActionResult> Treat(int id, TreatReclamationDto dto)
     {
@@ -413,132 +550,278 @@ public class ReclamationsController : ControllerBase
         var currentRole = GetCurrentUserRole();
 
         if (currentUserId == null)
+        {
             return Unauthorized("Utilisateur non authentifié.");
+        }
 
-        var user = await GetCurrentUser();
+        var user = await _context.Users
+            .Include(u => u.Role)
+            .FirstOrDefaultAsync(u => u.Id == currentUserId.Value);
 
         if (user == null)
-            return NotFound("Utilisateur introuvable.");
+        {
+            return Unauthorized("Utilisateur introuvable.");
+        }
 
-        var item = await _context.Reclamations
-            .Include(r => r.CreatedByUser)
-                .ThenInclude(u => u!.Role)
-            .FirstOrDefaultAsync(r => r.Id == id);
+        var reclamation = await GetLoadedReclamation(id);
 
-        if (item == null)
+        if (reclamation == null)
+        {
             return NotFound("Réclamation introuvable.");
+        }
 
-        if (!CanTreatReclamation(item, currentUserId.Value, currentRole))
-            return Forbid();
+        if (!CanTreat(reclamation, currentUserId.Value, currentRole))
+        {
+            return Forbid("Vous n'avez pas le droit de traiter cette réclamation.");
+        }
+
+        if (IsClosed(reclamation))
+        {
+            return BadRequest("Cette réclamation est déjà clôturée ou traitée.");
+        }
 
         if (string.IsNullOrWhiteSpace(dto.Decision))
+        {
             return BadRequest("La décision est obligatoire.");
+        }
 
         if (string.IsNullOrWhiteSpace(dto.Resolution))
-            return BadRequest("La résolution ou l’opération effectuée est obligatoire.");
+        {
+            return BadRequest("La résolution est obligatoire.");
+        }
 
-        var allowedStatuses = new[] { "TRAITEE", "REFUSEE", "CLOTUREE" };
-        var newStatus = string.IsNullOrWhiteSpace(dto.Status)
-            ? "TRAITEE"
-            : dto.Status.Trim();
+        var newStatus = NormalizeTreatmentStatus(dto.Status);
 
-        if (!allowedStatuses.Contains(newStatus))
-            return BadRequest("Statut invalide. Valeurs acceptées : TRAITEE, REFUSEE, CLOTUREE.");
+        var oldStatus = reclamation.Status;
 
-        var oldStatus = item.Status;
+        reclamation.Status = newStatus;
+        reclamation.Decision = dto.Decision.Trim();
+        reclamation.Resolution = dto.Resolution.Trim();
+        reclamation.TreatedAt = DateTime.Now;
+        reclamation.TreatedByUserId = user.Id;
+        reclamation.AssignedToUserId = user.Id;
+        reclamation.UpdatedAt = DateTime.Now;
 
-        item.Status = newStatus;
-        item.Decision = dto.Decision.Trim();
-        item.Resolution = dto.Resolution.Trim();
-        item.TreatedByUserId = currentUserId.Value;
-        item.TreatedAt = DateTime.Now;
-        item.UpdatedAt = DateTime.Now;
-
-        await _context.SaveChangesAsync();
-
-        await AddHistoryAsync(
-            item.Id,
-            currentUserId.Value,
-            "TREAT",
+        await AddHistory(
+            reclamation.Id,
+            user.Id,
+            ActionTreat,
             oldStatus,
-            item.Status,
-            $"Décision : {item.Decision}. Résolution : {item.Resolution}"
+            reclamation.Status,
+            $"Décision : {reclamation.Decision}. Résolution : {reclamation.Resolution}"
         );
 
-        await AddArchiveAsync(
-            user,
-            action: "TREAT_RECLAMATION",
-            entityId: item.Id,
-            description: $"Traitement de la réclamation : {item.Title}",
-            oldValues: new { Status = oldStatus },
-            newValues: new
+        await AddArchive(
+            user.Id,
+            user.FullName,
+            currentRole,
+            "Traitement réclamation",
+            "Reclamation",
+            reclamation.Id,
+            $"Traitement de la réclamation : {reclamation.Title}. Statut : {reclamation.Status}.",
+            new { oldStatus },
+            new
             {
-                item.Status,
-                item.Decision,
-                item.Resolution,
-                item.TreatedByUserId,
-                item.TreatedAt
+                newStatus = reclamation.Status,
+                reclamation.Decision,
+                reclamation.Resolution,
+                treatedByUserId = user.Id
             }
         );
 
-        await NotifyUserAsync(
-            item.CreatedByUserId,
-            title: "Réclamation traitée",
-            message: $"Votre réclamation « {item.Title} » a été traitée. Décision : {item.Decision}",
-            type: "RECLAMATION"
+        await NotifyUser(
+            reclamation.CreatedByUserId,
+            "Réclamation traitée",
+            $"Votre réclamation \"{reclamation.Title}\" a été traitée. Décision : {reclamation.Decision}.",
+            "Reclamation"
         );
 
-        return NoContent();
+        await _context.SaveChangesAsync();
+
+        return Ok(new { message = "Réclamation traitée avec succès." });
     }
 
-    [HttpDelete("{id}")]
+    // =========================================================
+    // DELETE
+    // =========================================================
+
+    [HttpDelete("{id:int}")]
     [Authorize(Roles = "ADMIN")]
     public async Task<IActionResult> Delete(int id)
     {
-        var currentUser = await GetCurrentUser();
+        var currentUserId = GetCurrentUserId();
+        var currentRole = GetCurrentUserRole();
 
-        if (currentUser == null)
-            return Unauthorized("Utilisateur non authentifié.");
-
-        var item = await _context.Reclamations
-            .Include(r => r.Histories)
-            .FirstOrDefaultAsync(r => r.Id == id);
-
-        if (item == null)
-            return NotFound("Réclamation introuvable.");
-
-        var oldValues = new
+        if (currentUserId == null)
         {
-            item.Id,
-            item.Title,
-            item.ProblemType,
-            item.Description,
-            item.SourcePage,
-            item.EntityName,
-            item.EntityId,
-            item.EntityLabel,
-            item.Status,
-            item.Priority,
-            item.AssignedToRole,
-            item.CreatedByUserId
-        };
+            return Unauthorized("Utilisateur non authentifié.");
+        }
 
-        _context.Reclamations.Remove(item);
-        await _context.SaveChangesAsync();
+        var user = await _context.Users
+            .Include(u => u.Role)
+            .FirstOrDefaultAsync(u => u.Id == currentUserId.Value);
 
-        await AddArchiveAsync(
-            currentUser,
-            action: "DELETE_RECLAMATION",
-            entityId: id,
-            description: $"Suppression de la réclamation : {oldValues.Title}",
-            oldValues: oldValues,
-            newValues: null
+        if (user == null)
+        {
+            return Unauthorized("Utilisateur introuvable.");
+        }
+
+        var reclamation = await GetLoadedReclamation(id);
+
+        if (reclamation == null)
+        {
+            return NotFound("Réclamation introuvable.");
+        }
+
+        // L'admin peut supprimer seulement les réclamations qui relèvent de son circuit.
+        if (!IsForAdminTreatment(reclamation))
+        {
+            return Forbid("Vous ne pouvez supprimer que les réclamations transférées à l'administrateur.");
+        }
+
+        await AddArchive(
+            user.Id,
+            user.FullName,
+            currentRole,
+            "Suppression réclamation",
+            "Reclamation",
+            reclamation.Id,
+            $"Suppression de la réclamation : {reclamation.Title}.",
+            new
+            {
+                reclamation.Id,
+                reclamation.Title,
+                reclamation.Status,
+                reclamation.AssignedToRole,
+                CreatedBy = reclamation.CreatedByUser?.FullName
+            },
+            null
         );
 
-        return NoContent();
+        _context.Reclamations.Remove(reclamation);
+        await _context.SaveChangesAsync();
+
+        return Ok(new { message = "Réclamation supprimée avec succès." });
     }
 
-    private async Task<Reclamation?> GetFullReclamation(int id)
+    // =========================================================
+    // DROITS MÉTIER
+    // =========================================================
+
+    private bool CanView(Reclamation reclamation, int currentUserId, string currentRole)
+    {
+        if (currentRole == RoleEmploye)
+        {
+            return reclamation.CreatedByUserId == currentUserId;
+        }
+
+        if (currentRole == RoleResponsable)
+        {
+            return
+                (
+                    reclamation.AssignedToRole == RoleResponsable &&
+                    GetCreatorRole(reclamation) == RoleEmploye
+                )
+                ||
+                reclamation.CreatedByUserId == currentUserId;
+        }
+
+        if (currentRole == RoleAdmin)
+        {
+            return IsForAdminTreatment(reclamation);
+        }
+
+        return false;
+    }
+
+    private bool CanStartTreatment(Reclamation reclamation, int currentUserId, string currentRole)
+    {
+        if (reclamation.CreatedByUserId == currentUserId)
+        {
+            return false;
+        }
+
+        if (currentRole == RoleResponsable)
+        {
+            return reclamation.AssignedToRole == RoleResponsable &&
+                   GetCreatorRole(reclamation) == RoleEmploye &&
+                   reclamation.Status == StatusEnAttente;
+        }
+
+        if (currentRole == RoleAdmin)
+        {
+            return IsForAdminTreatment(reclamation) &&
+                   (reclamation.Status == StatusEnAttente ||
+                    reclamation.Status == StatusEscaladeeAdmin);
+        }
+
+        return false;
+    }
+
+    private bool CanEscalateToAdmin(Reclamation reclamation, int currentUserId, string currentRole)
+    {
+        if (currentRole != RoleResponsable)
+        {
+            return false;
+        }
+
+        if (reclamation.CreatedByUserId == currentUserId)
+        {
+            return false;
+        }
+
+        return reclamation.AssignedToRole == RoleResponsable &&
+               GetCreatorRole(reclamation) == RoleEmploye &&
+               (reclamation.Status == StatusEnAttente ||
+                reclamation.Status == StatusEnCours);
+    }
+
+    private bool CanTreat(Reclamation reclamation, int currentUserId, string currentRole)
+    {
+        if (reclamation.CreatedByUserId == currentUserId)
+        {
+            return false;
+        }
+
+        if (currentRole == RoleResponsable)
+        {
+            return reclamation.AssignedToRole == RoleResponsable &&
+                   GetCreatorRole(reclamation) == RoleEmploye;
+        }
+
+        if (currentRole == RoleAdmin)
+        {
+            return IsForAdminTreatment(reclamation);
+        }
+
+        return false;
+    }
+
+    private bool IsForAdminTreatment(Reclamation reclamation)
+    {
+        return reclamation.AssignedToRole == RoleAdmin &&
+               (
+                   GetCreatorRole(reclamation) == RoleResponsable ||
+                   reclamation.Status == StatusEscaladeeAdmin ||
+                   reclamation.Histories.Any(h =>
+                       h.Action == ActionEscalateToAdmin ||
+                       h.NewStatus == StatusEscaladeeAdmin
+                   )
+               );
+    }
+
+    private bool IsClosed(Reclamation reclamation)
+    {
+        return reclamation.Status == StatusTraitee ||
+               reclamation.Status == StatusRefusee ||
+               reclamation.Status == StatusCloturee;
+    }
+
+    // =========================================================
+    // HELPERS
+    // =========================================================
+
+    private async Task<Reclamation?> GetLoadedReclamation(int id)
     {
         return await _context.Reclamations
             .Include(r => r.CreatedByUser)
@@ -550,84 +833,7 @@ public class ReclamationsController : ControllerBase
             .FirstOrDefaultAsync(r => r.Id == id);
     }
 
-    private static ReclamationDto ToDto(Reclamation r)
-    {
-        return new ReclamationDto
-        {
-            Id = r.Id,
-            Title = r.Title,
-            ProblemType = r.ProblemType,
-            Description = r.Description,
-            ReclamationDate = r.ReclamationDate,
-            SourcePage = r.SourcePage,
-            EntityName = r.EntityName,
-            EntityId = r.EntityId,
-            EntityLabel = r.EntityLabel,
-            Status = r.Status,
-            Priority = r.Priority,
-            AssignedToRole = r.AssignedToRole,
-            AssignedToUserId = r.AssignedToUserId,
-            AssignedToUserName = r.AssignedToUser != null ? r.AssignedToUser.FullName : "",
-            CreatedByUserId = r.CreatedByUserId,
-            CreatedByUserName = r.CreatedByUser != null ? r.CreatedByUser.FullName : "",
-            CreatedByUserRole = r.CreatedByUser?.Role != null ? r.CreatedByUser.Role.Name : "",
-            Decision = r.Decision,
-            Resolution = r.Resolution,
-            TreatedAt = r.TreatedAt,
-            TreatedByUserId = r.TreatedByUserId,
-            TreatedByUserName = r.TreatedByUser != null ? r.TreatedByUser.FullName : "",
-            CreatedAt = r.CreatedAt,
-            UpdatedAt = r.UpdatedAt,
-            Histories = r.Histories
-                .OrderByDescending(h => h.CreatedAt)
-                .Select(h => new ReclamationHistoryDto
-                {
-                    Id = h.Id,
-                    ReclamationId = h.ReclamationId,
-                    ActionByUserId = h.ActionByUserId,
-                    ActionByUserName = h.ActionByUser != null ? h.ActionByUser.FullName : "",
-                    Action = h.Action,
-                    OldStatus = h.OldStatus,
-                    NewStatus = h.NewStatus,
-                    Comment = h.Comment,
-                    CreatedAt = h.CreatedAt
-                })
-                .ToList()
-        };
-    }
-
-    private bool CanAccessReclamation(Reclamation item, int userId, string role)
-    {
-        if (item.CreatedByUserId == userId && role != "ADMIN")
-            return true;
-
-        if (role == "ADMIN")
-            return item.AssignedToRole == "ADMIN";
-
-        if (role == "RESPONSABLE")
-            return item.AssignedToRole == "RESPONSABLE";
-
-        return false;
-    }
-
-    private bool CanTreatReclamation(Reclamation item, int userId, string role)
-    {
-        if (item.Status == "TRAITEE" || item.Status == "REFUSEE" || item.Status == "CLOTUREE")
-            return false;
-
-        if (item.CreatedByUserId == userId)
-            return false;
-
-        if (role == "ADMIN")
-            return item.AssignedToRole == "ADMIN";
-
-        if (role == "RESPONSABLE")
-            return item.AssignedToRole == "RESPONSABLE";
-
-        return false;
-    }
-
-    private async Task AddHistoryAsync(
+    private async Task AddHistory(
         int reclamationId,
         int actionByUserId,
         string action,
@@ -640,19 +846,23 @@ public class ReclamationsController : ControllerBase
             ReclamationId = reclamationId,
             ActionByUserId = actionByUserId,
             Action = action,
-            OldStatus = oldStatus,
-            NewStatus = newStatus,
-            Comment = comment,
+            OldStatus = oldStatus ?? string.Empty,
+            NewStatus = newStatus ?? string.Empty,
+            Comment = comment ?? string.Empty,
             CreatedAt = DateTime.Now
         };
 
         _context.ReclamationHistories.Add(history);
-        await _context.SaveChangesAsync();
+
+        await Task.CompletedTask;
     }
 
-    private async Task AddArchiveAsync(
-        User user,
+    private async Task AddArchive(
+        int userId,
+        string userName,
+        string role,
         string action,
+        string entityName,
         int? entityId,
         string description,
         object? oldValues,
@@ -660,11 +870,11 @@ public class ReclamationsController : ControllerBase
     {
         var archive = new ArchiveLog
         {
-            UserId = user.Id,
-            UserName = user.FullName,
-            Role = user.Role != null ? user.Role.Name : GetCurrentUserRole(),
+            UserId = userId,
+            UserName = userName,
+            Role = role,
             Action = action,
-            EntityName = "Reclamation",
+            EntityName = entityName,
             EntityId = entityId,
             Description = description,
             OldValues = oldValues == null ? null : System.Text.Json.JsonSerializer.Serialize(oldValues),
@@ -673,30 +883,17 @@ public class ReclamationsController : ControllerBase
         };
 
         _context.ArchiveLogs.Add(archive);
-        await _context.SaveChangesAsync();
+
+        await Task.CompletedTask;
     }
 
-    private async Task NotifyUserAsync(int userId, string title, string message, string type)
+    private async Task NotifyUsersByRole(string roleName, string title, string message, string type)
     {
-        var notification = new UserNotification
-        {
-            UserId = userId,
-            Title = title,
-            Message = message,
-            Type = type,
-            IsRead = false,
-            CreatedAt = DateTime.Now
-        };
+        var normalizedRole = NormalizeRole(roleName);
 
-        _context.UserNotifications.Add(notification);
-        await _context.SaveChangesAsync();
-    }
-
-    private async Task NotifyRoleAsync(string roleName, string title, string message, string type)
-    {
         var users = await _context.Users
             .Include(u => u.Role)
-            .Where(u => u.Role != null && u.Role.Name == roleName)
+            .Where(u => u.Role != null && u.Role.Name == normalizedRole)
             .ToListAsync();
 
         foreach (var user in users)
@@ -711,34 +908,132 @@ public class ReclamationsController : ControllerBase
                 CreatedAt = DateTime.Now
             });
         }
-
-        await _context.SaveChangesAsync();
     }
 
-    private async Task<User?> GetCurrentUser()
+    private async Task NotifyUser(int userId, string title, string message, string type)
     {
-        var userId = GetCurrentUserId();
+        var exists = await _context.Users.AnyAsync(u => u.Id == userId);
 
-        if (userId == null)
-            return null;
+        if (!exists)
+        {
+            return;
+        }
 
-        return await _context.Users
-            .Include(u => u.Role)
-            .FirstOrDefaultAsync(u => u.Id == userId.Value);
+        _context.UserNotifications.Add(new UserNotification
+        {
+            UserId = userId,
+            Title = title,
+            Message = message,
+            Type = type,
+            IsRead = false,
+            CreatedAt = DateTime.Now
+        });
+    }
+
+    private ReclamationDto ToDto(Reclamation reclamation)
+    {
+        return new ReclamationDto
+        {
+            Id = reclamation.Id,
+            Title = reclamation.Title,
+            ProblemType = reclamation.ProblemType,
+            Description = reclamation.Description,
+            ReclamationDate = reclamation.ReclamationDate,
+            SourcePage = reclamation.SourcePage,
+            EntityName = reclamation.EntityName,
+            EntityId = reclamation.EntityId,
+            EntityLabel = reclamation.EntityLabel,
+            Status = reclamation.Status,
+            Priority = reclamation.Priority,
+            AssignedToRole = reclamation.AssignedToRole,
+            AssignedToUserId = reclamation.AssignedToUserId,
+            AssignedToUserName = reclamation.AssignedToUser?.FullName ?? string.Empty,
+            CreatedByUserId = reclamation.CreatedByUserId,
+            CreatedByUserName = reclamation.CreatedByUser?.FullName ?? string.Empty,
+            CreatedByUserRole = GetCreatorRole(reclamation),
+            Decision = reclamation.Decision,
+            Resolution = reclamation.Resolution,
+            TreatedAt = reclamation.TreatedAt,
+            TreatedByUserId = reclamation.TreatedByUserId,
+            TreatedByUserName = reclamation.TreatedByUser?.FullName ?? string.Empty,
+            CreatedAt = reclamation.CreatedAt,
+            UpdatedAt = reclamation.UpdatedAt,
+            Histories = reclamation.Histories
+                .OrderByDescending(h => h.CreatedAt)
+                .Select(h => new ReclamationHistoryDto
+                {
+                    Id = h.Id,
+                    ReclamationId = h.ReclamationId,
+                    ActionByUserId = h.ActionByUserId,
+                    ActionByUserName = h.ActionByUser?.FullName ?? string.Empty,
+                    Action = h.Action,
+                    OldStatus = h.OldStatus,
+                    NewStatus = h.NewStatus,
+                    Comment = h.Comment,
+                    CreatedAt = h.CreatedAt
+                })
+                .ToList()
+        };
     }
 
     private int? GetCurrentUserId()
     {
-        var userIdValue = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var idClaim =
+            User.FindFirstValue(ClaimTypes.NameIdentifier) ??
+            User.FindFirstValue("sub") ??
+            User.FindFirstValue("id") ??
+            User.FindFirstValue("userId");
 
-        if (int.TryParse(userIdValue, out var userId))
-            return userId;
-
-        return null;
+        return int.TryParse(idClaim, out var userId) ? userId : null;
     }
 
     private string GetCurrentUserRole()
     {
-        return User.FindFirst(ClaimTypes.Role)?.Value ?? "";
+        var role =
+            User.FindFirstValue(ClaimTypes.Role) ??
+            User.FindFirstValue("role") ??
+            string.Empty;
+
+        return NormalizeRole(role);
+    }
+
+    private string GetCreatorRole(Reclamation reclamation)
+    {
+        return NormalizeRole(reclamation.CreatedByUser?.Role?.Name ?? string.Empty);
+    }
+
+    private string NormalizeRole(string? role)
+    {
+        return (role ?? string.Empty)
+            .Trim()
+            .ToUpperInvariant()
+            .Replace("É", "E");
+    }
+
+    private string NormalizePriority(string? priority)
+    {
+        var value = (priority ?? "NORMALE").Trim().ToUpperInvariant();
+
+        return value switch
+        {
+            "BASSE" => "BASSE",
+            "NORMALE" => "NORMALE",
+            "HAUTE" => "HAUTE",
+            "URGENTE" => "URGENTE",
+            _ => "NORMALE"
+        };
+    }
+
+    private string NormalizeTreatmentStatus(string? status)
+    {
+        var value = (status ?? StatusTraitee).Trim().ToUpperInvariant();
+
+        return value switch
+        {
+            StatusTraitee => StatusTraitee,
+            StatusRefusee => StatusRefusee,
+            StatusCloturee => StatusCloturee,
+            _ => StatusTraitee
+        };
     }
 }

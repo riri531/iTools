@@ -19,6 +19,7 @@ public class UsersController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
     private readonly ArchiveService _archiveService;
+    private readonly EmailService _emailService;
     private readonly IWebHostEnvironment _environment;
 
     private static readonly string[] AllowedImageContentTypes =
@@ -33,10 +34,12 @@ public class UsersController : ControllerBase
     public UsersController(
         ApplicationDbContext context,
         ArchiveService archiveService,
+        EmailService emailService,
         IWebHostEnvironment environment)
     {
         _context = context;
         _archiveService = archiveService;
+        _emailService = emailService;
         _environment = environment;
     }
 
@@ -109,6 +112,12 @@ public class UsersController : ControllerBase
             return BadRequest("Le mot de passe est obligatoire.");
         }
 
+        var passwordValidationMessage = ValidatePassword(dto.Password);
+        if (!string.IsNullOrWhiteSpace(passwordValidationMessage))
+        {
+            return BadRequest(passwordValidationMessage);
+        }
+
         if (dto.RoleId <= 0)
         {
             return BadRequest("Le rôle est obligatoire.");
@@ -151,9 +160,17 @@ public class UsersController : ControllerBase
             action: "CREATE",
             entityName: "User",
             entityId: user.Id,
-            description: $"Ajout de l’utilisateur : {createdUser.FullName}",
+            description: $"Ajout de l’utilisateur : {createdUser.FullName}. Email d'accès envoyé automatiquement.",
             oldValues: null,
             newValues: createdUser
+        );
+
+        await _emailService.SendNewUserCreatedEmailAsync(
+            toEmail: createdUser.Email,
+            fullName: createdUser.FullName,
+            loginEmail: createdUser.Email,
+            temporaryPassword: dto.Password,
+            roleName: createdUser.RoleName
         );
 
         return CreatedAtAction(nameof(GetById), new { id = user.Id }, createdUser);
@@ -241,6 +258,12 @@ public class UsersController : ControllerBase
 
         if (!string.IsNullOrWhiteSpace(dto.Password))
         {
+            var passwordValidationMessage = ValidatePassword(dto.Password);
+            if (!string.IsNullOrWhiteSpace(passwordValidationMessage))
+            {
+                return BadRequest(passwordValidationMessage);
+            }
+
             user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password);
         }
 
@@ -693,6 +716,43 @@ public class UsersController : ControllerBase
 
         var relativePath = imageUrl.TrimStart('/').Replace('/', Path.DirectorySeparatorChar);
         return Path.Combine(GetWebRootPath(), relativePath);
+    }
+
+
+    private string ValidatePassword(string password)
+    {
+        if (string.IsNullOrWhiteSpace(password))
+        {
+            return "Le mot de passe est obligatoire.";
+        }
+
+        if (password.Length < 12)
+        {
+            return "Le mot de passe doit contenir au moins 12 caractères.";
+        }
+
+        if (!password.Any(char.IsUpper))
+        {
+            return "Le mot de passe doit contenir au moins une lettre majuscule.";
+        }
+
+        if (!password.Any(char.IsLower))
+        {
+            return "Le mot de passe doit contenir au moins une lettre minuscule.";
+        }
+
+        if (!password.Any(char.IsDigit))
+        {
+            return "Le mot de passe doit contenir au moins un chiffre.";
+        }
+
+        var specialCharacters = "!@#$%^&*()_-+=[]{};:,.?";
+        if (!password.Any(ch => specialCharacters.Contains(ch)))
+        {
+            return "Le mot de passe doit contenir au moins un caractère spécial.";
+        }
+
+        return string.Empty;
     }
 
     private string FormatDate(DateTime date)
