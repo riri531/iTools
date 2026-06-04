@@ -1,10 +1,10 @@
 <div class="access-page">
-  <div class="page-overlay"></div>
-  <div class="page-light"></div>
+  <div class="access-bg"></div>
+  <div class="access-overlay"></div>
 
-  <main class="access-layout">
-    <section class="access-info">
-      <span class="info-kicker">Nouveau compte</span>
+  <main class="access-shell">
+    <section class="access-info-card">
+      <span class="info-badge">Nouveau compte</span>
 
       <h1>Demande d’accès</h1>
 
@@ -13,19 +13,19 @@
         Votre demande sera transmise à l’administrateur pour validation.
       </p>
 
-      <a routerLink="/login" class="back-link">
+      <a routerLink="/login" class="back-btn">
         Retour à la connexion
       </a>
     </section>
 
-    <section class="access-card">
-      <div class="card-header">
-        <span class="section-kicker">Formulaire</span>
+    <section class="access-form-card">
+      <span class="form-badge">Formulaire</span>
 
-        <h2>Informations demandeur</h2>
+      <h2>Informations demandeur</h2>
 
-        <p>Merci de renseigner les informations nécessaires au traitement.</p>
-      </div>
+      <p class="form-description">
+        Merci de renseigner les informations nécessaires au traitement.
+      </p>
 
       <div class="alert success" *ngIf="successMessage">
         {{ successMessage }}
@@ -37,88 +37,102 @@
 
       <form class="access-form" (ngSubmit)="submit()">
         <div class="form-grid">
-          <div class="field-group">
+          <div class="field">
             <label>Nom complet</label>
-
-            <div class="input-shell">
-              <input
-                type="text"
-                name="fullName"
-                [(ngModel)]="form.fullName"
-                placeholder="Nom complet"
-                required
-              />
-            </div>
+            <input
+              type="text"
+              name="fullName"
+              [(ngModel)]="form.fullName"
+              placeholder="Nom complet"
+              required
+            />
           </div>
 
-          <div class="field-group">
+          <div class="field">
             <label>Matricule TIS</label>
-
-            <div class="input-shell">
-              <input
-                type="text"
-                name="matricule"
-                [(ngModel)]="form.matricule"
-                placeholder="Matricule"
-                required
-              />
-            </div>
+            <input
+              type="text"
+              name="matricule"
+              [(ngModel)]="form.matricule"
+              placeholder="Matricule"
+              required
+            />
           </div>
 
-          <div class="field-group">
+          <div class="field">
             <label>Adresse email</label>
-
-            <div class="input-shell">
-              <input
-                type="email"
-                name="email"
-                [(ngModel)]="form.email"
-                placeholder="exp@allcircuits.com"
-                autocomplete="email"
-                required
-              />
-            </div>
+            <input
+              type="email"
+              name="email"
+              [(ngModel)]="form.email"
+              placeholder="exp@allcircuits.com"
+              autocomplete="email"
+              required
+            />
           </div>
 
-          <div class="field-group">
+          <div class="field">
             <label>Téléphone</label>
-
-            <div class="input-shell">
-              <input
-                type="text"
-                name="phoneNumber"
-                [(ngModel)]="form.phoneNumber"
-                placeholder="+216 ..."
-                required
-              />
-            </div>
+            <input
+              type="text"
+              name="phoneNumber"
+              [(ngModel)]="form.phoneNumber"
+              placeholder="+216 ..."
+              required
+            />
           </div>
 
-          <div class="field-group full-row">
+          <div class="field full-row department-field">
             <label>Service / Département</label>
 
-            <div class="input-shell">
-              <input
-                type="text"
-                name="department"
-                [(ngModel)]="form.department"
-                placeholder="Production, informatique..."
-                required
-              />
+            <div class="department-select" [class.open]="departmentDropdownOpen">
+              <button
+                type="button"
+                class="department-select-button"
+                (click)="toggleDepartmentDropdown()"
+              >
+                <span [class.placeholder]="!form.department">
+                  {{ selectedDepartmentLabel || 'Sélectionner un département' }}
+                </span>
+
+                <span class="department-arrow">
+                  {{ departmentDropdownOpen ? '▲' : '▼' }}
+                </span>
+              </button>
+
+              <div class="department-dropdown" *ngIf="departmentDropdownOpen">
+                <label
+                  class="department-radio-option"
+                  *ngFor="let department of departments"
+                  [class.selected]="form.department === department.value"
+                >
+                  <input
+                    type="radio"
+                    name="department"
+                    [value]="department.value"
+                    [(ngModel)]="form.department"
+                    (change)="selectDepartment()"
+                    required
+                  />
+
+                  <span class="radio-dot"></span>
+
+                  <span class="department-text">
+                    {{ department.label }}
+                  </span>
+                </label>
+              </div>
             </div>
           </div>
 
-          <div class="field-group full-row">
+          <div class="field full-row">
             <label>Message optionnel</label>
-
-            <div class="textarea-shell">
-              <textarea
-                name="message"
-                [(ngModel)]="form.message"
-                placeholder="Ajoutez un message si nécessaire..."
-                rows="4"
-              ></textarea>
-            </div>
+            <textarea
+              name="message"
+              [(ngModel)]="form.message"
+              placeholder="Ajoutez un message si nécessaire..."
+              rows="4"
+            ></textarea>
           </div>
         </div>
 

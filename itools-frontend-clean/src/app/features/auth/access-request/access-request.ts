@@ -1,12 +1,17 @@
-import { Component, inject } from '@angular/core';
+import { Component, HostListener, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { NgIf } from '@angular/common';
+import { NgFor, NgIf } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 
+type DepartmentOption = {
+  label: string;
+  value: string;
+};
+
 @Component({
   selector: 'app-access-request',
-  imports: [FormsModule, NgIf, RouterLink],
+  imports: [FormsModule, NgIf, NgFor, RouterLink],
   templateUrl: './access-request.html',
   styleUrl: './access-request.scss'
 })
@@ -14,6 +19,43 @@ export class AccessRequestComponent {
   private http = inject(HttpClient);
 
   private apiUrl = 'http://localhost:5160/api/AccessRequests';
+
+  departmentDropdownOpen = false;
+
+  departments: DepartmentOption[] = [
+    {
+      label: 'Département Finances',
+      value: 'Département Finances'
+    },
+    {
+      label: 'Département Commercial & Industrialisation',
+      value: 'Département Commercial & Industrialisation'
+    },
+    {
+      label: 'Département Ressources Humaines',
+      value: 'Département Ressources Humaines'
+    },
+    {
+      label: 'Département Technique',
+      value: 'Département Technique'
+    },
+    {
+      label: 'Département Production & Maintenance',
+      value: 'Département Production & Maintenance'
+    },
+    {
+      label: 'Département Qualité',
+      value: 'Département Qualité'
+    },
+    {
+      label: 'Département Supply Chain',
+      value: 'Département Supply Chain'
+    },
+    {
+      label: 'Département des Achats',
+      value: 'Département des Achats'
+    }
+  ];
 
   form = {
     fullName: '',
@@ -27,6 +69,26 @@ export class AccessRequestComponent {
   loading = false;
   successMessage = '';
   errorMessage = '';
+
+  get selectedDepartmentLabel(): string {
+    return (
+      this.departments.find((department) => department.value === this.form.department)
+        ?.label || ''
+    );
+  }
+
+  toggleDepartmentDropdown(): void {
+    this.departmentDropdownOpen = !this.departmentDropdownOpen;
+  }
+
+  selectDepartment(): void {
+    this.departmentDropdownOpen = false;
+  }
+
+  @HostListener('document:keydown.escape')
+  closeDropdownWithEscape(): void {
+    this.departmentDropdownOpen = false;
+  }
 
   submit(): void {
     this.successMessage = '';
@@ -53,7 +115,7 @@ export class AccessRequestComponent {
     }
 
     if (!this.form.department.trim()) {
-      this.errorMessage = 'Veuillez saisir votre service ou département.';
+      this.errorMessage = 'Veuillez sélectionner votre service ou département.';
       return;
     }
 
@@ -82,6 +144,8 @@ export class AccessRequestComponent {
           department: '',
           message: ''
         };
+
+        this.departmentDropdownOpen = false;
       },
 
       error: (err) => {
