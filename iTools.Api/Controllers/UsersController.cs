@@ -256,15 +256,18 @@ public class UsersController : ControllerBase
         user.CreatedAt = dto.CreatedAt ?? user.CreatedAt;
         user.UpdatedAt = DateTime.UtcNow;
 
-        if (!string.IsNullOrWhiteSpace(dto.Password))
+        var passwordWasChangedByAdmin = !string.IsNullOrWhiteSpace(dto.Password);
+        var newTemporaryPassword = dto.Password?.Trim() ?? string.Empty;
+
+        if (passwordWasChangedByAdmin)
         {
-            var passwordValidationMessage = ValidatePassword(dto.Password);
+            var passwordValidationMessage = ValidatePassword(newTemporaryPassword);
             if (!string.IsNullOrWhiteSpace(passwordValidationMessage))
             {
                 return BadRequest(passwordValidationMessage);
             }
 
-            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password);
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newTemporaryPassword);
         }
 
         await _context.SaveChangesAsync();
@@ -289,10 +292,23 @@ public class UsersController : ControllerBase
             action: "UPDATE",
             entityName: "User",
             entityId: user.Id,
-            description: $"Modification de l’utilisateur : {user.FullName}",
+            description: passwordWasChangedByAdmin
+                ? $"Modification de l’utilisateur : {user.FullName}. Nouveau mot de passe envoyé par email."
+                : $"Modification de l’utilisateur : {user.FullName}",
             oldValues: oldValues,
             newValues: newValues
         );
+
+        if (passwordWasChangedByAdmin)
+        {
+            await _emailService.SendUserPasswordChangedByAdminEmailAsync(
+                toEmail: updatedUser.Email,
+                fullName: updatedUser.FullName,
+                loginEmail: updatedUser.Email,
+                temporaryPassword: newTemporaryPassword,
+                roleName: updatedUser.Role?.Name ?? "Non renseigné"
+            );
+        }
 
         return NoContent();
     }

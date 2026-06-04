@@ -238,6 +238,94 @@ iTools - Gestion d’emplacement des outils
         await SendEmailAsync(message);
     }
 
+    public async Task SendUserPasswordChangedByAdminEmailAsync(
+        string toEmail,
+        string fullName,
+        string loginEmail,
+        string temporaryPassword,
+        string roleName)
+    {
+        var message = new MimeMessage();
+
+        message.From.Add(new MailboxAddress(_settings.FromName, _settings.FromEmail));
+        message.To.Add(MailboxAddress.Parse(toEmail));
+        message.Subject = "Modification de votre mot de passe iTools";
+
+        var safeName = string.IsNullOrWhiteSpace(fullName) ? "Utilisateur" : fullName;
+        var safeRole = string.IsNullOrWhiteSpace(roleName) ? "Non renseigné" : roleName;
+
+        var bodyBuilder = new BodyBuilder
+        {
+            HtmlBody = $@"
+                <div style='font-family: Arial, sans-serif; line-height: 1.6; color: #222;'>
+                    <h2 style='color:#c1121f;'>Mot de passe modifié</h2>
+
+                    <p>Bonjour {safeName},</p>
+
+                    <p>
+                        Votre mot de passe sur l’application <strong>iTools</strong>
+                        a été modifié par l’administrateur.
+                    </p>
+
+                    <p>Voici vos nouvelles informations de connexion :</p>
+
+                    <div style='padding:14px;
+                                border-radius:10px;
+                                background:#f3f4f6;
+                                border:1px solid #ddd;
+                                margin:16px 0;'>
+                        <p><strong>Email :</strong> {loginEmail}</p>
+                        <p><strong>Nouveau mot de passe temporaire :</strong> {temporaryPassword}</p>
+                        <p><strong>Rôle :</strong> {safeRole}</p>
+                    </div>
+
+                    <p>
+                        Ce mot de passe respecte les contraintes de sécurité :
+                        longueur minimale, majuscule, minuscule, chiffre et caractère spécial.
+                    </p>
+
+                    <p>
+                        Pour votre sécurité, veuillez vous connecter puis modifier votre mot de passe
+                        dès que possible.
+                    </p>
+
+                    <p>
+                        Si vous n’êtes pas au courant de cette modification,
+                        veuillez contacter rapidement l’administrateur.
+                    </p>
+
+                    <hr />
+
+                    <p style='font-size:12px;color:#666;'>
+                        iTools - Gestion d’emplacement des outils
+                    </p>
+                </div>",
+            TextBody = $@"
+Bonjour {safeName},
+
+Votre mot de passe sur l’application iTools a été modifié par l’administrateur.
+
+Voici vos nouvelles informations de connexion :
+
+Email : {loginEmail}
+Nouveau mot de passe temporaire : {temporaryPassword}
+Rôle : {safeRole}
+
+Ce mot de passe respecte les contraintes de sécurité : longueur minimale, majuscule, minuscule, chiffre et caractère spécial.
+
+Pour votre sécurité, veuillez vous connecter puis modifier votre mot de passe dès que possible.
+
+Si vous n’êtes pas au courant de cette modification, veuillez contacter rapidement l’administrateur.
+
+ iTools - Gestion d’emplacement des outils
+"
+        };
+
+        message.Body = bodyBuilder.ToMessageBody();
+
+        await SendEmailAsync(message);
+    }
+
     public async Task SendAccessRequestRejectedEmailAsync(
         string toEmail,
         string fullName,
