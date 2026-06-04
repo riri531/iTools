@@ -8,7 +8,6 @@ namespace iTools.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize]
 public class DashboardController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
@@ -19,50 +18,74 @@ public class DashboardController : ControllerBase
     }
 
     [HttpGet("stats")]
+    [AllowAnonymous]
     public async Task<ActionResult<DashboardStatsDto>> GetStats()
     {
-        var totalOutils = await _context.Outils.CountAsync();
-        var totalUsers = await _context.Users.CountAsync();
-        var totalEmplacements = await _context.Emplacements.CountAsync();
+        var totalOutils = await _context.Outils.AsNoTracking().CountAsync();
+        var totalUsers = await _context.Users.AsNoTracking().CountAsync();
+        var totalEmplacements = await _context.Emplacements.AsNoTracking().CountAsync();
 
-        var emplacementsLibres = await _context.Emplacements.CountAsync(e => e.Status == "LIBRE");
-        var emplacementsOccupes = await _context.Emplacements.CountAsync(e => e.Status == "OCCUPE");
-        var emplacementsHs = await _context.Emplacements.CountAsync(e => e.Status == "HS");
-
-        var outilsEnService = await _context.Outils.CountAsync(o => o.Status == "S");
-        var outilsHs = await _context.Outils.CountAsync(o => o.Status == "HS");
-        var outilsReserves = await _context.Outils.CountAsync(o => o.Status == "RESERVE");
-
-        // Graphique camembert : répartition des emplacements
-        var pieLabels = new List<string> { "LIBRE", "OCCUPE", "HS" };
-        var pieData = new List<int> { emplacementsLibres, emplacementsOccupes, emplacementsHs };
-
-        // Graphique bâtons : outils réservés par code outillage
-        // Si aucun outil n'est réservé, on affiche les 10 premiers outils avec 0/1 selon RESERVE.
-        var reservedTools = await _context.Outils
-            .Where(o => o.Status == "RESERVE")
-            .OrderBy(o => o.CodeOutillage)
-            .Select(o => o.CodeOutillage)
+        var emplacementStatuses = await _context.Emplacements
+            .AsNoTracking()
+            .Select(e => e.Status)
             .ToListAsync();
 
-        List<string> barLabels;
-        List<int> barData;
+        var outils = await _context.Outils
+            .AsNoTracking()
+            .Select(o => new
+            {
+                o.Id,
+                o.CodeOutillage,
+                o.OTT,
+                o.Status
+            })
+            .ToListAsync();
 
-        if (reservedTools.Count > 0)
-        {
-            barLabels = reservedTools;
-            barData = reservedTools.Select(_ => 1).ToList();
-        }
-        else
-        {
-            var tools = await _context.Outils
-                .OrderBy(o => o.CodeOutillage)
-                .Take(10)
-                .Select(o => new { o.CodeOutillage, o.Status })
-                .ToListAsync();
+        var emplacementsLibres = emplacementStatuses.Count(s => NormalizeStatus(s) == "LIBRE");
+        var emplacementsOccupes = emplacementStatuses.Count(s => NormalizeStatus(s) == "OCCUPE");
+        var emplacementsHs = emplacementStatuses.Count(s => NormalizeStatus(s) == "HS");
 
-            barLabels = tools.Select(t => t.CodeOutillage).ToList();
-            barData = tools.Select(t => t.Status == "RESERVE" ? 1 : 0).ToList();
+        var outilsEnService = outils.Count(o => IsOutilEnService(o.Status));
+        var outilsHs = outils.Count(o => NormalizeStatus(o.Status) == "HS");
+        var outilsReserves = outils.Count(o => IsOutilReserve(o.Status));
+
+        var pieLabels = new List<string>
+        {
+            "LIBRE",
+            "OCCUPÉ",
+            "HS"
+        };
+
+        var pieData = new List<int>
+        {
+            emplacementsLibres,
+            emplacementsOccupes,
+            emplacementsHs
+        };
+
+        var barSource = outils
+            .OrderBy(o => o.CodeOutillage)
+            .Take(10)
+            .ToList();
+
+        var barLabels = barSource
+            .Select(o =>
+                !string.IsNullOrWhiteSpace(o.CodeOutillage)
+                    ? o.CodeOutillage
+                    : !string.IsNullOrWhiteSpace(o.OTT)
+                        ? o.OTT
+                        : $"Outil {o.Id}"
+            )
+            .ToList();
+
+        var barData = barSource
+            .Select(o => IsOutilReserve(o.Status) ? 1 : 0)
+            .ToList();
+
+        if (barLabels.Count == 0)
+        {
+            barLabels = new List<string> { "Aucun outil" };
+            barData = new List<int> { 0 };
         }
 
         var dto = new DashboardStatsDto
@@ -87,5 +110,55 @@ public class DashboardController : ControllerBase
         };
 
         return Ok(dto);
+    }
+
+    private static string NormalizeStatus(string? status)
+    {
+        var value = (status ?? string.Empty)
+            .Trim()
+            .ToUpperInvariant()
+            .Replace("É", "E")
+            .Replace("È", "E")
+            .Replace("Ê", "E")
+            .Replace("À", "A");
+
+        return value switch
+        {
+            "LIBRE" => "LIBRE",
+
+            "OCCUPE" => "OCCUPE",
+            "OCCUPÉ" => "OCCUPE",
+
+            "HS" => "HS",
+            "HORS SERVICE" => "HS",
+            "HORS-SERVICE" => "HS",
+
+            "S" => "SERVICE",
+            "SERVICE" => "SERVICE",
+            "EN SERVICE" => "SERVICE",
+            "EN-SERVICE" => "SERVICE",
+
+            "RESERVE" => "RESERVE",
+            "RÉSERVÉ" => "RESERVE",
+            "RESERVÉ" => "RESERVE",
+            "RÉSERVE" => "RESERVE",
+            "RESERVEE" => "RESERVE",
+            "RÉSERVÉE" => "RESERVE",
+
+            _ => value
+        };
+    }
+
+    private static bool IsOutilEnService(string? status)
+    {
+        var normalized = NormalizeStatus(status);
+
+        return normalized == "SERVICE"
+            || normalized == "RESERVE";
+    }
+
+    private static bool IsOutilReserve(string? status)
+    {
+        return NormalizeStatus(status) == "RESERVE";
     }
 }

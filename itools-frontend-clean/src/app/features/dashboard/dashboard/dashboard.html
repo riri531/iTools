@@ -1,36 +1,20 @@
 <div class="dashboard-page">
-  <div class="dashboard-toolbar">
+  <section class="dashboard-hero">
     <div>
-      <span class="dashboard-kicker">Tableau de bord</span>
+      <span class="section-kicker">Tableau de bord</span>
       <h1>Vue instantanée de l’activité iTools</h1>
-      <p>
-        Les indicateurs se mettent à jour automatiquement toutes les 30 secondes.
-      </p>
+      <p>Les indicateurs se mettent à jour automatiquement toutes les 30 secondes.</p>
+      <small *ngIf="lastRefresh">Dernière actualisation : {{ lastRefresh | date:'dd/MM/yyyy HH:mm:ss' }}</small>
     </div>
 
-    <div class="refresh-zone">
-      <span class="last-update" *ngIf="lastUpdatedAt">
-        Dernière mise à jour : {{ lastUpdatedAt | date:'dd/MM/yyyy HH:mm:ss' }}
-      </span>
+    <button type="button" class="refresh-btn" (click)="refreshNow()" [disabled]="isLoading">
+      {{ refreshButtonLabel }}
+    </button>
+  </section>
 
-      <button
-        type="button"
-        class="refresh-btn"
-        (click)="refreshNow()"
-        [disabled]="isLoading"
-      >
-        {{ isLoading ? 'Actualisation...' : 'Actualiser' }}
-      </button>
-    </div>
-  </div>
-
-  <div class="dashboard-alert error" *ngIf="errorMessage">
+  <div class="alert error" *ngIf="errorMessage">
     {{ errorMessage }}
   </div>
-
-  <!-- =========================
-       BANNIÈRES DU HAUT
-       ========================= -->
 
   <section class="top-stats-grid">
     <article class="stat-card stat-card--green">
@@ -39,11 +23,8 @@
       </div>
 
       <div class="stat-content">
-        <strong class="stat-number">{{ stats.freeEmplacements }}</strong>
-        <span class="stat-label">
-          Emplacements<br />
-          libres
-        </span>
+        <strong class="stat-number">{{ stats.emplacementsLibres }}</strong>
+        <span class="stat-label">Emplacements<br />libres</span>
       </div>
     </article>
 
@@ -53,10 +34,8 @@
       </div>
 
       <div class="stat-content">
-        <strong class="stat-number">{{ stats.outils }}</strong>
-        <span class="stat-label">
-          Outillages
-        </span>
+        <strong class="stat-number">{{ stats.totalOutils }}</strong>
+        <span class="stat-label">Outillages</span>
       </div>
     </article>
 
@@ -66,11 +45,8 @@
       </div>
 
       <div class="stat-content">
-        <strong class="stat-number">{{ stats.hsEmplacements }}</strong>
-        <span class="stat-label">
-          Emplacements<br />
-          HS
-        </span>
+        <strong class="stat-number">{{ stats.emplacementsHs }}</strong>
+        <span class="stat-label">Emplacements<br />HS</span>
       </div>
     </article>
 
@@ -80,113 +56,74 @@
       </div>
 
       <div class="stat-content">
-        <strong class="stat-number">{{ stats.users }}</strong>
-        <span class="stat-label">
-          Utilisateurs<br />
-          inscrits
-        </span>
+        <strong class="stat-number">{{ stats.totalUsers }}</strong>
+        <span class="stat-label">Utilisateurs<br />inscrits</span>
       </div>
     </article>
   </section>
 
-  <!-- =========================
-       GRAPHIQUES
-       ========================= -->
-
   <section class="charts-grid">
-    <!-- Graph en bâtons CSS -->
     <article class="chart-card">
       <div class="chart-header">
         <span class="chart-kicker">Suivi outillages</span>
-
-        <h2>
-          Taux des emplacements réservés pour<br />
-          chaque outil
-        </h2>
+        <h2>Taux des emplacements réservés pour<br />chaque outil</h2>
       </div>
 
       <div class="bar-chart">
         <div class="bar-y-axis">
-          <span>{{ yAxisMaxLabel }}</span>
+          <span>{{ yAxisMax }}</span>
           <span>0</span>
         </div>
 
-        <div
-          class="bar-area"
-          [style.grid-template-columns]="'repeat(' + toolReservationStats.length + ', 1fr)'"
-        >
+        <div class="bar-area" [style.grid-template-columns]="'repeat(' + barItems.length + ', 1fr)'">
           <div class="bar-grid"></div>
 
-          <div
-            class="bar-item"
-            *ngFor="let item of toolReservationStats"
-            [class.bar-empty]="item.count === 0"
-          >
+          <div class="bar-item" *ngFor="let item of barItems" [class.bar-empty]="item.value === 0">
             <div
-              class="bar-fill bar-fill--active"
-              *ngIf="item.count > 0"
-              [style.height.%]="(item.count / maxReservationValue) * 100"
+              class="bar-fill"
+              *ngIf="item.value > 0"
+              [style.height.%]="item.height"
             ></div>
 
             <div class="bar-tooltip">
               <strong>Outil : {{ item.label }}</strong>
-              <span>Réservations : {{ item.count }}</span>
-              <span>Statut : {{ item.statusLabel }}</span>
+              <span>Réservations : {{ item.value }}</span>
+              <span>Statut : {{ item.value > 0 ? 'Réservé' : 'Aucune réservation' }}</span>
             </div>
           </div>
 
-          <div
-            class="bar-x-axis"
-            [style.grid-template-columns]="'repeat(' + toolReservationStats.length + ', 1fr)'"
-          >
-            <span *ngFor="let item of toolReservationStats">
-              {{ item.label }}
-            </span>
+          <div class="bar-x-axis" [style.grid-template-columns]="'repeat(' + barItems.length + ', 1fr)'">
+            <span *ngFor="let item of barItems">{{ item.label }}</span>
           </div>
         </div>
       </div>
     </article>
 
-    <!-- Graph circulaire CSS -->
     <article class="chart-card">
       <div class="chart-header">
         <span class="chart-kicker">État des emplacements</span>
-
-        <h2>
-          Taux des emplacements : Libre /<br />
-          Occupé / HS
-        </h2>
+        <h2>Taux des emplacements : Libre /<br />Occupé / HS</h2>
       </div>
 
       <div class="pie-legend">
-        <span *ngFor="let part of emplacementParts">
-          <i
-            class="legend-color"
-            [style.background]="part.colorVar"
-          ></i>
-          {{ part.label }}
-        </span>
+        <span><i class="legend-color legend-libre"></i>LIBRE</span>
+        <span><i class="legend-color legend-occupe"></i>OCCUPÉ</span>
+        <span><i class="legend-color legend-hs"></i>HS</span>
       </div>
 
       <div class="pie-wrapper">
-        <div
-          class="pie-chart"
-          [style.background]="pieChartBackground"
-        >
+        <div class="pie-chart" [ngStyle]="pieChartStyle">
           <div class="pie-center">
-            <strong>{{ stats.totalEmplacements }}</strong>
+            <strong>{{ totalEmplacementPie }}</strong>
             <span>Total</span>
           </div>
-
-          <div class="pie-tooltip-zone">
-            <div class="pie-tooltip static-tooltip">
-              <strong>État des emplacements</strong>
-              <span>LIBRE : {{ stats.freeEmplacements }} — {{ getPieTooltip('LIBRE') }}</span>
-              <span>OCCUPÉ : {{ stats.occupiedEmplacements }} — {{ getPieTooltip('OCCUPÉ') }}</span>
-              <span>HS : {{ stats.hsEmplacements }} — {{ getPieTooltip('HS') }}</span>
-            </div>
-          </div>
         </div>
+      </div>
+
+      <div class="pie-values">
+        <span>Libre : {{ stats.emplacementsLibres }}</span>
+        <span>Occupé : {{ stats.emplacementsOccupes }}</span>
+        <span>HS : {{ stats.emplacementsHs }}</span>
       </div>
     </article>
   </section>
