@@ -99,7 +99,30 @@ export class DashboardComponent implements OnInit, OnDestroy {
   get refreshButtonLabel(): string {
     return this.isLoading ? 'Actualisation...' : 'Actualiser';
   }
+  getPieValue(status: 'LIBRE' | 'OCCUPE' | 'HS'): number {
+  if (status === 'LIBRE') {
+    return this.stats.emplacementsLibres;
+  }
 
+  if (status === 'OCCUPE') {
+    return this.stats.emplacementsOccupes;
+  }
+
+  return this.stats.emplacementsHs;
+}
+
+getPiePercent(status: 'LIBRE' | 'OCCUPE' | 'HS'): string {
+  const total = this.totalEmplacementPie;
+
+  if (total <= 0) {
+    return '0%';
+  }
+
+  const value = this.getPieValue(status);
+  const percent = (value / total) * 100;
+
+  return `${percent.toFixed(2)}%`;
+}
   private startAutoRefresh(): void {
     this.refreshSubscription?.unsubscribe();
 

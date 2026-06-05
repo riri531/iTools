@@ -1,16 +1,29 @@
 <div class="dashboard-page">
-  <section class="dashboard-hero">
-    <div>
-      <span class="section-kicker">Tableau de bord</span>
-      <h1>Vue instantanée de l’activité iTools</h1>
-      <p>Les indicateurs se mettent à jour automatiquement toutes les 30 secondes.</p>
-      <small *ngIf="lastRefresh">Dernière actualisation : {{ lastRefresh | date:'dd/MM/yyyy HH:mm:ss' }}</small>
-    </div>
+    <section class="dashboard-header">
+      <div class="dashboard-header-content">
+        <span class="dashboard-kicker">Tableau de bord</span>
 
-    <button type="button" class="refresh-btn" (click)="refreshNow()" [disabled]="isLoading">
-      {{ refreshButtonLabel }}
-    </button>
-  </section>
+        <h1>Vue instantanée de l’activité iTools</h1>
+
+        <p>
+          Les indicateurs se mettent à jour automatiquement toutes les 5 heures.
+        </p>
+
+        <small class="last-refresh" *ngIf="lastRefresh">
+          Dernière actualisation :
+          {{ lastRefresh | date: 'dd/MM/yyyy HH:mm:ss' }}
+        </small>
+      </div>
+
+      <button
+        type="button"
+        class="refresh-btn"
+        (click)="refreshNow()"
+        [disabled]="isLoading"
+      >
+        {{ refreshButtonLabel }}
+      </button>
+    </section>
 
   <div class="alert error" *ngIf="errorMessage">
     {{ errorMessage }}
@@ -117,6 +130,36 @@
             <strong>{{ totalEmplacementPie }}</strong>
             <span>Total</span>
           </div>
+
+          <div class="pie-hover-zone pie-hover-zone--libre">
+            <div class="pie-tooltip pie-tooltip--libre">
+              <strong>Statut : LIBRE</strong>
+              <span>Nombre : {{ stats.emplacementsLibres }}</span>
+              <span>Pourcentage : {{ getPiePercent('LIBRE') }}</span>
+            </div>
+          </div>
+
+          <div class="pie-hover-zone pie-hover-zone--occupe">
+            <div class="pie-tooltip pie-tooltip--occupe">
+              <strong>Statut : OCCUPÉ</strong>
+              <span>Nombre : {{ stats.emplacementsOccupes }}</span>
+              <span>Pourcentage : {{ getPiePercent('OCCUPE') }}</span>
+            </div>
+          </div>
+
+          <div class="pie-hover-zone pie-hover-zone--hs">
+            <div class="pie-tooltip pie-tooltip--hs">
+              <strong>Statut : HS</strong>
+              <span>Nombre : {{ stats.emplacementsHs }}</span>
+              <span>Pourcentage : {{ getPiePercent('HS') }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="pie-summary">
+          <span>Libre : {{ stats.emplacementsLibres }}</span>
+          <span>Occupé : {{ stats.emplacementsOccupes }}</span>
+          <span>HS : {{ stats.emplacementsHs }}</span>
         </div>
       </div>
 
